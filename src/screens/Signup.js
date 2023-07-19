@@ -8,17 +8,29 @@ import { useFonts } from 'expo-font';
 const SignupPage = (props) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [isEmailValid, setIsEmailValid] = useState(false)
+    const [isPasswordValid, setIsPasswordValid] = useState(false)
     const [loginHovered, setLoginHovered] = useState(false);
     const [signupHovered, setSignupHovered] = useState(false);
     const fadeAnim = useState(new Animated.Value(0))[0];
+    const [emailTextInputBorderColor, setEmailTextInputBorderColor] = useState(false)
+    const [passwordTextInputBorderColor, setPasswordTextInputBorderColor] = useState(false)
+    const [firstNameTextInputBorderColor, setFirstNameTextInputBorderColor] = useState(false)
+    const [lastNameTextInputBorderColor, setLastNameTextInputBorderColor] = useState(false)
+    const [companyTextInputBorderColor, setCompanyTextInputBorderColor] = useState(false)
 
     useEffect(() => {
         Animated.timing(fadeAnim, {
             toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
+            duration: 1000,
+            useNativeDriver: false,
         }).start();
     }, []);
+
+    useEffect(() => {
+        setIsEmailValid(email.includes('.com') && email.includes('@') ? true : false)
+        setIsPasswordValid(password.length > 7 && password.length < 19 ? true : false)
+    }, [email, password])
 
     const handleLogin = () => {
         // TODO: Implement login logic
@@ -35,12 +47,12 @@ const SignupPage = (props) => {
 
     const [fontsLoaded] = useFonts({
         'futura-extra-black': require('../../assets/fonts/Futura-Extra-Black-font.ttf'),
-      });
-      
-      if (!fontsLoaded) {
+    });
+
+    if (!fontsLoaded) {
         return null; // Render nothing until the fonts are loaded
-      }
-    
+    }
+
 
     return (
         <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
@@ -50,55 +62,68 @@ const SignupPage = (props) => {
             <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
             <BlurView intensity={90} tint="light" style={StyleSheet.absoluteFill} />
             <BlurView intensity={100} style={styles.content}>
-                <Text style={styles.title}>D V I R</Text>      
+                <Text style={styles.title}>D V I R</Text>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                     <View style={[styles.inputContainer, { width: '45%' }]}>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, firstNameTextInputBorderColor && styles.withBorderInputContainer]}
                             placeholder="First Name"
                             placeholderTextColor="#868383DC"
                             value={email}
                             onChangeText={setEmail}
+                            onFocus={() => { setFirstNameTextInputBorderColor(true) }}
+                            onBlur={() => { setFirstNameTextInputBorderColor(false) }}
                         />
                     </View>
                     <View style={[styles.inputContainer, { width: '45%' }]}>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, lastNameTextInputBorderColor && styles.withBorderInputContainer]}
                             placeholder="Last Name"
                             placeholderTextColor="#868383DC"
                             value={email}
                             onChangeText={setEmail}
+                            onFocus={() => { setLastNameTextInputBorderColor(true) }}
+                            onBlur={() => { setLastNameTextInputBorderColor(false) }}
                         />
                     </View>
                 </View>
                 <View style={styles.inputContainer}>
                     <TextInput
-                        style={styles.input}
+                        style={[styles.input, emailTextInputBorderColor && styles.withBorderInputContainer]}
                         placeholder="Email"
                         placeholderTextColor="#868383DC"
                         value={email}
                         onChangeText={setEmail}
                         keyboardType="email-address"
                         autoCapitalize="none"
+                        onFocus={() => { setEmailTextInputBorderColor(true) }}
+                        onBlur={() => { setEmailTextInputBorderColor(false) }}
                     />
                 </View>
+                {!isEmailValid ? <Text style={{ color: 'red', paddingTop: 5, paddingLeft: 5, fontSize: 10, alignSelf: 'flex-start' }}>Enter Valid Email</Text> : null}
+
                 <View style={styles.inputContainer}>
                     <TextInput
-                        style={styles.input}
+                        style={[styles.input, passwordTextInputBorderColor && styles.withBorderInputContainer]}
                         placeholder="Password"
                         placeholderTextColor="#868383DC"
                         value={password}
                         onChangeText={setPassword}
                         secureTextEntry
+                        onFocus={() => { setPasswordTextInputBorderColor(true) }}
+                        onBlur={() => { setPasswordTextInputBorderColor(false) }}
                     />
                 </View>
+                {!isPasswordValid ? <Text style={{ color: 'red', paddingTop: 5, paddingLeft: 5, fontSize: 10, alignSelf: 'flex-start' }}>Password length should have 6 to 18 characters</Text> : null}
                 <View style={styles.inputContainer}>
                     <TextInput
-                        style={styles.input}
+                        style={[styles.input, companyTextInputBorderColor && styles.withBorderInputContainer]}
                         placeholder="Company"
                         placeholderTextColor="#868383DC"
                         value={password}
                         onChangeText={setPassword}
+                        onFocus={() => { setCompanyTextInputBorderColor(true) }}
+                        onBlur={() => { setCompanyTextInputBorderColor(false) }}
                     />
                 </View>
                 <TouchableOpacity
@@ -172,7 +197,7 @@ const styles = StyleSheet.create({
     },
     inputContainer: {
         width: '100%',
-        marginBottom: 10,
+        marginTop: 10,
     },
     input: {
         width: '100%',
@@ -184,6 +209,15 @@ const styles = StyleSheet.create({
         borderColor: '#cccccc',
         borderTopLeftRadius: 20,
         borderBottomRightRadius: 20,
+        outlineStyle: 'none'
+    },
+    withBorderInputContainer: {
+        borderColor: '#558BC1',
+        shadowColor: '#558BC1',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 1,
+        shadowRadius: 10,
+        elevation: 0,
     },
     signupButton: {
         width: '100%',

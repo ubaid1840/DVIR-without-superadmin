@@ -3,6 +3,8 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated } from 'r
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useFonts } from 'expo-font';
+import { useIsFocused } from '@react-navigation/native';
+
 
 const LoginPage = (props) => {
 
@@ -11,27 +13,32 @@ const LoginPage = (props) => {
     const [loginHovered, setLoginHovered] = useState(false);
     const [forgetPasswordHovered, setForgetPasswordHovered] = useState(false);
     const [signupHovered, setSignupHovered] = useState(false);
-    const fadeAnim = useState(new Animated.Value(0))[0];
+    const [fadeAnim] = useState(new Animated.Value(0));
     const [isEmailValid, setIsEmailValid] = useState(false)
     const [isPasswordValid, setIsPasswordValid] = useState(false)
     const [emailTextInputBorderColor, setEmailTextInputBorderColor] = useState(false)
     const [passwordTextInputBorderColor, setPasswordTextInputBorderColor] = useState(false)
-     
-
-    useEffect(() => {
-        Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: false
-        }).start();
-    }, []);
-
-    
 
     useEffect(() => {
         setIsEmailValid(email.includes('.com') && email.includes('@') ? true : false)
         setIsPasswordValid(password.length > 7 && password.length < 19 ? true : false)
     }, [email, password])
+
+
+    const isFocused = useIsFocused()
+
+    useEffect(() => {
+        setEmail("")
+        setPassword("")
+        Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: false
+        }).start();
+        return () => {
+            fadeAnim.setValue(0);
+        }
+    }, [isFocused])
 
     const handleLogin = () => {
         // TODO: Implement login logic
@@ -54,6 +61,8 @@ const LoginPage = (props) => {
         return null;
     }
 
+
+
     return (
         <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
             <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
@@ -69,11 +78,11 @@ const LoginPage = (props) => {
                         placeholder="Email"
                         placeholderTextColor="#868383DC"
                         value={email}
-                        onChangeText={setEmail}
+                        onChangeText={(val) => { setEmail(val) }}
                         keyboardType="email-address"
                         autoCapitalize="none"
-                        onFocus={()=>{setEmailTextInputBorderColor(true)}}
-                        onBlur={()=>{setEmailTextInputBorderColor(false)}}
+                        onFocus={() => { setEmailTextInputBorderColor(true) }}
+                        onBlur={() => { setEmailTextInputBorderColor(false) }}
                     />
                 </View>
                 {!isEmailValid ? <Text style={{ color: 'red', paddingTop: 5, paddingLeft: 5, fontSize: 10, alignSelf: 'flex-start' }}>Enter Valid Email</Text> : null}
@@ -83,10 +92,10 @@ const LoginPage = (props) => {
                         placeholder="Password"
                         placeholderTextColor="#868383DC"
                         value={password}
-                        onChangeText={setPassword}
+                        onChangeText={(val) => { setPassword(val) }}
                         secureTextEntry
-                        onFocus={()=>{setPasswordTextInputBorderColor(true)}}
-                        onBlur={()=>{setPasswordTextInputBorderColor(false)}}
+                        onFocus={() => { setPasswordTextInputBorderColor(true) }}
+                        onBlur={() => { setPasswordTextInputBorderColor(false) }}
                     />
                 </View>
                 {!isPasswordValid ? <Text style={{ color: 'red', paddingTop: 5, paddingLeft: 5, fontSize: 10, alignSelf: 'flex-start' }}>Password length should have 6 to 18 characters</Text> : null}
@@ -178,7 +187,7 @@ const styles = StyleSheet.create({
     inputContainer: {
         width: '100%',
         marginTop: 10,
-        
+
     },
     input: {
         width: '100%',
@@ -192,10 +201,10 @@ const styles = StyleSheet.create({
         borderBottomRightRadius: 20,
         outlineStyle: 'none'
     },
-    withBorderInputContainer:{
-        borderColor:'#558BC1',
+    withBorderInputContainer: {
+        borderColor: '#558BC1',
         shadowColor: '#558BC1',
-        shadowOffset: { width: 0, height:  0},
+        shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 1,
         shadowRadius: 10,
         elevation: 0,

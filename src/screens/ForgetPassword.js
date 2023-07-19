@@ -16,7 +16,8 @@ const ForgetPasswordPage = (props) => {
     useEffect(() => {
         Animated.timing(fadeAnim, {
             toValue: 1,
-            duration: 500,
+            duration: 1000,
+            useNativeDriver: false,
         }).start();
     }, []);
 
