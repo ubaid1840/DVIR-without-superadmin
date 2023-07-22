@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
+import AppBtn from '../components/Button';
 
 
 
@@ -9,7 +10,6 @@ const ForgetPasswordPage = (props) => {
     const [email, setEmail] = useState('');
     const [isEmailValid, setIsEmailValid] = useState(false)
     const [emailTextInputBorderColor, setEmailTextInputBorderColor] = useState(false)
-    const [resetButtonHovered, setResetButtonHovered] = useState(false);
     const [loginHovered, setLoginHovered] = useState(false);
     const fadeAnim = useState(new Animated.Value(0))[0];
 
@@ -56,15 +56,10 @@ const ForgetPasswordPage = (props) => {
                     onBlur={()=>{setEmailTextInputBorderColor(false)}}
                 />
                  {!isEmailValid ? <Text style={{ color: 'red', paddingTop: 5, paddingLeft: 5, fontSize: 10, alignSelf: 'flex-start' }}>Enter Valid Email</Text> : null}
-                <TouchableOpacity
-                    style={[styles.resetButton, resetButtonHovered && styles.resetButtonHover]}
-                    onPress={handleForgetPasswod}
-                    activeOpacity={0.7}
-                    onMouseEnter={() => setResetButtonHovered(true)}
-                    onMouseLeave={() => setResetButtonHovered(false)}
-                >
-                    <Text style={styles.buttonText}>Reset</Text>
-                </TouchableOpacity>
+               <AppBtn 
+               title = "Reset"
+               onPress = {handleForgetPasswod}
+               />
                 <View style={{ marginTop: 10, flexDirection: 'row' }}>
                     <Text style={{ fontSize: 14 }}>Already have an account? </Text>
                     <TouchableOpacity
@@ -87,6 +82,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
+        backdropFilter: 'blur(10px)'
     },
     gradient1: {
         ...StyleSheet.absoluteFill,

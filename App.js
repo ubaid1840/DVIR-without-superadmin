@@ -5,21 +5,21 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LoginPage from './src/screens/Login';
 import SignupPage from './src/screens/Signup';
 import ForgetPasswordPage from './src/screens/ForgetPassword';
-import Dashboard from './src/screens/Dashboard';
+import DashboardPage from './src/screens/Dashboard';
 
 const App = () => {
 
   const AppStack = createNativeStackNavigator();
 
   return (
-   <NavigationContainer >
-          <AppStack.Navigator initialRouteName='Login' options={{}}>
-            <AppStack.Screen name='Login' component={LoginPage} options={{ headerShown: false }}></AppStack.Screen>
-            <AppStack.Screen name='Signup' component={SignupPage} options={{ headerShown: false }}></AppStack.Screen>
-            <AppStack.Screen name='ForgetPassword' component={ForgetPasswordPage} options={{ headerShown: false }}></AppStack.Screen>
-            <AppStack.Screen name='Dashboard' component={Dashboard} options={{ headerShown: false }}></AppStack.Screen>
-          </AppStack.Navigator>
-        </NavigationContainer>
+    <NavigationContainer >
+      <AppStack.Navigator initialRouteName='Login' options={{}}>
+        <AppStack.Screen name='Login' component={LoginPage} options={{ headerShown: false }}></AppStack.Screen>
+        <AppStack.Screen name='Signup' component={SignupPage} options={{ headerShown: false }}></AppStack.Screen>
+        <AppStack.Screen name='ForgetPassword' component={ForgetPasswordPage} options={{ headerShown: false }}></AppStack.Screen>
+        <AppStack.Screen name='Dashboard' component={DashboardPage} options={{ headerShown: false }}></AppStack.Screen>
+      </AppStack.Navigator>
+    </NavigationContainer>
   );
 };
 

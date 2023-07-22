@@ -4,13 +4,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useFonts } from 'expo-font';
 import { useIsFocused } from '@react-navigation/native';
+import AppBtn from '../components/Button';
 
 
 const LoginPage = (props) => {
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [loginHovered, setLoginHovered] = useState(false);
     const [forgetPasswordHovered, setForgetPasswordHovered] = useState(false);
     const [signupHovered, setSignupHovered] = useState(false);
     const [fadeAnim] = useState(new Animated.Value(0));
@@ -99,15 +99,11 @@ const LoginPage = (props) => {
                     />
                 </View>
                 {!isPasswordValid ? <Text style={{ color: 'red', paddingTop: 5, paddingLeft: 5, fontSize: 10, alignSelf: 'flex-start' }}>Password length should have 6 to 18 characters</Text> : null}
-                <TouchableOpacity
-                    style={[styles.loginButton, loginHovered && styles.loginButtonHover]}
+                <AppBtn
+                    title="Login"
                     onPress={handleLogin}
-                    activeOpacity={0.7}
-                    onMouseEnter={() => setLoginHovered(true)}
-                    onMouseLeave={() => setLoginHovered(false)}
                 >
-                    <Text style={styles.buttonText}>Login</Text>
-                </TouchableOpacity>
+                </AppBtn>
                 <TouchableOpacity
                     style={styles.forgetPasswordButton}
                     onPress={handleForgetPasswod}
@@ -140,7 +136,8 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        backdropFilter: 'blur(10px)'
     },
     gradient1: {
         ...StyleSheet.absoluteFill,

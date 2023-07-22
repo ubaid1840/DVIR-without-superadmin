@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated } from 'r
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useFonts } from 'expo-font';
+import AppBtn from '../components/Button';
 
 
 const SignupPage = (props) => {
@@ -126,15 +127,10 @@ const SignupPage = (props) => {
                         onBlur={() => { setCompanyTextInputBorderColor(false) }}
                     />
                 </View>
-                <TouchableOpacity
-                    style={[styles.signupButton, signupHovered && styles.signupButtonHover]}
-                    onPress={handleSignup}
-                    activeOpacity={0.7}
-                    onMouseEnter={() => setSignupHovered(true)}
-                    onMouseLeave={() => setSignupHovered(false)}
-                >
-                    <Text style={styles.buttonText}>Sign Up</Text>
-                </TouchableOpacity>
+                <AppBtn 
+                title = "Sign Up"
+                onPress = {handleSignup}
+                />
                 <View style={{ marginTop: 10, flexDirection: 'row' }}>
                     <Text style={{ fontSize: 14 }}>Already have an account? </Text>
                     <TouchableOpacity onPress={handleLogin} activeOpacity={0.7} onMouseEnter={() => setLoginHovered(true)} onMouseLeave={() => setLoginHovered(false)}>
@@ -151,7 +147,8 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        backdropFilter: 'blur(10px)'
     },
     gradient1: {
         ...StyleSheet.absoluteFill,
