@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated } from 'react-native';
 import { useFonts } from 'expo-font';
 import CircularProgressBar from '../components/CircleProgress'
 import DropdownComponent from '../components/DropDownComponent';
@@ -20,6 +20,7 @@ const DashboardPage = () => {
   const [dashboardHovered, setDashboardHovered] = useState(false)
   const [inspectiondHovered, setInspectionHovered] = useState(false)
   const [maintenanceHovered, setMaintenanceHovered] = useState(false)
+  const [fadeAnim] = useState(new Animated.Value(0));
   const [assetsHovered, setAssetsHovered] = useState(false)
   const [usersHovered, setUsersHovered] = useState(false)
   const [driverSelectedOption, setDriverSelectedOption] = useState('Inspection');
@@ -28,6 +29,20 @@ const DashboardPage = () => {
   const [inspectionCalendarSelect, setInspectionCalendarSelect] = useState('All')
   const [totalInspections, setTotalInspections] = useState(19)
   const [totalDefects, setTotalDefects] = useState(7)
+
+  useEffect(() => {
+   
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 1000,
+      useNativeDriver: false
+  }).start();
+
+  return () => {
+    fadeAnim.setValue(0);
+  }
+   
+},[selectedPage] )
 
   const handleDriverValueChange = (value) => {
     setDriverSelectedOption(value);
@@ -124,7 +139,7 @@ const DashboardPage = () => {
     switch (selectedPage) {
       case 'Dashboard':
         return (
-          <View style={styles.contentContainer}>
+          <Animated.View style={[styles.contentContainer, {opacity:fadeAnim}]}>
             <ScrollView>
               <View style={{
                 position: 'absolute',
@@ -182,6 +197,8 @@ const DashboardPage = () => {
                 <View >
                   <AppBtn
                     title="Download Report"
+                    btnStyle = {styles.btn}
+                    btnTextStyle = {styles.btnText}
                     onPress={handleDownloadReportBtn}></AppBtn>
                 </View>
               </View>
@@ -307,13 +324,13 @@ const DashboardPage = () => {
 
               </View>
             </ScrollView>
-          </View>
+          </Animated.View>
 
         );
       case 'Inspection':
         return (
-          <View style={styles.contentContainer}>
-            <ScrollView>
+          <Animated.View style={[styles.contentContainer, {opacity:fadeAnim}]}>
+          <ScrollView>
               <View style={{
                 position: 'absolute',
                 top: 0,
@@ -368,111 +385,38 @@ const DashboardPage = () => {
                 <View >
                   <AppBtn
                     title="Download Report"
+                    btnStyle = {styles.btn}
+                btnTextStyle = {styles.btnText}
                     onPress={handleDownloadReportBtn}></AppBtn>
                 </View>
               </View>
               <View style={styles.contentCardStyle}>
                 <Form />
               </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 40 }}>
-                <View style={styles.contentCardStyle}>
-                  <Text style={{ color: '#1E3D5C', fontSize: 24, fontWeight: 'bold', paddingBottom: 30 }}>
-                    Driver Leaderboard
-                  </Text>
-                  <DropdownComponent
-                    options={driverOptionList}
-                    selectedValue={driverSelectedOption}
-                    onValueChange={handleDriverValueChange}
-                    dropdownStyle={styles.dropdown}
-                  />
-
-                  <FlatList
-                    data={driver}
-                    renderItem={({ item, index }) => {
-                      return (
-                        <View style={{ marginTop: 20, paddingTop: 20, borderTopWidth: 1, borderTopColor: '#CAC8C8' }}>
-                          <View style={{ flexDirection: 'row' }}>
-                            <NameAvatar title={item.name[0]} />
-                            <View style={{ paddingLeft: 20 }}>
-                              <Text style={{ fontSize: 15, color: 'black', fontWeight: '600' }}>{item.name}</Text>
-                              <Text style={{ fontSize: 15, color: 'grey', marginTop: 15 }}>{item.company}</Text>
-                            </View>
-                            <View style={{ right: 0, position: 'absolute' }}>
-                              {driverSelectedOption == "Inspection" ?
-                                <Text style={{ fontSize: 15, color: 'black', fontWeight: '600' }}>{item.inspection} Inspection</Text>
-                                :
-                                <Text style={{ fontSize: 15, color: 'black', fontWeight: '600' }}>{item.defects} Defects</Text>
-                              }
-
-                            </View>
-                          </View>
-                        </View>
-                      )
-                    }} />
-                </View>
-
-                <View style={styles.contentCardStyle}>
-                  <Text style={{ color: '#1E3D5C', fontSize: 24, fontWeight: 'bold', paddingBottom: 30 }}>
-                    Asset Leaderboard
-                  </Text>
-                  <DropdownComponent
-                    options={assetOptionList}
-                    selectedValue={assetSelectedOption}
-                    onValueChange={handleAssetValueChange}
-                    dropdownStyle={styles.dropdown}
-                    textStyle={styles.text} />
-
-                  <FlatList
-                    data={asset}
-                    renderItem={({ item, index }) => {
-                      return (
-                        <View style={{ marginTop: 20, paddingTop: 20, borderTopWidth: 1, borderTopColor: '#CAC8C8' }}>
-                          <View style={{ flexDirection: 'row' }}>
-                            <NameAvatar title={item.name[0]} />
-                            <View style={{ paddingLeft: 20 }}>
-                              <Text style={{ fontSize: 15, color: 'black', fontWeight: '600' }}>{item.name}</Text>
-                              <Text style={{ fontSize: 15, color: 'grey', marginTop: 15 }}>{item.company}</Text>
-                            </View>
-                            <View style={{ right: 0, position: 'absolute' }}>
-                              {assetSelectedOption == "Inspection" ?
-                                <Text style={{ fontSize: 15, color: 'black', fontWeight: '600' }}>{item.inspection} Inspection</Text>
-                                :
-                                <Text style={{ fontSize: 15, color: 'black', fontWeight: '600' }}>{item.defects} Defects</Text>
-                              }
-
-                            </View>
-                          </View>
-                        </View>
-                      )
-                    }} />
-
-                </View>
-
-              </View>
             </ScrollView>
-          </View>
+          </Animated.View>
 
         );
       case 'Maintenance':
         return (
-          <View style={styles.contentContainer}>
-            {/* Add your Maintenance content here */}
+          <Animated.View style={[styles.contentContainer, {opacity:fadeAnim}]}>
+          {/* Add your Maintenance content here */}
             <Text style={styles.screenTitle}>Maintenance Content</Text>
-          </View>
+          </Animated.View>
         );
       case 'Assets':
         return (
-          <View style={styles.contentContainer}>
-            {/* Add your Assets content here */}
+          <Animated.View style={[styles.contentContainer, {opacity:fadeAnim}]}>
+          {/* Add your Assets content here */}
             <Text style={styles.screenTitle}>Assets Content</Text>
-          </View>
+          </Animated.View>
         );
       case 'Users':
         return (
-          <View style={styles.contentContainer}>
-            {/* Add your Users content here */}
+          <Animated.View style={[styles.contentContainer, {opacity:fadeAnim}]}>
+          {/* Add your Users content here */}
             <Text style={styles.screenTitle}>Users Content</Text>
-          </View>
+          </Animated.View>
         );
       default:
         return null;
@@ -489,7 +433,10 @@ const DashboardPage = () => {
           <Image style={selectedPage == 'Dashboard' ? [styles.iconStyle, styles.iconStyleHover] : [styles.iconStyle, dashboardHovered && styles.iconStyleHover]} source={require('../../assets/dashboard_speed_icon.png')}></Image>
           <TouchableOpacity
             style={{ paddingLeft: 20 }}
-            onPress={() => setSelectedPage('Dashboard')}
+            onPress={() => {
+              fadeAnim.setValue(0);
+              setSelectedPage('Dashboard')
+            }}
           >
             <Text style={selectedPage == 'Dashboard' ? [styles.navText, styles.navTextHover] : [styles.navText, dashboardHovered && styles.navTextHover]}>Dashboard</Text>
           </TouchableOpacity>
@@ -501,7 +448,10 @@ const DashboardPage = () => {
           <Image style={selectedPage == 'Inspection' ? [styles.iconStyle, styles.iconStyleHover] : [styles.iconStyle, inspectiondHovered && styles.iconStyleHover]} source={require('../../assets/inspection_icon.png')}></Image>
           <TouchableOpacity
             style={{ paddingLeft: 20 }}
-            onPress={() => setSelectedPage('Inspection')}
+            onPress={() => {
+              fadeAnim.setValue(0);
+              setSelectedPage('Inspection')
+            }}
           >
             <Text style={selectedPage == 'Inspection' ? [styles.navText, styles.navTextHover] : [styles.navText, inspectiondHovered && styles.navTextHover]}>Inspection</Text>
           </TouchableOpacity>
@@ -513,7 +463,10 @@ const DashboardPage = () => {
           <Image style={selectedPage == 'Maintenance' ? [styles.iconStyle, styles.iconStyleHover] : [styles.iconStyle, maintenanceHovered && styles.iconStyleHover]} source={require('../../assets/maintenance_icon.png')}></Image>
           <TouchableOpacity
             style={{ paddingLeft: 20 }}
-            onPress={() => setSelectedPage('Maintenance')}
+            onPress={() => {
+              fadeAnim.setValue(0);
+              setSelectedPage('Maintenance')
+            }}
           >
             <Text style={selectedPage == 'Maintenance' ? [styles.navText, styles.navTextHover] : [styles.navText, maintenanceHovered && styles.navTextHover]}>Maintenance</Text>
           </TouchableOpacity>
@@ -524,7 +477,10 @@ const DashboardPage = () => {
           <Image style={selectedPage == 'Assets' ? [styles.iconStyle, styles.iconStyleHover] : [styles.iconStyle, assetsHovered && styles.iconStyleHover]} source={require('../../assets/vehicle_icon.png')}></Image>
           <TouchableOpacity
             style={{ paddingLeft: 20 }}
-            onPress={() => setSelectedPage('Assets')}
+            onPress={() => {
+              fadeAnim.setValue(0);
+              setSelectedPage('Assets')
+            }}
           >
             <Text style={selectedPage == 'Assets' ? [styles.navText, styles.navTextHover] : [styles.navText, assetsHovered && styles.navTextHover]}>Assets</Text>
           </TouchableOpacity>
@@ -535,7 +491,10 @@ const DashboardPage = () => {
           <Image style={selectedPage == 'Users' ? [styles.iconStyle, styles.iconStyleHover] : [styles.iconStyle, usersHovered && styles.iconStyleHover]} source={require('../../assets/user_icon.png')}></Image>
           <TouchableOpacity
             style={{ paddingLeft: 20 }}
-            onPress={() => setSelectedPage('Users')}
+            onPress={() => {
+              fadeAnim.setValue(0);
+              setSelectedPage('Users')
+            }}
           >
             <Text style={selectedPage == 'Users' ? [styles.navText, styles.navTextHover] : [styles.navText, usersHovered && styles.navTextHover]}>Users</Text>
           </TouchableOpacity>
@@ -621,7 +580,7 @@ const styles = StyleSheet.create({
 
   contentContainer: {
     flex: 1,
-    overflow: 'hidden'
+    overflow: 'hidden',
   },
   screenTitle: {
     fontSize: 24,
@@ -711,7 +670,23 @@ const styles = StyleSheet.create({
     elevation: 5,
     margin: 40,
     flex: 1
-  }
+  },
+  btn: {
+    width: '100%',
+    height: 50,
+    backgroundColor: '#336699',
+    borderRadius: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+},
+btnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft:10,
+    marginRight:10
+},
 });
 
 export default DashboardPage;

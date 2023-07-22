@@ -85,12 +85,16 @@ export default function CircularProgressBar({
                 </G>
 
             </Svg>
-            <TextInput
+            {/* <TextInput
                 editable={false}
                 value={`${Math.round(inputProgress)}%`}
                 style={[StyleSheet.absoluteFillObject, { fontSize: radius / 2, color: textColor ?? color }, { fontWeight: 'bold', textAlign: 'center', position:'absolute' }]}
             >
-            </TextInput>
+            </TextInput> */}
+
+            <Text style={[StyleSheet.absoluteFillObject, { fontSize: radius / 2, color: textColor ?? color }, { fontWeight: 'bold', textAlign: 'center', position:'absolute' }]}>
+            {`${Math.round(inputProgress)}%`}
+            </Text>
         </View>
     )
 }

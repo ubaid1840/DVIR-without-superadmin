@@ -129,6 +129,8 @@ const SignupPage = (props) => {
                 </View>
                 <AppBtn 
                 title = "Sign Up"
+                btnStyle = {styles.btn}
+                btnTextStyle = {styles.btnText}
                 onPress = {handleSignup}
                 />
                 <View style={{ marginTop: 10, flexDirection: 'row' }}>
@@ -262,7 +264,23 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: 'bold',
         textDecorationLine: 'underline'
-    }
+    },
+    btn: {
+        width: '100%',
+        height: 50,
+        backgroundColor: '#336699',
+        borderRadius: 5,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 10,
+    },
+    btnText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginLeft:10,
+        marginRight:10
+    },
 });
 
 export default SignupPage;

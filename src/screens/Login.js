@@ -101,6 +101,8 @@ const LoginPage = (props) => {
                 {!isPasswordValid ? <Text style={{ color: 'red', paddingTop: 5, paddingLeft: 5, fontSize: 10, alignSelf: 'flex-start' }}>Password length should have 6 to 18 characters</Text> : null}
                 <AppBtn
                     title="Login"
+                    btnStyle = {styles.btn}
+                    btnTextStyle = {styles.btnText}
                     onPress={handleLogin}
                 >
                 </AppBtn>
@@ -250,6 +252,22 @@ const styles = StyleSheet.create({
     signupTextHover: {
         color: '#558BC1',
         textDecorationLine: 'underline',
+    },
+    btn: {
+        width: '100%',
+        height: 50,
+        backgroundColor: '#336699',
+        borderRadius: 5,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 10,
+    },
+    btnText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginLeft:10,
+        marginRight:10
     },
 });
 

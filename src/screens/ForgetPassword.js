@@ -58,6 +58,8 @@ const ForgetPasswordPage = (props) => {
                  {!isEmailValid ? <Text style={{ color: 'red', paddingTop: 5, paddingLeft: 5, fontSize: 10, alignSelf: 'flex-start' }}>Enter Valid Email</Text> : null}
                <AppBtn 
                title = "Reset"
+               btnStyle = {styles.btn}
+               btnTextStyle = {styles.btnText}
                onPress = {handleForgetPasswod}
                />
                 <View style={{ marginTop: 10, flexDirection: 'row' }}>
@@ -185,6 +187,22 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: 'bold',
         textDecorationLine: 'underline',
+    },
+    btn: {
+        width: '100%',
+        height: 50,
+        backgroundColor: '#336699',
+        borderRadius: 5,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 10,
+    },
+    btnText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginLeft:10,
+        marginRight:10
     },
 });
 
