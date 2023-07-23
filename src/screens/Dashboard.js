@@ -8,11 +8,15 @@ import { BlurView } from 'expo-blur';
 import AppBtn from '../components/Button';
 import NameAvatar from '../components/NameAvatar';
 import Form from '../components/Form';
+import CustomDropdownProfile from '../components/DropDownProfileComponent';
+import Header from '../components/Header';
+import MainDashboard from './MainDashboard';
+import GeneralInspection from './GeneralInspection';
 
 
 const driverOptionList = ['Inspection'];
 const assetOptionList = ['Inspection', 'Defects'];
-const logoutList = ['Profile', 'Logout']
+
 
 const DashboardPage = () => {
 
@@ -31,18 +35,18 @@ const DashboardPage = () => {
   const [totalDefects, setTotalDefects] = useState(7)
 
   useEffect(() => {
-   
+
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 1000,
       useNativeDriver: false
-  }).start();
+    }).start();
 
-  return () => {
-    fadeAnim.setValue(0);
-  }
-   
-},[selectedPage] )
+    return () => {
+      fadeAnim.setValue(0);
+    }
+
+  }, [selectedPage])
 
   const handleDriverValueChange = (value) => {
     setDriverSelectedOption(value);
@@ -52,6 +56,7 @@ const DashboardPage = () => {
     setAssetSelectedOption(value);
   };
 
+  
   const sortDriver = () => {
     // Sort the data based on age in ascending order
     const sortedData = driver.slice().sort((a, b) => a.inspection - b.inspection);
@@ -73,10 +78,6 @@ const DashboardPage = () => {
   };
 
   const handleDownloadReportBtn = () => {
-
-  }
-
-  const handleUserChange = () => {
 
   }
 
@@ -138,283 +139,100 @@ const DashboardPage = () => {
   const renderPage = () => {
     switch (selectedPage) {
       case 'Dashboard':
-        return (
-          <Animated.View style={[styles.contentContainer, {opacity:fadeAnim}]}>
-            <ScrollView>
-              <View style={{
-                position: 'absolute',
-                top: 0,
-                bottom: 0,
-                left: 0,
-                right: 0,
-                overflow: 'hidden'
-              }}>
-                <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
-                <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
-                <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
-                <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
-              </View>
-              <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
-
-
-              <View style={{ flexDirection: 'row', marginLeft: 40, marginTop: 40, alignItems: 'center' }}>
-                <View style={{ backgroundColor: '#67E9DA', borderRadius: 15, }}>
-                  <Image style={{ width: 30, height: 30, tintColor: "#FFFFFF", margin: 10 }}
-                    source={require('../../assets/dashboard_speed_icon.png')}></Image>
-                </View>
-                <Text style={{ fontSize: 40, color: '#1E3D5C', fontWeight: '900', marginLeft: 10 }}>
-                  Dashboard
-                </Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 30, paddingLeft: 40, paddingRight: 40 }}>
-                <View style={{ flexDirection: 'row', paddingLeft: 30 }}>
-                  <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setDashboardCalendarSelect("Yesterday")}>
-                    <Text style={[styles.calenderSortText, dashboardCalendarSelect == "Yesterday" && styles.calenderSortSelectedText]}>
-                      Yesterday
-                    </Text>
-                  </TouchableOpacity >
-                  <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setDashboardCalendarSelect("Today")}>
-                    <Text style={[styles.calenderSortText, dashboardCalendarSelect == "Today" && styles.calenderSortSelectedText]}>
-                      Today
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setDashboardCalendarSelect("Week")}>
-                    <Text style={[styles.calenderSortText, dashboardCalendarSelect == "Week" && styles.calenderSortSelectedText]}>
-                      Week
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setDashboardCalendarSelect("Month")}>
-                    <Text style={[styles.calenderSortText, dashboardCalendarSelect == "Month" && styles.calenderSortSelectedText]}>
-                      Month
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setDashboardCalendarSelect("Year")}>
-                    <Text style={[styles.calenderSortText, dashboardCalendarSelect == "Year" && styles.calenderSortSelectedText]}>
-                      Year
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-                <View >
-                  <AppBtn
-                    title="Download Report"
-                    btnStyle = {styles.btn}
-                    btnTextStyle = {styles.btnText}
-                    onPress={handleDownloadReportBtn}></AppBtn>
-                </View>
-              </View>
-              <View style={styles.contentCardStyle}>
-                <Text style={{ color: '#1E3D5C', fontSize: 24, fontWeight: 'bold', paddingBottom: 30 }}>
-                  Inspection & Defects
-                </Text>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-evenly' }}>
-                  <View style={{ marginLeft: 10, marginRight: 10 }}>
-                    <CircularProgressBar percentage='60' />
-                    <Text style={styles.subHeadingText}>
-                      Inspected assets
-                    </Text>
-                  </View>
-                  <View style={{ marginLeft: 10, marginRight: 10 }}>
-                    <CircularProgressBar percentage='43' />
-                    <Text style={styles.subHeadingText}>
-                      Inspecting drivers
-                    </Text>
-                  </View>
-                  <View style={{ marginLeft: 10, marginRight: 10 }}>
-                    <CircularProgressBar percentage='87' />
-                    <Text style={styles.subHeadingText}>
-                      Assets with defects
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={{ justifyContent: 'space-evenly', flexDirection: 'row', marginTop: 30 }}>
-                  <View style={{ alignItems: 'center' }}>
-                    <View style={styles.driverAndAssetAvatar}>
-                      <View style={{}}>{sortDriver()}</View>
-                    </View>
-                    <Text style={styles.subHeadingText}>
-                      Driver with least inspections
-                    </Text>
-                  </View>
-                  <View>
-                    <View style={{ alignItems: 'center' }}>
-                      <View style={styles.driverAndAssetAvatar}>
-                        <View style={{}}>{sortAsset()}</View>
-                      </View>
-                      <Text style={styles.subHeadingText}>
-                        Asset with most defects
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 40 }}>
-                <View style={styles.contentCardStyle}>
-                  <Text style={{ color: '#1E3D5C', fontSize: 24, fontWeight: 'bold', paddingBottom: 30 }}>
-                    Driver Leaderboard
-                  </Text>
-                  <DropdownComponent
-                    options={driverOptionList}
-                    selectedValue={driverSelectedOption}
-                    onValueChange={handleDriverValueChange}
-                    dropdownStyle={styles.dropdown}
-                  />
-
-                  <FlatList
-                    data={driver}
-                    renderItem={({ item, index }) => {
-                      return (
-                        <View style={{ marginTop: 20, paddingTop: 20, borderTopWidth: 1, borderTopColor: '#CAC8C8' }}>
-                          <View style={{ flexDirection: 'row' }}>
-                            <NameAvatar title={item.name[0]} />
-                            <View style={{ paddingLeft: 20 }}>
-                              <Text style={{ fontSize: 15, color: 'black', fontWeight: '600' }}>{item.name}</Text>
-                              <Text style={{ fontSize: 15, color: 'grey', marginTop: 15 }}>{item.company}</Text>
-                            </View>
-                            <View style={{ right: 0, position: 'absolute' }}>
-                              {driverSelectedOption == "Inspection" ?
-                                <Text style={{ fontSize: 15, color: 'black', fontWeight: '600' }}>{item.inspection} Inspection</Text>
-                                :
-                                <Text style={{ fontSize: 15, color: 'black', fontWeight: '600' }}>{item.defects} Defects</Text>
-                              }
-
-                            </View>
-                          </View>
-                        </View>
-                      )
-                    }} />
-                </View>
-
-                <View style={styles.contentCardStyle}>
-                  <Text style={{ color: '#1E3D5C', fontSize: 24, fontWeight: 'bold', paddingBottom: 30 }}>
-                    Asset Leaderboard
-                  </Text>
-                  <DropdownComponent
-                    options={assetOptionList}
-                    selectedValue={assetSelectedOption}
-                    onValueChange={handleAssetValueChange}
-                    dropdownStyle={styles.dropdown}
-                    textStyle={styles.text} />
-
-                  <FlatList
-                    data={asset}
-                    renderItem={({ item, index }) => {
-                      return (
-                        <View style={{ marginTop: 20, paddingTop: 20, borderTopWidth: 1, borderTopColor: '#CAC8C8' }}>
-                          <View style={{ flexDirection: 'row' }}>
-                            <NameAvatar title={item.name[0]} />
-                            <View style={{ paddingLeft: 20 }}>
-                              <Text style={{ fontSize: 15, color: 'black', fontWeight: '600' }}>{item.name}</Text>
-                              <Text style={{ fontSize: 15, color: 'grey', marginTop: 15 }}>{item.company}</Text>
-                            </View>
-                            <View style={{ right: 0, position: 'absolute' }}>
-                              {assetSelectedOption == "Inspection" ?
-                                <Text style={{ fontSize: 15, color: 'black', fontWeight: '600' }}>{item.inspection} Inspection</Text>
-                                :
-                                <Text style={{ fontSize: 15, color: 'black', fontWeight: '600' }}>{item.defects} Defects</Text>
-                              }
-
-                            </View>
-                          </View>
-                        </View>
-                      )
-                    }} />
-
-                </View>
-
-              </View>
-            </ScrollView>
-          </Animated.View>
-
-        );
+        // 
+        return(<MainDashboard />)
+        
       case 'Inspection':
         return (
-          <Animated.View style={[styles.contentContainer, {opacity:fadeAnim}]}>
-          <ScrollView>
-              <View style={{
-                position: 'absolute',
-                top: 0,
-                bottom: 0,
-                left: 0,
-                right: 0,
-                overflow: 'hidden'
-              }}>
-                <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
-                <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
-                <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
-                <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
-              </View>
-              <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
+          <GeneralInspection />
+        )
+        // return (
+        //   <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
+        //     <ScrollView>
+        //       <View style={{
+        //         position: 'absolute',
+        //         top: 0,
+        //         bottom: 0,
+        //         left: 0,
+        //         right: 0,
+        //         overflow: 'hidden'
+        //       }}>
+        //         <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
+        //         <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
+        //         <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
+        //         <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
+        //       </View>
+        //       <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
 
-              <View style={{flexDirection:'row',marginLeft: 40, marginTop: 40,marginRight:40, justifyContent:'space-between'}}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={{ backgroundColor: '#67E9DA', borderRadius: 15, }}>
-                    <Image style={{ width: 30, height: 30, tintColor: "#FFFFFF", margin: 10 }}
-                      source={require('../../assets/inspection_icon.png')}></Image>
-                  </View>
-                  <Text style={{ fontSize: 40, color: '#1E3D5C', fontWeight: '900', marginLeft: 10 }}>
-                    Inspection
-                  </Text>
-                </View>
-                <View style={{flexDirection:'row'}}>
-                  <Text style={{fontSize:50, color:'#1E3D5C'}}>{totalInspections}</Text>
-                  <Text style={{fontSize:20, color:'#5B5B5B', marginHorizontal:10, marginTop:10}}>Inspections</Text>
-                  <View style={{borderRightWidth:2, borderRightColor:'#5B5B5B' ,marginHorizontal:20, opacity:0.5}}></View>
-                  <Text style={{fontSize:50, color:'#1E3D5C'}}>{totalDefects}</Text>
-                  <Text style={{fontSize:20, color:'#5B5B5B', marginHorizontal:10, marginTop:10}}>Defects</Text>
-                </View>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 30, paddingLeft: 40, paddingRight: 40 }}>
-                <View style={{ flexDirection: 'row', paddingLeft: 30 }}>
-                  <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setInspectionCalendarSelect("All")}>
-                    <Text style={[styles.calenderSortText, inspectionCalendarSelect == "All" && styles.calenderSortSelectedText]}>
-                      All
-                    </Text>
-                  </TouchableOpacity >
-                  <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setInspectionCalendarSelect("Failed")}>
-                    <Text style={[styles.calenderSortText, inspectionCalendarSelect == "Failed" && styles.calenderSortSelectedText]}>
-                      Failed
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setInspectionCalendarSelect("Pass")}>
-                    <Text style={[styles.calenderSortText, inspectionCalendarSelect == "Pass" && styles.calenderSortSelectedText]}>
-                      Pass
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-                <View >
-                  <AppBtn
-                    title="Download Report"
-                    btnStyle = {styles.btn}
-                btnTextStyle = {styles.btnText}
-                    onPress={handleDownloadReportBtn}></AppBtn>
-                </View>
-              </View>
-              <View style={styles.contentCardStyle}>
-                <Form />
-              </View>
-            </ScrollView>
-          </Animated.View>
+        //       <View style={{ flexDirection: 'row', marginLeft: 40, marginTop: 40, marginRight: 40, justifyContent: 'space-between' }}>
+        //         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        //           <View style={{ backgroundColor: '#67E9DA', borderRadius: 15, }}>
+        //             <Image style={{ width: 30, height: 30, tintColor: "#FFFFFF", margin: 10 }}
+        //               source={require('../../assets/inspection_icon.png')}></Image>
+        //           </View>
+        //           <Text style={{ fontSize: 40, color: '#1E3D5C', fontWeight: '900', marginLeft: 10 }}>
+        //             Inspection
+        //           </Text>
+        //         </View>
+        //         <View style={{ flexDirection: 'row' }}>
+        //           <Text style={{ fontSize: 50, color: '#1E3D5C' }}>{totalInspections}</Text>
+        //           <Text style={{ fontSize: 20, color: '#5B5B5B', marginHorizontal: 10, marginTop: 10, fontWeight: '500' }}>Inspections</Text>
+        //           <View style={{ borderRightWidth: 2, borderRightColor: '#5B5B5B', marginHorizontal: 20, opacity: 0.5 }}></View>
+        //           <Text style={{ fontSize: 50, color: '#D60000' }}>{totalDefects}</Text>
+        //           <Text style={{ fontSize: 20, color: '#D60000', marginHorizontal: 10, marginTop: 10, fontWeight: '500' }}>Defects</Text>
+        //         </View>
+        //       </View>
+        //       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 30, paddingLeft: 40, paddingRight: 40 }}>
+        //         <View style={{ flexDirection: 'row', paddingLeft: 30 }}>
+        //           <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setInspectionCalendarSelect("All")}>
+        //             <Text style={[styles.calenderSortText, inspectionCalendarSelect == "All" && styles.calenderSortSelectedText]}>
+        //               All
+        //             </Text>
+        //           </TouchableOpacity >
+        //           <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setInspectionCalendarSelect("Failed")}>
+        //             <Text style={[styles.calenderSortText, inspectionCalendarSelect == "Failed" && styles.calenderSortSelectedText]}>
+        //               Failed
+        //             </Text>
+        //           </TouchableOpacity>
+        //           <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setInspectionCalendarSelect("Pass")}>
+        //             <Text style={[styles.calenderSortText, inspectionCalendarSelect == "Pass" && styles.calenderSortSelectedText]}>
+        //               Pass
+        //             </Text>
+        //           </TouchableOpacity>
+        //         </View>
+        //         <View >
+        //           <AppBtn
+        //             title="Download Report"
+        //             btnStyle={styles.btn}
+        //             btnTextStyle={styles.btnText}
+        //             onPress={handleDownloadReportBtn}></AppBtn>
+        //         </View>
+        //       </View>
+        //       <View style={styles.contentCardStyle}>
+        //         <Form />
+        //       </View>
+        //     </ScrollView>
+        //   </Animated.View>
 
-        );
-      case 'Maintenance':
+        // );
+      // case 'Maintenance':
+      //   return (
+      //     <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
+      //       {/* Add your Maintenance content here */}
+      //       <Text style={styles.screenTitle}>Maintenance Content</Text>
+      //     </Animated.View>
+      //   );
+      // case 'Assets':
+      //   return (
+      //     <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
+      //       {/* Add your Assets content here */}
+      //       <Text style={styles.screenTitle}>Assets Content</Text>
+      //     </Animated.View>
+      //   );
+      // case 'Users':
         return (
-          <Animated.View style={[styles.contentContainer, {opacity:fadeAnim}]}>
-          {/* Add your Maintenance content here */}
-            <Text style={styles.screenTitle}>Maintenance Content</Text>
-          </Animated.View>
-        );
-      case 'Assets':
-        return (
-          <Animated.View style={[styles.contentContainer, {opacity:fadeAnim}]}>
-          {/* Add your Assets content here */}
-            <Text style={styles.screenTitle}>Assets Content</Text>
-          </Animated.View>
-        );
-      case 'Users':
-        return (
-          <Animated.View style={[styles.contentContainer, {opacity:fadeAnim}]}>
-          {/* Add your Users content here */}
+          <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
+            {/* Add your Users content here */}
             <Text style={styles.screenTitle}>Users Content</Text>
           </Animated.View>
         );
@@ -500,19 +318,12 @@ const DashboardPage = () => {
           </TouchableOpacity>
         </View>
       </View>
-      <View style={{ flexDirection: 'column', flex: 1 }}>
-        <View style={{ flexDirection: 'row', paddingLeft: 60, paddingRight: 60, justifyContent: 'space-between', paddingTop: 10, paddingBottom: 10, alignItems: 'center', backgroundColor: '#FFFFFF' }}>
-          <Text style={{ fontSize: 16, fontWeight: '400', color: '#5B5B5B' }}>
-            Welcome Ubaid Ur Rehman!
-          </Text>
-          <View style={{ flexDirection: 'row', width: 150, alignItems: 'center' }}>
-            <Text style={{ fontSize: 18, fontWeight: '700', color: '#5B5B5B' }}>Ubaid</Text>
-            <TouchableOpacity style={{ marginLeft: 20 }}>
-              <NameAvatar title="U" />
-            </TouchableOpacity>
-          </View>
-        </View>
+      <View style={{ flexDirection: 'column', flex: 1, }}>
+      <View style={{zIndex:1}}>
+             <Header />
+             </View>
         {renderPage()}
+   
       </View>
 
     </View>
@@ -609,6 +420,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     minWidth: 150,
   },
+  dropdownProfile: {
+    padding: 12,
+    minWidth: 100,
+  },
+
   text: {
     // Custom styles for the text inside dropdown and selected value
     // For example:
@@ -679,14 +495,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 10,
-},
-btnText: {
+  },
+  btnText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
-    marginLeft:10,
-    marginRight:10
-},
+    marginLeft: 10,
+    marginRight: 10
+  },
 });
 
 export default DashboardPage;

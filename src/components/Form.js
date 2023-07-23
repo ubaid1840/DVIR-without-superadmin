@@ -281,7 +281,7 @@ const Form = () => {
         return (
             <View style={styles.row}>
                 {columns.map((column) => {
-                    console.log(item[column])
+                    // console.log(item[column])
                     return (
                         item[column] == undefined ? null :
                             <View key={column} style={styles.cell}>

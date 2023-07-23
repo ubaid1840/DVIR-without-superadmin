@@ -1,36 +1,73 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, Image, Animated, TouchableWithoutFeedback } from 'react-native';
 
-const CustomDropdown = ({ options, selectedValue, onValueChange, dropdownStyle, textStyle }) => {
+const CustomDropdownProfile = ({ options, selectedValue, onValueChange, dropdownStyle, textStyle, title }) => {
     const [showOptions, setShowOptions] = useState(false);
     const [hoveredIndex, setHoveredIndex] = useState(-1);
     const [dropdownSelect, setDropdownSelect] = useState(false)
+    const [arrowAnimate] = useState(new Animated.Value(0))
+
+    const animation = () => {
+        Animated.timing(arrowAnimate, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: false
+        }).start();
+    }
+
+    const animationBAck = () => {
+        Animated.timing(arrowAnimate, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: false
+        }).start();
+
+    }
 
     const handleDropdownToggle = () => {
         setShowOptions(!showOptions);
-        setDropdownSelect(!dropdownSelect)
+        // setDropdownSelect(!dropdownSelect)
+        if (showOptions == false) {
+          
+            animation()
+        }
+        else {
+           
+            animationBAck()
+        }
     };
 
     const handleOptionSelect = (value) => {
-        setShowOptions(false);
-        onValueChange(value);
-        setDropdownSelect(!dropdownSelect)
+        // console.log(value)
+        onValueChange(value)
+        handleDropdownToggle()
+        handleOptionHover(-1)
+
     };
 
     const handleOptionHover = (index) => {
         setHoveredIndex(index);
     };
 
+    const rotateInterpolation = arrowAnimate.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '180deg'],
+    });
+
     return (
         <View style={styles.container}>
             <TouchableOpacity
                 style={[dropdownStyle, dropdownSelect && styles.dropdownButtonSelect, { flexDirection: 'row', justifyContent: 'space-between' }]}
                 onPress={handleDropdownToggle}
+                onMouseEnter={() => {
+                    handleDropdownToggle()
+                }}
             >
-                <Text style={[styles.selectedValue, textStyle]}>
+                {/* <Text style={[styles.selectedValue, textStyle]}>
                     {selectedValue}
-                </Text>
-                <Image style={{ width: 20, height: 20 }} source={require(showOptions ? '../../assets/up_arrow_icon.png' : '../../assets/down_arrow_icon.png')}></Image>
+                </Text> */}
+                <Text style={{fontSize: 18, fontWeight: '700', color: '#5B5B5B'}}>{title}</Text>
+                <Animated.Image style={{marginLeft:10, width: 20, height: 20, transform: [{ rotate: rotateInterpolation }] }} source={require('../../assets/up_arrow_icon.png')}></Animated.Image>
             </TouchableOpacity>
             {showOptions && (
                 <View style={[styles.optionsContainer]}>
@@ -78,7 +115,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: '100%',
         right: 0,
-        left: 0,
+        //  left: 0,
         borderWidth: 1,
         borderColor: '#ccc',
         borderRadius: 8,
@@ -89,7 +126,8 @@ const styles = StyleSheet.create({
                 boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)', // Add boxShadow for web
             },
         }),
-
+        width: 100,
+        zIndex:1
     },
     option: {
         padding: 12,
@@ -112,13 +150,7 @@ const styles = StyleSheet.create({
         }),
     },
     dropdownButtonSelect: {
-        borderColor: '#558BC1',
-        shadowColor: '#558BC1',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 1,
-        shadowRadius: 10,
-        elevation: 0,
     }
 });
 
-export default CustomDropdown;
+export default CustomDropdownProfile;
