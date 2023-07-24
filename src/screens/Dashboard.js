@@ -12,6 +12,7 @@ import CustomDropdownProfile from '../components/DropDownProfileComponent';
 import Header from '../components/Header';
 import MainDashboard from './MainDashboard';
 import GeneralInspection from './GeneralInspection';
+import CustomDropdownLeftSide from '../components/DropDownComponentLeftSide';
 
 
 const driverOptionList = ['Inspection'];
@@ -33,6 +34,21 @@ const DashboardPage = () => {
   const [inspectionCalendarSelect, setInspectionCalendarSelect] = useState('All')
   const [totalInspections, setTotalInspections] = useState(19)
   const [totalDefects, setTotalDefects] = useState(7)
+  const [InspectionSelectedOption, setInspectionSelectedOption] = useState('')
+  const [inspectionOptionExpand, setInspectionOptionExpand] = useState(false)
+  const [generalInspectionHovered, setGeneralInspectionHovered] = useState(false)
+  const [daysInspectionhovered, setDaysInspectionHovered] = useState(false)
+  const [inspectionSelectedPage, setInspectionSelectedPage] = useState('')
+  const [maintenanceOptionExpand, setMaintenanceOptionExpand] = useState(false)
+  const [defectsHovered, setDefectsHovered] = useState(false)
+  const [workOrderHovered, setWorkOrderHovered] = useState(false)
+  const [maintenanceSelectedPage, setMaintenanceSelectedPage] = useState('')
+  const [usersOptionExpand, setUsersOptionExpand] = useState(false)
+  const [driverHovered, setDriverHovered] = useState(false)
+  const [mechanicHovered, setMechanicHovered] = useState(false)
+  const [managerHovered, setManagerHovered] = useState(false)
+  const [usersSelectedPage, setUsersSelectedPage] = useState('')
+
 
   useEffect(() => {
 
@@ -48,6 +64,22 @@ const DashboardPage = () => {
 
   }, [selectedPage])
 
+  useEffect(() => {
+    if (selectedPage != "Inspection" && selectedPage != "Maintenance") {
+      setInspectionOptionExpand(false)
+      setInspectionSelectedPage("")
+      setMaintenanceOptionExpand(false)
+      setMaintenanceSelectedPage("")
+    }
+    if (selectedPage == "Maintenance") {
+      setInspectionHovered(false)
+    }
+    if(selectedPage == 'Inspection') {
+      setMaintenanceHovered(false)
+    }
+  }, [selectedPage])
+
+ 
   const handleDriverValueChange = (value) => {
     setDriverSelectedOption(value);
   };
@@ -56,7 +88,7 @@ const DashboardPage = () => {
     setAssetSelectedOption(value);
   };
 
-  
+
   const sortDriver = () => {
     // Sort the data based on age in ascending order
     const sortedData = driver.slice().sort((a, b) => a.inspection - b.inspection);
@@ -79,6 +111,16 @@ const DashboardPage = () => {
 
   const handleDownloadReportBtn = () => {
 
+  }
+
+  const handleInspectionValueChange = (value) => {
+    if (value === 'Inspection') {
+      setInspectionSelectedPage(''); // If 'Inspection' is selected, reset the inspectionSelectedPage
+    } else if (value === 'General Inspection') {
+      setInspectionSelectedPage('General Inspection');
+    } else if (value === '45 days Inspection') {
+      setInspectionSelectedPage('45 days Inspection');
+    }
   }
 
 
@@ -136,110 +178,124 @@ const DashboardPage = () => {
     DefectsCount: "1",
   }]
 
+  const closeAllExpands =(value) => {
+    if (value == 'Dashboard'){
+      setInspectionOptionExpand(false)
+      setMaintenanceOptionExpand(false)
+      setUsersOptionExpand(false)
+      setMaintenanceSelectedPage("")
+      setInspectionSelectedPage("")
+      setUsersSelectedPage("")
+    }
+    else if (value == 'Inspection') {
+      setMaintenanceOptionExpand(false)
+      setUsersOptionExpand(false)
+      setMaintenanceSelectedPage("")
+      setUsersSelectedPage("")
+    }
+    else if (value == 'Maintenance') {
+      setInspectionOptionExpand(false)
+      setUsersOptionExpand(false)
+      setInspectionSelectedPage("")
+      setUsersSelectedPage("")
+    }
+    else if (value == 'Assets') {
+      setInspectionOptionExpand(false)
+      setMaintenanceOptionExpand(false)
+      setUsersOptionExpand(false)
+      setMaintenanceSelectedPage("")
+      setInspectionSelectedPage("")
+      setUsersSelectedPage("")
+    }
+    else if (value == 'Users') {
+      setInspectionOptionExpand(false)
+      setMaintenanceOptionExpand(false)
+      setMaintenanceSelectedPage("")
+      setInspectionSelectedPage("")
+    }
+  }
   const renderPage = () => {
-    switch (selectedPage) {
-      case 'Dashboard':
-        // 
-        return(<MainDashboard />)
-        
-      case 'Inspection':
+
+
+    if (selectedPage == 'Dashboard') {
+      return (
+        <MainDashboard />
+      )
+    }
+    // else if (selectedPage == 'Maintenance') {
+    //   return (
+    //     <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
+    //       {/* Add your Maintenance content here */}
+    //       <Text style={styles.screenTitle}>Maintenance Content</Text>
+    //     </Animated.View>
+    //   )
+    // }
+    else if (selectedPage == 'Assets') {
+      return (
+        <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
+          {/* Add your Assets content here */}
+          <Text style={styles.screenTitle}>Assets Content</Text>
+        </Animated.View>
+      );
+    }
+    else if (selectedPage == "Inspection") {
+      if (inspectionSelectedPage == 'General Inspection') {
         return (
           <GeneralInspection />
         )
-        // return (
-        //   <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
-        //     <ScrollView>
-        //       <View style={{
-        //         position: 'absolute',
-        //         top: 0,
-        //         bottom: 0,
-        //         left: 0,
-        //         right: 0,
-        //         overflow: 'hidden'
-        //       }}>
-        //         <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
-        //         <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
-        //         <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
-        //         <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
-        //       </View>
-        //       <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
-
-        //       <View style={{ flexDirection: 'row', marginLeft: 40, marginTop: 40, marginRight: 40, justifyContent: 'space-between' }}>
-        //         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        //           <View style={{ backgroundColor: '#67E9DA', borderRadius: 15, }}>
-        //             <Image style={{ width: 30, height: 30, tintColor: "#FFFFFF", margin: 10 }}
-        //               source={require('../../assets/inspection_icon.png')}></Image>
-        //           </View>
-        //           <Text style={{ fontSize: 40, color: '#1E3D5C', fontWeight: '900', marginLeft: 10 }}>
-        //             Inspection
-        //           </Text>
-        //         </View>
-        //         <View style={{ flexDirection: 'row' }}>
-        //           <Text style={{ fontSize: 50, color: '#1E3D5C' }}>{totalInspections}</Text>
-        //           <Text style={{ fontSize: 20, color: '#5B5B5B', marginHorizontal: 10, marginTop: 10, fontWeight: '500' }}>Inspections</Text>
-        //           <View style={{ borderRightWidth: 2, borderRightColor: '#5B5B5B', marginHorizontal: 20, opacity: 0.5 }}></View>
-        //           <Text style={{ fontSize: 50, color: '#D60000' }}>{totalDefects}</Text>
-        //           <Text style={{ fontSize: 20, color: '#D60000', marginHorizontal: 10, marginTop: 10, fontWeight: '500' }}>Defects</Text>
-        //         </View>
-        //       </View>
-        //       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 30, paddingLeft: 40, paddingRight: 40 }}>
-        //         <View style={{ flexDirection: 'row', paddingLeft: 30 }}>
-        //           <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setInspectionCalendarSelect("All")}>
-        //             <Text style={[styles.calenderSortText, inspectionCalendarSelect == "All" && styles.calenderSortSelectedText]}>
-        //               All
-        //             </Text>
-        //           </TouchableOpacity >
-        //           <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setInspectionCalendarSelect("Failed")}>
-        //             <Text style={[styles.calenderSortText, inspectionCalendarSelect == "Failed" && styles.calenderSortSelectedText]}>
-        //               Failed
-        //             </Text>
-        //           </TouchableOpacity>
-        //           <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setInspectionCalendarSelect("Pass")}>
-        //             <Text style={[styles.calenderSortText, inspectionCalendarSelect == "Pass" && styles.calenderSortSelectedText]}>
-        //               Pass
-        //             </Text>
-        //           </TouchableOpacity>
-        //         </View>
-        //         <View >
-        //           <AppBtn
-        //             title="Download Report"
-        //             btnStyle={styles.btn}
-        //             btnTextStyle={styles.btnText}
-        //             onPress={handleDownloadReportBtn}></AppBtn>
-        //         </View>
-        //       </View>
-        //       <View style={styles.contentCardStyle}>
-        //         <Form />
-        //       </View>
-        //     </ScrollView>
-        //   </Animated.View>
-
-        // );
-      // case 'Maintenance':
-      //   return (
-      //     <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
-      //       {/* Add your Maintenance content here */}
-      //       <Text style={styles.screenTitle}>Maintenance Content</Text>
-      //     </Animated.View>
-      //   );
-      // case 'Assets':
-      //   return (
-      //     <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
-      //       {/* Add your Assets content here */}
-      //       <Text style={styles.screenTitle}>Assets Content</Text>
-      //     </Animated.View>
-      //   );
-      // case 'Users':
+      }
+      else if (inspectionSelectedPage == '45 days Inspection') {
         return (
-          <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
-            {/* Add your Users content here */}
-            <Text style={styles.screenTitle}>Users Content</Text>
-          </Animated.View>
-        );
-      default:
-        return null;
+          <View style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}>
+            <Text>45 days inspection</Text>
+          </View>
+        )
+      }
+    }
+    else if (selectedPage == "Maintenance") {
+      if (maintenanceSelectedPage == 'Defects') {
+        return (
+          <View style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}>
+            <Text>Defects</Text>
+          </View>
+        )
+      }
+      else if (maintenanceSelectedPage == 'Work Order') {
+        return (
+          <View style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}>
+            <Text>Work Order</Text>
+          </View>
+        )
+      }
+    }
+    else if (selectedPage == "Users") {
+      if (usersSelectedPage == 'Driver') {
+        return (
+          <View style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}>
+            <Text>Driver</Text>
+          </View>
+        )
+      }
+      else if (usersSelectedPage == 'Mechanic') {
+        return (
+          <View style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}>
+            <Text>Mechanic</Text>
+          </View>
+        )
+      }
+      else if (usersSelectedPage == 'Manager') {
+        return (
+          <View style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}>
+            <Text>Manager</Text>
+          </View>
+        )
+      }
     }
   };
+
+
+
+  
 
   return (
     <View style={styles.container}>
@@ -254,41 +310,121 @@ const DashboardPage = () => {
             onPress={() => {
               fadeAnim.setValue(0);
               setSelectedPage('Dashboard')
+              closeAllExpands('Dashboard')
             }}
           >
             <Text style={selectedPage == 'Dashboard' ? [styles.navText, styles.navTextHover] : [styles.navText, dashboardHovered && styles.navTextHover]}>Dashboard</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={selectedPage == 'Inspection' ? [styles.navItem, styles.hoverNavItem] : [styles.navItem, inspectiondHovered && styles.hoverNavItem]}
+        <View style={inspectionOptionExpand == true ? [styles.navItem, styles.hoverNavItem] : [styles.navItem, inspectiondHovered && styles.hoverNavItem]}
           onMouseEnter={() => { setInspectionHovered(true) }}
           onMouseLeave={() => { setInspectionHovered(false) }}>
-          <Image style={selectedPage == 'Inspection' ? [styles.iconStyle, styles.iconStyleHover] : [styles.iconStyle, inspectiondHovered && styles.iconStyleHover]} source={require('../../assets/inspection_icon.png')}></Image>
+          <Image style={inspectionOptionExpand == true ? [styles.iconStyle, styles.iconStyleHover] : [styles.iconStyle, inspectiondHovered && styles.iconStyleHover]} source={require('../../assets/inspection_icon.png')}></Image>
+
           <TouchableOpacity
-            style={{ paddingLeft: 20 }}
+            style={{ paddingLeft: 20, flexDirection: 'row' }}
             onPress={() => {
-              fadeAnim.setValue(0);
-              setSelectedPage('Inspection')
-            }}
-          >
-            <Text style={selectedPage == 'Inspection' ? [styles.navText, styles.navTextHover] : [styles.navText, inspectiondHovered && styles.navTextHover]}>Inspection</Text>
+              // fadeAnim.setValue(0);
+              setInspectionOptionExpand(!inspectionOptionExpand)
+              // setMaintenanceOptionExpand(false)
+              closeAllExpands('Inspection')
+            }}>
+
+            <Text style={inspectionOptionExpand == true ? [styles.navText, styles.navTextHover] : [styles.navText, inspectiondHovered && styles.navTextHover]}>Inspection</Text>
+            <Image style={selectedPage == 'Inspection' ? [styles.iconStyle, styles.iconStyleHover, { marginHorizontal: 10 }] : [styles.iconStyle, inspectiondHovered && styles.iconStyleHover, { marginHorizontal: 10 }]} source={require('../../assets/down_arrow_icon.png')}></Image>
           </TouchableOpacity>
         </View>
 
-        <View style={selectedPage == 'Maintenance' ? [styles.navItem, styles.hoverNavItem] : [styles.navItem, maintenanceHovered && styles.hoverNavItem]}
+        {inspectionOptionExpand == true ?
+          <View style={{ marginLeft: 20 }}>
+            <View style={inspectionSelectedPage == 'General Inspection' ? [styles.navItem, { height: 30 }] : [styles.navItem, { height: 30 }]}
+              onMouseEnter={() => { setGeneralInspectionHovered(true) }}
+              onMouseLeave={() => { setGeneralInspectionHovered(false) }}>
+              <TouchableOpacity
+                style={{ paddingLeft: 20 }}
+                onPress={() => {
+                  fadeAnim.setValue(0);
+                  setInspectionSelectedPage('General Inspection')
+                  setSelectedPage("Inspection")
+                }}
+              >
+                <Text style={inspectionSelectedPage == 'General Inspection' ? [styles.navText, { color: '#FFFFFF', opacity: 1, }] : [styles.navText, generalInspectionHovered && { color: '#FFFFFF', opacity: 1 }]}>General Inspection</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={inspectionSelectedPage == '45 days Inspection' ? [styles.navItem, { height: 30 }] : [styles.navItem, { height: 30 }]}
+              onMouseEnter={() => { setDaysInspectionHovered(true) }}
+              onMouseLeave={() => { setDaysInspectionHovered(false) }}>
+              <TouchableOpacity
+                style={{ paddingLeft: 20 }}
+                onPress={() => {
+                  fadeAnim.setValue(0);
+                  setInspectionSelectedPage('45 days Inspection')
+                  setSelectedPage("Inspection")
+                }}
+              >
+                <Text style={inspectionSelectedPage == '45 days Inspection' ? [styles.navText, { color: '#FFFFFF', opacity: 1 }] : [styles.navText, daysInspectionhovered && { color: '#FFFFFF', opacity: 1 }]}>45 days Inspection</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          :
+          null}
+
+        <View style={maintenanceOptionExpand == true ? [styles.navItem, styles.hoverNavItem] : [styles.navItem, maintenanceHovered && styles.hoverNavItem]}
           onMouseEnter={() => { setMaintenanceHovered(true) }}
           onMouseLeave={() => { setMaintenanceHovered(false) }}>
-          <Image style={selectedPage == 'Maintenance' ? [styles.iconStyle, styles.iconStyleHover] : [styles.iconStyle, maintenanceHovered && styles.iconStyleHover]} source={require('../../assets/maintenance_icon.png')}></Image>
+          <Image style={maintenanceOptionExpand == true ? [styles.iconStyle, styles.iconStyleHover] : [styles.iconStyle, maintenanceHovered && styles.iconStyleHover]} source={require('../../assets/maintenance_icon.png')}></Image>
+
           <TouchableOpacity
-            style={{ paddingLeft: 20 }}
+            style={{ paddingLeft: 20, flexDirection: 'row' }}
             onPress={() => {
-              fadeAnim.setValue(0);
-              setSelectedPage('Maintenance')
-            }}
-          >
-            <Text style={selectedPage == 'Maintenance' ? [styles.navText, styles.navTextHover] : [styles.navText, maintenanceHovered && styles.navTextHover]}>Maintenance</Text>
+              // fadeAnim.setValue(0);
+              setMaintenanceOptionExpand(!maintenanceOptionExpand)
+              // setInspectionOptionExpand(false)
+              closeAllExpands('Maintenance')
+            }}>
+
+            <Text style={maintenanceOptionExpand == true ? [styles.navText, styles.navTextHover] : [styles.navText, maintenanceHovered && styles.navTextHover]}>Maintenance</Text>
+            <Image style={selectedPage == 'Maintenance' ? [styles.iconStyle, styles.iconStyleHover, { marginHorizontal: 10 }] : [styles.iconStyle, maintenanceHovered && styles.iconStyleHover, { marginHorizontal: 10 }]} source={require('../../assets/down_arrow_icon.png')}></Image>
           </TouchableOpacity>
         </View>
+
+        {maintenanceOptionExpand == true ?
+          <View style={{ marginLeft: 20 }}>
+            <View style={maintenanceSelectedPage == 'Defects' ? [styles.navItem, { height: 30 }] : [styles.navItem, { height: 30 }]}
+              onMouseEnter={() => { setDefectsHovered(true) }}
+              onMouseLeave={() => { setDefectsHovered(false) }}>
+              <TouchableOpacity
+                style={{ paddingLeft: 20 }}
+                onPress={() => {
+                  fadeAnim.setValue(0);
+                  setMaintenanceSelectedPage('Defects')
+                  setSelectedPage("Maintenance")
+                }}
+              >
+                <Text style={maintenanceSelectedPage == 'Defects' ? [styles.navText, { color: '#FFFFFF', opacity: 1, }] : [styles.navText, defectsHovered && { color: '#FFFFFF', opacity: 1 }]}>Defects</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={maintenanceSelectedPage == 'Work Order' ? [styles.navItem, { height: 30 }] : [styles.navItem, { height: 30 }]}
+              onMouseEnter={() => { setWorkOrderHovered(true) }}
+              onMouseLeave={() => { setWorkOrderHovered(false) }}>
+              <TouchableOpacity
+                style={{ paddingLeft: 20 }}
+                onPress={() => {
+                  fadeAnim.setValue(0);
+                  setMaintenanceSelectedPage('Work Order')
+                  setSelectedPage("Maintenance")
+                }}
+              >
+                <Text style={maintenanceSelectedPage == 'Work Order' ? [styles.navText, { color: '#FFFFFF', opacity: 1 }] : [styles.navText, workOrderHovered && { color: '#FFFFFF', opacity: 1 }]}>Work Order</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          :
+          null}
+
         <View style={selectedPage == 'Assets' ? [styles.navItem, styles.hoverNavItem] : [styles.navItem, assetsHovered && styles.hoverNavItem]}
           onMouseEnter={() => { setAssetsHovered(true) }}
           onMouseLeave={() => { setAssetsHovered(false) }}>
@@ -298,32 +434,92 @@ const DashboardPage = () => {
             onPress={() => {
               fadeAnim.setValue(0);
               setSelectedPage('Assets')
-            }}
-          >
+              // setInspectionOptionExpand(false)
+              // setInspectionSelectedPage("")
+              closeAllExpands('Assets')
+            }}>
             <Text style={selectedPage == 'Assets' ? [styles.navText, styles.navTextHover] : [styles.navText, assetsHovered && styles.navTextHover]}>Assets</Text>
           </TouchableOpacity>
         </View>
-        <View style={selectedPage == 'Users' ? [styles.navItem, styles.hoverNavItem] : [styles.navItem, usersHovered && styles.hoverNavItem]}
+
+        <View style={usersOptionExpand == true ? [styles.navItem, styles.hoverNavItem] : [styles.navItem, usersHovered && styles.hoverNavItem]}
           onMouseEnter={() => { setUsersHovered(true) }}
           onMouseLeave={() => { setUsersHovered(false) }}>
-          <Image style={selectedPage == 'Users' ? [styles.iconStyle, styles.iconStyleHover] : [styles.iconStyle, usersHovered && styles.iconStyleHover]} source={require('../../assets/user_icon.png')}></Image>
+          <Image style={usersOptionExpand == true ? [styles.iconStyle, styles.iconStyleHover] : [styles.iconStyle, usersHovered && styles.iconStyleHover]} source={require('../../assets/user_icon.png')}></Image>
+
           <TouchableOpacity
-            style={{ paddingLeft: 20 }}
+            style={{ paddingLeft: 20, flexDirection: 'row' }}
             onPress={() => {
-              fadeAnim.setValue(0);
-              setSelectedPage('Users')
-            }}
-          >
-            <Text style={selectedPage == 'Users' ? [styles.navText, styles.navTextHover] : [styles.navText, usersHovered && styles.navTextHover]}>Users</Text>
+              // fadeAnim.setValue(0);
+              setUsersOptionExpand(!usersOptionExpand)
+              // setInspectionOptionExpand(false)
+              // setMaintenanceOptionExpand(false)
+              closeAllExpands('Users')
+            }}>
+
+            <Text style={usersOptionExpand == true ? [styles.navText, styles.navTextHover] : [styles.navText, usersHovered && styles.navTextHover]}>Users</Text>
+            <Image style={selectedPage == 'Users' ? [styles.iconStyle, styles.iconStyleHover, { marginHorizontal: 10 }] : [styles.iconStyle, usersHovered && styles.iconStyleHover, { marginHorizontal: 10 }]} source={require('../../assets/down_arrow_icon.png')}></Image>
           </TouchableOpacity>
         </View>
+
+        {usersOptionExpand == true ?
+          <View style={{ marginLeft: 20 }}>
+            <View style={usersSelectedPage == 'Driver' ? [styles.navItem, { height: 30 }] : [styles.navItem, { height: 30 }]}
+              onMouseEnter={() => { setDriverHovered(true) }}
+              onMouseLeave={() => { setDriverHovered(false) }}>
+              <TouchableOpacity
+                style={{ paddingLeft: 20 }}
+                onPress={() => {
+                  fadeAnim.setValue(0);
+                  setUsersSelectedPage('Driver')
+                  setSelectedPage("Users")
+                }}
+              >
+                <Text style={usersSelectedPage == 'Driver' ? [styles.navText, { color: '#FFFFFF', opacity: 1, }] : [styles.navText, driverHovered && { color: '#FFFFFF', opacity: 1 }]}>Driver</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={usersSelectedPage == 'Mechanic' ? [styles.navItem, { height: 30 }] : [styles.navItem, { height: 30 }]}
+              onMouseEnter={() => { setMechanicHovered(true) }}
+              onMouseLeave={() => { setMechanicHovered(false) }}>
+              <TouchableOpacity
+                style={{ paddingLeft: 20 }}
+                onPress={() => {
+                  fadeAnim.setValue(0);
+                  setUsersSelectedPage('Mechanic')
+                  setSelectedPage("Users")
+                }}
+              >
+                <Text style={usersSelectedPage == 'Mechanic' ? [styles.navText, { color: '#FFFFFF', opacity: 1 }] : [styles.navText, mechanicHovered && { color: '#FFFFFF', opacity: 1 }]}>Mechanic</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={usersSelectedPage == 'Manager' ? [styles.navItem, { height: 30 }] : [styles.navItem, { height: 30 }]}
+              onMouseEnter={() => { setManagerHovered(true) }}
+              onMouseLeave={() => { setManagerHovered(false) }}>
+              <TouchableOpacity
+                style={{ paddingLeft: 20 }}
+                onPress={() => {
+                  fadeAnim.setValue(0);
+                  setUsersSelectedPage('Manager')
+                  setSelectedPage("Users")
+                }}
+              >
+                <Text style={usersSelectedPage == 'Manager' ? [styles.navText, { color: '#FFFFFF', opacity: 1 }] : [styles.navText, managerHovered && { color: '#FFFFFF', opacity: 1 }]}>Manager</Text>
+              </TouchableOpacity>
+            </View>
+
+          </View>
+          :
+          null}
+
       </View>
       <View style={{ flexDirection: 'column', flex: 1, }}>
-      <View style={{zIndex:1}}>
-             <Header />
-             </View>
+        <View style={{ zIndex: 1 }}>
+          <Header />
+        </View>
         {renderPage()}
-   
+
       </View>
 
     </View>
@@ -415,10 +611,8 @@ const styles = StyleSheet.create({
     // Custom styles for the dropdown container
     // For example:
     padding: 12,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    minWidth: 150,
+
+    minWidth: 200,
   },
   dropdownProfile: {
     padding: 12,

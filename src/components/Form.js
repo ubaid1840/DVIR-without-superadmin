@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, FlatList, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, FlatList, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import AppBtn from './Button';
 
 const columns = [
@@ -284,21 +284,22 @@ const Form = () => {
                     // console.log(item[column])
                     return (
                         item[column] == undefined ? null :
-                            <View key={column} style={styles.cell}>
+                            <TouchableOpacity key={column} style={styles.cell} onPress={() => { console.log(item['Inspection ID']) }}>
                                 <Text style={styles.entryText}>{item[column]}</Text>
-                            </View>
+                            </TouchableOpacity>
+
 
                     )
                 })}
                 {/* <TouchableOpacity style={styles.button}>
           <Text style={styles.buttonText}>Button</Text>
         </TouchableOpacity> */}
-                <View style={{justifyContent:'center', alignItems:'center', alignContent:'center'}}>
+                {/* <View style={{justifyContent:'center', alignItems:'center', alignContent:'center'}}>
                     <AppBtn
                         title="Report"
                         btnStyle={styles.btn}
                         btnTextStyle={styles.btnText} />
-                </View>
+                </View> */}
             </View>
         );
     };
@@ -312,7 +313,7 @@ const Form = () => {
                             <Text style={styles.columnHeaderText}>{column}</Text>
                         </View>
                     ))}
-                    <Text style={styles.columnHeaderText}>Action</Text>
+                    {/* <Text style={styles.columnHeaderText}>Action</Text> */}
                 </View>
                 <FlatList
                     data={entriesData}
@@ -344,7 +345,8 @@ const styles = StyleSheet.create({
     cell: {
         flex: 1,
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
+        height: 40
     },
     entryText: {
         fontWeight: 'normal',
@@ -397,8 +399,8 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 14,
         fontWeight: 'bold',
-        marginLeft:10,
-        marginRight:10
+        marginLeft: 10,
+        marginRight: 10
     },
 });
 
