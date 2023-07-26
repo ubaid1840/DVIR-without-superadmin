@@ -6,6 +6,56 @@ import { useFonts } from 'expo-font';
 import { useIsFocused } from '@react-navigation/native';
 import AppBtn from '../components/Button';
 
+const loginList = [{
+    id: '1',
+    firstName: 'John',
+    lastName: 'Doe',
+    company: 'Example Inc.',
+    email: 'john.doe@gmail.com',
+    password: 'password123',
+    designation:'Owner',
+    Access:'Full'
+  },
+  {
+    id: '2',
+    firstName: 'Jane',
+    lastName: 'Smith',
+    company: 'Sample Co.',
+    email: 'jane.smith@gmail.com',
+    password: 'myp@ssword',
+    designation:'Manager',
+    Access:'Full'
+  },
+  {
+    id: '3',
+    firstName: 'Michael',
+    lastName: 'Johnson',
+    company: 'Tech Solutions',
+    email: 'michael.johnson@gmail.com',
+    password: 'pass1234',
+    designation:'Driver',
+    Access:'Limited'
+  },
+  {
+    id: '4',
+    firstName: 'Emily',
+    lastName: 'Brown',
+    company: 'Design Studio',
+    email: 'emily.brown@gmail.com',
+    password: 'securePwd',
+    designation:'Mechanic',
+    Access:'Limited'
+  },
+  {
+    id: '5',
+    firstName: 'David',
+    lastName: 'Lee',
+    company: 'Marketing Hub',
+    email: 'david.lee@gmail.com',
+    password: 'hello123',
+    designation:'Mechanic',
+    Access:'Full'
+  }]
 
 const LoginPage = (props) => {
 
@@ -42,7 +92,19 @@ const LoginPage = (props) => {
 
     const handleLogin = () => {
         // TODO: Implement login logic
-        props.navigation.navigate('Dashboard');
+        let i=0
+        loginList.map((item)=>{
+            if(item.email == email && item.password == password)
+            i++
+        })
+        if (i == 1) {
+            console.log("Login successful")
+            props.navigation.navigate('Dashboard');
+        }   
+        else {
+            console.log("Login failed")
+        }
+         
     };
 
     const handleForgetPasswod = () => {

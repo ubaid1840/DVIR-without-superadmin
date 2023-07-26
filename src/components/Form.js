@@ -1,407 +1,335 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, FlatList, StyleSheet, TouchableWithoutFeedback } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, FlatList, StyleSheet, Image, Platform, Animated } from 'react-native';
+import Checkbox from 'expo-checkbox';
 import AppBtn from './Button';
+import DropDownComponent from './DropDown';
 
-const columns = [
-    'Status',
-    'Inspection ID',
-    'Date Inspected',
-    'Date Received',
-    'Asset Name',
-    'Asset VIN',
-    'Asset License Plate',
-    'Asset Type',
-    'Asset Make',
-    'Asset Model',
-    'Driver Name',
-    'Driver User',
-    'Employee Number',
-    'Defects Count'
-];
-
-const entriesData = [
-    {
-        'Status': 'Completed',
-        'Inspection ID': '12345',
-        'Date Inspected': '2023-07-20',
-        'Date Received': '2023-07-21',
-        'Asset Name': 'Asset A',
-        'Asset VIN': 'VIN123',
-        'Asset License Plate': 'ABC123',
-        'Asset Type': 'Truck',
-        'Asset Make': 'BrandX',
-        'Asset Model': 'ModelY',
-        'Driver Name': 'John Doe',
-        'Driver User': 'john.doe',
-        'Employee Number': 'EMP001',
-        'Defects Count': '3',
-    },
-    // Add more entries
-    {
-        'Status': 'In Progress',
-        'Inspection ID': '67890',
-        'Date Inspected': '2023-07-22',
-        'Date Received': '2023-07-23',
-        'Asset Name': 'Asset B',
-        'Asset VIN': 'VIN456',
-        'Asset License Plate': 'XYZ789',
-        'Asset Type': 'Car',
-        'Asset Make': 'BrandY',
-        'Asset Model': 'ModelZ',
-        'Driver Name': 'Jane Smith',
-        'Driver User': 'jane.smith',
-        'Employee Number': 'EMP002',
-        'Defects Count': '0',
-    },
-    {
-        'Status': 'Pending',
-        'Inspection ID': '54321',
-        'Date Inspected': '2023-07-23',
-        'Date Received': '2023-07-24',
-        'Asset Name': 'Asset C',
-        'Asset VIN': 'VIN789',
-        'Asset License Plate': 'PQR123',
-        'Asset Type': 'Bus',
-        'Asset Make': 'BrandZ',
-        'Asset Model': 'ModelX',
-        'Driver Name': 'Robert Johnson',
-        'Driver User': 'robert.johnson',
-        'Employee Number': 'EMP003',
-        'Defects Count': '5',
-    },
-    // Add more entries
-    {
-        'Status': 'Completed',
-        'Inspection ID': '98765',
-        'Date Inspected': '2023-07-25',
-        'Date Received': '2023-07-26',
-        'Asset Name': 'Asset D',
-        'Asset VIN': 'VIN111',
-        'Asset License Plate': 'LMN456',
-        'Asset Type': 'Truck',
-        'Asset Make': 'BrandA',
-        'Asset Model': 'ModelB',
-        'Driver Name': 'Sarah Johnson',
-        'Driver User': 'sarah.johnson',
-        'Employee Number': 'EMP004',
-        'Defects Count': '1',
-    },
-    // Add more entries
-    {
-        'Status': 'In Progress',
-        'Inspection ID': '23456',
-        'Date Inspected': '2023-07-27',
-        'Date Received': '2023-07-28',
-        'Asset Name': 'Asset E',
-        'Asset VIN': 'VIN222',
-        'Asset License Plate': 'OPQ789',
-        'Asset Type': 'Car',
-        'Asset Make': 'BrandC',
-        'Asset Model': 'ModelD',
-        'Driver Name': 'Michael Smith',
-        'Driver User': 'michael.smith',
-        'Employee Number': 'EMP005',
-        'Defects Count': '2',
-    },
-    // Add more entries
-    {
-        'Status': 'Pending',
-        'Inspection ID': '87654',
-        'Date Inspected': '2023-07-29',
-        'Date Received': '2023-07-30',
-        'Asset Name': 'Asset F',
-        'Asset VIN': 'VIN333',
-        'Asset License Plate': 'RST012',
-        'Asset Type': 'Bus',
-        'Asset Make': 'BrandE',
-        'Asset Model': 'ModelF',
-        'Driver Name': 'Emily Brown',
-        'Driver User': 'emily.brown',
-        'Employee Number': 'EMP006',
-        'Defects Count': '4',
-    },
-    // Add more entries
-    {
-        'Status': 'Completed',
-        'Inspection ID': '34567',
-        'Date Inspected': '2023-07-31',
-        'Date Received': '2023-08-01',
-        'Asset Name': 'Asset G',
-        'Asset VIN': 'VIN444',
-        'Asset License Plate': 'UVW345',
-        'Asset Type': 'Truck',
-        'Asset Make': 'BrandB',
-        'Asset Model': 'ModelC',
-        'Driver Name': 'David Johnson',
-        'Driver User': 'david.johnson',
-        'Employee Number': 'EMP007',
-        'Defects Count': '0',
-    },
-    // Add more entries
-    {
-        'Status': 'In Progress',
-        'Inspection ID': '65432',
-        'Date Inspected': '2023-08-02',
-        'Date Received': '2023-08-03',
-        'Asset Name': 'Asset H',
-        'Asset VIN': 'VIN555',
-        'Asset License Plate': 'XYZ678',
-        'Asset Type': 'Car',
-        'Asset Make': 'BrandD',
-        'Asset Model': 'ModelE',
-        'Driver Name': 'Sophia Brown',
-        'Driver User': 'sophia.brown',
-        'Employee Number': 'EMP008',
-        'Defects Count': '3',
-    },
-    // Add more entries
-    {
-        'Status': 'Pending',
-        'Inspection ID': '12345',
-        'Date Inspected': '2023-08-04',
-        'Date Received': '2023-08-05',
-        'Asset Name': 'Asset I',
-        'Asset VIN': 'VIN666',
-        'Asset License Plate': 'ABC987',
-        'Asset Type': 'Bus',
-        'Asset Make': 'BrandF',
-        'Asset Model': 'ModelG',
-        'Driver Name': 'Oliver Johnson',
-        'Driver User': 'oliver.johnson',
-        'Employee Number': 'EMP009',
-        'Defects Count': '1',
-    },
-    // Add more entries
-    {
-        'Status': 'Completed',
-        'Inspection ID': '23456',
-        'Date Inspected': '2023-08-06',
-        'Date Received': '2023-08-07',
-        'Asset Name': 'Asset J',
-        'Asset VIN': 'VIN777',
-        'Asset License Plate': 'LMN654',
-        'Asset Type': 'Truck',
-        'Asset Make': 'BrandA',
-        'Asset Model': 'ModelB',
-        'Driver Name': 'Emma Davis',
-        'Driver User': 'emma.davis',
-        'Employee Number': 'EMP010',
-        'Defects Count': '0',
-    },
-    // Add more entries
-    {
-        'Status': 'In Progress',
-        'Inspection ID': '54321',
-        'Date Inspected': '2023-08-08',
-        'Date Received': '2023-08-09',
-        'Asset Name': 'Asset K',
-        'Asset VIN': 'VIN888',
-        'Asset License Plate': 'OPQ987',
-        'Asset Type': 'Car',
-        'Asset Make': 'BrandC',
-        'Asset Model': 'ModelD',
-        'Driver Name': 'William Miller',
-        'Driver User': 'william.miller',
-        'Employee Number': 'EMP011',
-        'Defects Count': '2',
-    },
-    // Add more entries
-    {
-        'Status': 'Pending',
-        'Inspection ID': '87654',
-        'Date Inspected': '2023-08-10',
-        'Date Received': '2023-08-11',
-        'Asset Name': 'Asset L',
-        'Asset VIN': 'VIN999',
-        'Asset License Plate': 'RST321',
-        'Asset Type': 'Bus',
-        'Asset Make': 'BrandE',
-        'Asset Model': 'ModelF',
-        'Driver Name': 'Noah Davis',
-        'Driver User': 'noah.davis',
-        'Employee Number': 'EMP012',
-        'Defects Count': '4',
-    },
-    // Add more entries
-    {
-        'Status': 'Completed',
-        'Inspection ID': '34567',
-        'Date Inspected': '2023-08-12',
-        'Date Received': '2023-08-13',
-        'Asset Name': 'Asset M',
-        'Asset VIN': 'VIN000',
-        'Asset License Plate': 'UVW012',
-        'Asset Type': 'Truck',
-        'Asset Make': 'BrandB',
-        'Asset Model': 'ModelC',
-        'Driver Name': 'Ava Johnson',
-        'Driver User': 'ava.johnson',
-        'Employee Number': 'EMP013',
-        'Defects Count': '0',
-    },
-    // Add more entries
-    {
-        'Status': 'In Progress',
-        'Inspection ID': '65432',
-        'Date Inspected': '2023-08-14',
-        'Date Received': '2023-08-15',
-        'Asset Name': 'Asset N',
-        'Asset VIN': 'VIN111',
-        'Asset License Plate': 'XYZ222',
-        'Asset Type': 'Car',
-        'Asset Make': 'BrandD',
-        'Asset Model': 'ModelE',
-        'Driver Name': 'James Brown',
-        'Driver User': 'james.brown',
-        'Employee Number': 'EMP014',
-        'Defects Count': '3',
-    },
-    // Add more entries
-    {
-        'Status': 'Pending',
-        'Inspection ID': '12345',
-        'Date Inspected': '2023-08-16',
-        'Date Received': '2023-08-17',
-        'Asset Name': 'Asset O',
-        'Asset VIN': 'VIN222',
-        'Asset License Plate': 'ABC333',
-        'Asset Type': 'Bus',
-        'Asset Make': 'BrandF',
-        'Asset Model': 'ModelG',
-        'Driver Name': 'Ella Johnson',
-        'Driver User': 'ella.johnson',
-        'Employee Number': 'EMP015',
-        'Defects Count': '1',
-    },
-];
+const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, columnHeaderCell, columnHeaderText, titleForm, onValueChange }) => {
 
 
-const Form = () => {
-    const renderRow = ({ item }) => {
-        return (
-            <View style={styles.row}>
-                {columns.map((column) => {
-                    // console.log(item[column])
-                    return (
-                        item[column] == undefined ? null :
-                            <TouchableOpacity key={column} style={styles.cell} onPress={() => { console.log(item['Inspection ID']) }}>
-                                <Text style={styles.entryText}>{item[column]}</Text>
-                            </TouchableOpacity>
+    const [isChecked, setChecked] = useState(false);
+    const [imageHovered, setImageHovered] = useState({});
+    const [isCheckedSelected, setIsCheckedSelected] = useState(entriesData.map(() => false));
+    const [selectedRows, setSelectedRows] = useState([]);
+  
+    const [density, setDensity] = useState(15);
+    const densityAnim = useRef(new Animated.Value(density)).current;
 
 
-                    )
-                })}
-                {/* <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Button</Text>
-        </TouchableOpacity> */}
-                {/* <View style={{justifyContent:'center', alignItems:'center', alignContent:'center'}}>
-                    <AppBtn
-                        title="Report"
-                        btnStyle={styles.btn}
-                        btnTextStyle={styles.btnText} />
-                </View> */}
-            </View>
-        );
+    const handleMouseEnter = (column) => {
+        setImageHovered(prevState => ({ ...prevState, [column]: true }));
     };
 
-    return (
-        <ScrollView horizontal>
-            <View>
-                <View style={styles.columnHeaderRow}>
-                    {columns.map((column) => (
-                        <View key={column} style={styles.columnHeaderCell}>
-                            <Text style={styles.columnHeaderText}>{column}</Text>
-                        </View>
-                    ))}
-                    {/* <Text style={styles.columnHeaderText}>Action</Text> */}
+    const handleMouseLeave = (column) => {
+        setImageHovered(prevState => ({ ...prevState, [column]: false }));
+    };
+
+    const handleValueChange = (value) => {
+        onValueChange(value)
+
+    }
+
+    const handleCheck = (value, column, index) => {
+        setIsCheckedSelected(prevState => {
+            const newState = [...prevState];
+            newState[index] = !newState[index];
+            return newState;
+        });
+
+        setSelectedRows((prevState) => {
+            const newSelectedRows = [...prevState];
+            if (prevState.includes(index)) {
+                // If the row was already selected, remove it from the selectedRows
+                const selectedIndex = prevState.indexOf(index);
+                newSelectedRows.splice(selectedIndex, 1);
+            } else {
+                // If the row was not selected, add it to the selectedRows
+                newSelectedRows.push(index);
+            }
+            return newSelectedRows;
+        });
+    };
+
+    const handleDelete = (index) => {
+        // Remove the selected rows from the entriesData array
+        const filteredEntries = entriesData.filter((item, i) => i !== index);
+
+        // Clear the selectedRows state
+        setSelectedRows([]);
+
+        console.log(filteredEntries)
+
+        // Update the entriesData with the filtered entries (excluding the selected rows)
+        // onValueChange(filteredEntries);
+    };
+
+    const handleDropdownValueChange = (value) => {
+        if (value === "Compact") {
+          setDensity(10);
+        } else if (value === "Standard") {
+          setDensity(15);
+        } else if (value === "Comfortable") {
+          setDensity(20);
+        }
+      };
+      
+
+      useEffect(() => {
+        // Create an animation configuration
+        const config = {
+          toValue: density,
+          duration: 500,
+          useNativeDriver: false,
+        };
+      
+        // Create the animation
+        const animation = Animated.timing(densityAnim, config);
+      
+        // Start the animation
+        animation.start();
+      }, [density]);
+      
+
+
+    if (titleForm == "General Inspection") {
+        const renderRow = ({ item }) => {
+            return (
+                <View style={row}>
+                    {columns.map((column) => {
+                        return (
+                            item[column] == undefined ? null :
+                                <TouchableOpacity key={column} style={cell}
+                                    onPress={() => handleValueChange(item)}>
+                                    <Text style={entryText}>{item[column]}</Text>
+                                </TouchableOpacity>
+                        )
+                    })}
                 </View>
-                <FlatList
-                    data={entriesData}
-                    keyExtractor={(item, index) => index.toString()}
-                    renderItem={renderRow}
-                    showsHorizontalScrollIndicator={false}
-                />
-            </View>
-        </ScrollView>
-    );
+            );
+        };
+        return (
+            <ScrollView horizontal>
+                <View>
+                    <View style={columnHeaderRow}>
+                        {columns.map((column) => (
+
+                            <View key={column} style={columnHeaderCell}>
+                                <Text style={columnHeaderText}>{column}</Text>
+                            </View>
+                        ))}
+                        {/* <Text style={styles.columnHeaderText}>Action</Text> */}
+                    </View>
+                    <FlatList
+                        data={entriesData}
+                        keyExtractor={(item, index) => index.toString()}
+                        renderItem={renderRow}
+                        showsHorizontalScrollIndicator={false}
+                    />
+                </View>
+            </ScrollView>
+        );
+    }
+
+    else if (titleForm == "Assets") {
+        const renderRow = ({ item, index }) => {
+            return (
+                <Animated.View style={[row, {paddingVertical:(densityAnim)}]}>
+                    {columns.map((column) => {
+                        return (
+                            item[column] == undefined ? null :
+                                column === "Action" ?
+
+                                    <TouchableOpacity
+                                        onPress={() => handleValueChange(item)}
+                                        key={column}
+                                        style={[cell, {}]}
+                                        onMouseEnter={() => handleMouseEnter(index)}
+                                        onMouseLeave={() => handleMouseLeave(index)}
+                                    >
+                                        <Image
+                                            style={[styles.btn, imageHovered[index] && styles.btnHover]}
+                                            source={require('../../assets/action_icon.png')}
+                                        />
+                                    </TouchableOpacity>
+
+                                    :
+                                    <View
+                                        key={column}
+                                        style={[cell, column === "Name" && { minWidth: 300 }, column === "Forms" && { minWidth: 100 }, column === "Team Name" && { minWidth: 200 }, column === "Last Ins." && { minWidth: 150 }, column === "License Plate" && { minWidth: 200 }]}
+                                    >
+                                        {column == "Name" ?
+                                            <View style={styles.cell}>
+                                                <View style={styles.section}>
+                                                    <Checkbox
+                                                        style={styles.checkbox}
+                                                        value={isCheckedSelected[index]}
+                                                        onValueChange={() => handleCheck(item, column, index)} // Pass the index to handleCheck function
+                                                        color={isCheckedSelected[index] ? '#67E9DA' : undefined}
+                                                    />
+                                                    <Text style={entryText}>{item[column]}</Text>
+                                                </View>
+                                            </View>
+                                            :
+                                            <Text style={entryText}>{item[column]}</Text>
+                                        }
+                                    </View>
+                        )
+                    })}
+                </Animated.View>
+            );
+        };
+        return (
+            <ScrollView horizontal>
+                <View>
+                    <View style={{ flexDirection: 'row', zIndex: 1, marginBottom: 20 }}>
+
+                        <DropDownComponent
+                            title="Density"
+                            options={["Compact", "Standard", "Comfortable"]}
+                            imageSource={require('../../assets/density_icon.png')}
+                            onValueChange={handleDropdownValueChange}
+                            container={styles.dropdownContainer}
+                            dropdownButton={styles.dropdownButton}
+                            selectedValueStyle={styles.dropdownSelectedValueStyle}
+                            optionsContainer={styles.dropdownOptionsContainer}
+                            option={styles.dropdownOption}
+                            hoveredOption={styles.dropdownHoveredOption}
+                            optionText={styles.dropdownOptionText}
+                            hoveredOptionText={styles.dropdownHoveredOptionText}
+                            dropdownButtonSelect={styles.dropdownButtonSelect}
+                            dropdownStyle={styles.dropdown} />
+
+                        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 }}>
+                            <Text style={{ fontSize: 18, fontWeight: '700', color: '#5B5B5B' }}>Export</Text>
+                            <Image style={{ height: 15, width: 15, marginLeft: 10 }} source={require('../../assets/export_icon.png')}></Image>
+                        </TouchableOpacity>
+                        {selectedRows.length > 0 && (
+                            <TouchableOpacity onPress={() => { handleDelete(index) }} style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 }}>
+                                <Text style={{ fontSize: 18, fontWeight: '700', color: 'red' }}>Delete</Text>
+                                <Image style={{ height: 20, width: 20, tintColor: 'red', marginLeft: 10 }} source={require('../../assets/trash_icon.png')}></Image>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                    <Animated.View style={[columnHeaderRow, {paddingVertical : densityAnim}]}>
+                        {columns.map((column) => (
+                            <View key={column} style={[columnHeaderCell, column == 'Name' && { minWidth: 300 }, column == 'Forms' && { minWidth: 100 }, column == 'Team Name' && { minWidth: 200 }, column == 'Last Ins.' && { minWidth: 150 }, column == 'License Plate' && { minWidth: 200 }]}>
+                                <Text style={columnHeaderText}>{column}</Text>
+                            </View>
+                        ))}
+                    </Animated.View>
+                    <FlatList
+                        data={entriesData}
+                        keyExtractor={(item, index) => index.toString()}
+                        renderItem={renderRow}
+                        showsHorizontalScrollIndicator={true}
+                    />
+                </View>
+
+
+
+            </ScrollView>
+        );
+    }
+
 };
 
 const styles = StyleSheet.create({
-    row: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        // borderBottomColor: '#ccc',
-
-        marginTop: 8,
-        shadowColor: '#BADBFB',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 1,
-        shadowRadius: 4,
-        elevation: 0,
-        borderRadius: 20,
-        marginLeft: 5,
-        marginRight: 5
-    },
-    cell: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: 40
-    },
-    entryText: {
-        fontWeight: 'normal',
-        paddingHorizontal: 30,
-        paddingVertical: 5,
-        fontSize: 12
-    },
-    button: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        minWidth: 100,
-        borderWidth: 1,
-        borderColor: 'blue',
-        borderRadius: 5,
-    },
-    buttonText: {
-        fontWeight: 'bold',
-        color: 'blue',
-    },
-    columnHeaderRow: {
-        flexDirection: 'row',
-        backgroundColor: '#f2f2f2',
-        borderBottomWidth: 1,
-        borderBottomColor: '#ccc',
-        paddingVertical: 10,
-        alignItems: 'center',
-    },
-    columnHeaderCell: {
-        flex: 1,
-
-    },
-    columnHeaderText: {
-        fontWeight: 'bold',
-        marginBottom: 5,
-        textAlign: 'center',
-        paddingHorizontal: 20,
-        color: '#5A5A5A',
-        fontSize: 14
-    },
     btn: {
-        width: '100%',
-        height: 40,
-        backgroundColor: '#336699',
-        borderRadius: 5,
+        width: 25,
+        height: 25,
+        marginLeft: 15,
+        tintColor: '#1E3D5C',
+    },
+    btnHover: {
+        tintColor: '#67E9DA'
+    },
+    container: {
+        flex: 1,
+        marginHorizontal: 16,
+        marginVertical: 32,
+    },
+    section: {
+        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
+    },
+    paragraph: {
+        fontSize: 15,
+    },
+    checkbox: {
+        margin: 8,
+    },
+    deleteButton: {
+        backgroundColor: '#FF0000',
+        padding: 10,
+        borderRadius: 8,
+        alignSelf: 'flex-start',
+        marginVertical: 10,
+    },
+    deleteButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+    },
+    dropdownContainer: {
+        position: 'relative',
+        zIndex: 1
+    },
+    dropdownButton: {
+        padding: 12,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 8,
+        minWidth: 150,
+
+    },
+    dropdownSelectedValueStyle: {
+        fontSize: 16,
+    },
+    dropdownOptionsContainer: {
+        position: 'absolute',
+        top: '100%',
+        right: 0,
+        left: 0,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 8,
+        backgroundColor: '#fff',
         marginTop: 10,
+        ...Platform.select({
+            web: {
+                boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)', // Add boxShadow for web
+            },
+        }),
+        minWidth: 150
     },
-    btnText: {
-        color: '#fff',
-        fontSize: 14,
-        fontWeight: 'bold',
-        marginLeft: 10,
-        marginRight: 10
+    dropdownOption: {
+        padding: 12,
+        borderBottomWidth: 1,
+        borderColor: '#ccc',
     },
-});
+    dropdownHoveredOption: {
+        ...(Platform.OS === 'web' && {
+            backgroundColor: '#67E9DA',
+            cursor: 'pointer',
+            transitionDuration: '0.2s',
+        }),
+    },
+    dropdownOptionText: {
+        fontSize: 16,
+    },
+    dropdownHoveredOptionText: {
+        ...(Platform.OS === 'web' && {
+            color: '#FFFFFF',
+        }),
+    },
+    dropdownButtonSelect: {
+        // borderColor: '#558BC1',
+        // shadowColor: '#558BC1',
+        // shadowOffset: { width: 0, height: 0 },
+        // shadowOpacity: 1,
+        // shadowRadius: 10,
+        // elevation: 0,
+    }
+
+})
 
 export default Form;

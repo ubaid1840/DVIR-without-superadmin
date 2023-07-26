@@ -2,10 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import LoginPage from './src/screens/Login';
-import SignupPage from './src/screens/Signup';
-import ForgetPasswordPage from './src/screens/ForgetPassword';
-import DashboardPage from './src/screens/Dashboard';
+import LoginPage from './src/pages/Login';
+import SignupPage from './src/pages/Signup';
+import ForgetPasswordPage from './src/pages/ForgetPassword';
+import DashboardPage from './src/pages/Dashboard';
 
 const App = () => {
 

@@ -2,26 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated } from 'react-native';
 import { useFonts } from 'expo-font';
 import CircularProgressBar from '../components/CircleProgress'
-import DropdownComponent from '../components/DropDownComponent';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import AppBtn from '../components/Button';
 import NameAvatar from '../components/NameAvatar';
 import Form from '../components/Form';
-import CustomDropdownProfile from '../components/DropDownProfileComponent';
 import Header from '../components/Header';
 import MainDashboard from './MainDashboard';
-import GeneralInspection from './GeneralInspection';
+import GeneralInspectionPage from './GeneralInspection';
 import CustomDropdownLeftSide from '../components/DropDownComponentLeftSide';
+import AssetsPage from './Assets';
 
 
 const driverOptionList = ['Inspection'];
 const assetOptionList = ['Inspection', 'Defects'];
 
 
-const DashboardPage = () => {
+const DashboardPage = (props) => {
 
-  const [selectedPage, setSelectedPage] = useState('Dashboard');
+  const [selectedPage, setSelectedPage] = useState('Assets');
   const [dashboardHovered, setDashboardHovered] = useState(false)
   const [inspectiondHovered, setInspectionHovered] = useState(false)
   const [maintenanceHovered, setMaintenanceHovered] = useState(false)
@@ -232,16 +231,13 @@ const DashboardPage = () => {
     // }
     else if (selectedPage == 'Assets') {
       return (
-        <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
-          {/* Add your Assets content here */}
-          <Text style={styles.screenTitle}>Assets Content</Text>
-        </Animated.View>
+       <AssetsPage />
       );
     }
     else if (selectedPage == "Inspection") {
       if (inspectionSelectedPage == 'General Inspection') {
         return (
-          <GeneralInspection />
+          <GeneralInspectionPage />
         )
       }
       else if (inspectionSelectedPage == '45 days Inspection') {
@@ -294,7 +290,10 @@ const DashboardPage = () => {
   };
 
 
-
+  const handleHeaderValue = (value) => {
+    if(value == 'Logout')
+    props.navigation.navigate('Login')
+  };
   
 
   return (
@@ -516,7 +515,7 @@ const DashboardPage = () => {
       </View>
       <View style={{ flexDirection: 'column', flex: 1, }}>
         <View style={{ zIndex: 1 }}>
-          <Header />
+          <Header onValueChange={handleHeaderValue}/>
         </View>
         {renderPage()}
 
@@ -530,6 +529,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     flexDirection: 'row',
+    backdropFilter: 'blur(10px)'
+
   },
   title: {
     fontSize: 48,
