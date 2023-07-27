@@ -23,12 +23,7 @@ const AddBtn = (props) => {
 
 const styles = StyleSheet.create({
     btnHover: {
-        width: '100%',
-        height: 50,
-        borderRadius: 5,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: 10,
+        
         backgroundColor: '#558BC1',
     },
 })

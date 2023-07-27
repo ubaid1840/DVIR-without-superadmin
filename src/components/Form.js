@@ -11,6 +11,7 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
     const [imageHovered, setImageHovered] = useState({});
     const [isCheckedSelected, setIsCheckedSelected] = useState(entriesData.map(() => false));
     const [selectedRows, setSelectedRows] = useState([]);
+    const [data, setdata] = useState(entriesData)
   
     const [density, setDensity] = useState(15);
     const densityAnim = useRef(new Animated.Value(density)).current;
@@ -51,16 +52,20 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
     };
 
     const handleDelete = (index) => {
-        // Remove the selected rows from the entriesData array
-        const filteredEntries = entriesData.filter((item, i) => i !== index);
+        
+        const filteredEntries = entriesData.filter((item, ind) => !index.includes(ind))
 
+        
         // Clear the selectedRows state
-        setSelectedRows([]);
+       
 
         console.log(filteredEntries)
 
         // Update the entriesData with the filtered entries (excluding the selected rows)
-        // onValueChange(filteredEntries);
+        setdata(filteredEntries)
+        setSelectedRows([]);
+        setIsCheckedSelected(data.map(() => false))
+
     };
 
     const handleDropdownValueChange = (value) => {
@@ -204,7 +209,7 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                             <Image style={{ height: 15, width: 15, marginLeft: 10 }} source={require('../../assets/export_icon.png')}></Image>
                         </TouchableOpacity>
                         {selectedRows.length > 0 && (
-                            <TouchableOpacity onPress={() => { handleDelete(index) }} style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 }}>
+                            <TouchableOpacity onPress={() => { handleDelete(selectedRows) }} style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 }}>
                                 <Text style={{ fontSize: 18, fontWeight: '700', color: 'red' }}>Delete</Text>
                                 <Image style={{ height: 20, width: 20, tintColor: 'red', marginLeft: 10 }} source={require('../../assets/trash_icon.png')}></Image>
                             </TouchableOpacity>
@@ -218,7 +223,7 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                         ))}
                     </Animated.View>
                     <FlatList
-                        data={entriesData}
+                        data={data}
                         keyExtractor={(item, index) => index.toString()}
                         renderItem={renderRow}
                         showsHorizontalScrollIndicator={true}

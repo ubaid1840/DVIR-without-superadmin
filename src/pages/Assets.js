@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated, Platform, TextInput } from 'react-native';
 import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -8,8 +8,8 @@ import Form from '../components/Form';
 import Header from '../components/Header';
 import MainDashboard from './MainDashboard';
 import AddBtn from '../components/AddButton';
-import { TextInput } from 'react-native-web';
 import DropDownComponent from '../components/DropDown';
+import CreateNewAssetModal from './CreateNewAsset';
 
 const columns = [
     'Name',
@@ -69,7 +69,7 @@ const entriesData = [
 ];
 
 
-const AssetsPage = () => {
+const AssetsPage = (props) => {
 
     const [selectedPage, setSelectedPage] = useState('Dashboard');
     const [dashboardHovered, setDashboardHovered] = useState(false)
@@ -86,6 +86,15 @@ const AssetsPage = () => {
     const [searchTextInputBorderColor, setSearchTextInputBorderColor] = useState(false)
     const [searchAssetSelectedOption, setSearchAssetSelectedOption] = useState("Select")
     const [searchBtnHover, setSearchBtnHover] = useState(false)
+    const [createNewAssetModalVisible, setCreateNewAssetModalVisible] = useState(false);
+
+    const showCreateNewAssetModal = () => {
+        setCreateNewAssetModalVisible(true);
+    };
+
+    const closeCreateNewAssetModal = () => {
+        setCreateNewAssetModalVisible(false);
+    };
 
     useEffect(() => {
 
@@ -143,7 +152,8 @@ const AssetsPage = () => {
     }]
 
     const handleAssetsAddBtn = () => {
-
+        // props.onAddAssetBtn('CreateNewAsset')
+        setCreateNewAssetModalVisible(true)
     }
 
     const handleFormValue = (value) => {
@@ -196,7 +206,7 @@ const AssetsPage = () => {
                         <Text style={{ fontSize: 15, color: '#5B5B5B', marginHorizontal: 10, marginTop: 10, fontWeight: '700' }}>Assets with active defects</Text>
                     </View>
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingTop: 30, paddingLeft: 40, paddingRight: 40, }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingTop: 30, paddingLeft: 40, paddingRight: 40, zIndex: 1 }}>
                     <View style={{ marginRight: 10 }}>
                         <TextInput
                             style={[styles.input, searchTextInputBorderColor && styles.withBorderInputContainer]}
@@ -231,19 +241,21 @@ const AssetsPage = () => {
                         <TouchableOpacity
                             onMouseEnter={() => setSearchBtnHover(true)}
                             onMouseLeave={() => setSearchBtnHover(false)}
+                            onPress={() => {
+                                setSearchAssetSelectedOption('Select')
+                                setSearch('')
+                            }}
                         >
                             <Image style={[{ width: 40, height: 40, tintColor: '#336699' }, searchBtnHover && { tintColor: '#67E9DA' }]} source={require('../../assets/search_icon.png')}></Image>
                         </TouchableOpacity>
                     </View>
-
-
 
                     <View >
                         <AddBtn
                             title="Asset"
                             btnStyle={styles.btn}
                             btnTextStyle={styles.btnText}
-                            onPress={handleAssetsAddBtn} />
+                            onPress={()=>{handleAssetsAddBtn()}} />
                     </View>
                 </View>
                 <View style={styles.contentCardStyle}>
@@ -261,6 +273,10 @@ const AssetsPage = () => {
                     />
                 </View>
             </ScrollView>
+            <CreateNewAssetModal
+                isVisible={createNewAssetModalVisible}
+                onClose={closeCreateNewAssetModal}
+            />
         </Animated.View>
 
     );
@@ -367,18 +383,6 @@ const styles = StyleSheet.create({
         width: 20,
         tintColor: '#FFFFFF'
     },
-    dropdown: {
-        // Custom styles for the dropdown container
-        // For example:
-        padding: 12,
-        borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 8,
-        minWidth: 150,
-
-        backgroundColor: '#FFFFFF'
-    },
-
 
     text: {
         // Custom styles for the text inside dropdown and selected value
@@ -444,11 +448,16 @@ const styles = StyleSheet.create({
     },
     btn: {
         width: '100%',
-        height: 50,
+        height: 40,
         backgroundColor: '#336699',
         borderRadius: 5,
         alignItems: 'center',
         justifyContent: 'center',
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 0.9,
+        shadowRadius: 5,
+        elevation: 0,
+        shadowColor: '#575757'
     },
     btnText: {
         color: '#fff',
@@ -512,6 +521,16 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         minWidth: 150,
 
+    },
+    dropdown: {
+        // Custom styles for the dropdown container
+        // For example:
+        padding: 12,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 8,
+        minWidth: 150,
+        backgroundColor: '#FFFFFF',
     },
     dropdownSelectedValueStyle: {
         fontSize: 16,

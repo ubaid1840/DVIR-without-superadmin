@@ -58,7 +58,7 @@ const DashboardPage = (props) => {
     }).start();
 
     return () => {
-      fadeAnim.setValue(0);
+      // fadeAnim.setValue(0);
     }
 
   }, [selectedPage])
@@ -189,14 +189,14 @@ const DashboardPage = (props) => {
     else if (value == 'Inspection') {
       setMaintenanceOptionExpand(false)
       setUsersOptionExpand(false)
-      setMaintenanceSelectedPage("")
-      setUsersSelectedPage("")
+      // setMaintenanceSelectedPage("")
+      // setUsersSelectedPage("")
     }
     else if (value == 'Maintenance') {
       setInspectionOptionExpand(false)
       setUsersOptionExpand(false)
-      setInspectionSelectedPage("")
-      setUsersSelectedPage("")
+      // setInspectionSelectedPage("")
+      // setUsersSelectedPage("")
     }
     else if (value == 'Assets') {
       setInspectionOptionExpand(false)
@@ -209,8 +209,8 @@ const DashboardPage = (props) => {
     else if (value == 'Users') {
       setInspectionOptionExpand(false)
       setMaintenanceOptionExpand(false)
-      setMaintenanceSelectedPage("")
-      setInspectionSelectedPage("")
+      // setMaintenanceSelectedPage("")
+      // setInspectionSelectedPage("")
     }
   }
   const renderPage = () => {
@@ -231,7 +231,7 @@ const DashboardPage = (props) => {
     // }
     else if (selectedPage == 'Assets') {
       return (
-       <AssetsPage />
+       <AssetsPage onAddAssetBtn={handleAddAssetBtn}/>
       );
     }
     else if (selectedPage == "Inspection") {
@@ -294,6 +294,10 @@ const DashboardPage = (props) => {
     if(value == 'Logout')
     props.navigation.navigate('Login')
   };
+
+  const handleAddAssetBtn = () => {
+  props.navigation.navigate('CreateNewAsset')
+  }
   
 
   return (
@@ -324,7 +328,7 @@ const DashboardPage = (props) => {
           <TouchableOpacity
             style={{ paddingLeft: 20, flexDirection: 'row' }}
             onPress={() => {
-              // fadeAnim.setValue(0);
+              
               setInspectionOptionExpand(!inspectionOptionExpand)
               // setMaintenanceOptionExpand(false)
               closeAllExpands('Inspection')
@@ -343,7 +347,7 @@ const DashboardPage = (props) => {
               <TouchableOpacity
                 style={{ paddingLeft: 20 }}
                 onPress={() => {
-                  fadeAnim.setValue(0);
+                  // fadeAnim.setValue(0);
                   setInspectionSelectedPage('General Inspection')
                   setSelectedPage("Inspection")
                 }}
@@ -358,7 +362,7 @@ const DashboardPage = (props) => {
               <TouchableOpacity
                 style={{ paddingLeft: 20 }}
                 onPress={() => {
-                  fadeAnim.setValue(0);
+                  // fadeAnim.setValue(0);
                   setInspectionSelectedPage('45 days Inspection')
                   setSelectedPage("Inspection")
                 }}
@@ -397,7 +401,7 @@ const DashboardPage = (props) => {
               <TouchableOpacity
                 style={{ paddingLeft: 20 }}
                 onPress={() => {
-                  fadeAnim.setValue(0);
+                  // fadeAnim.setValue(0);
                   setMaintenanceSelectedPage('Defects')
                   setSelectedPage("Maintenance")
                 }}
@@ -412,7 +416,7 @@ const DashboardPage = (props) => {
               <TouchableOpacity
                 style={{ paddingLeft: 20 }}
                 onPress={() => {
-                  fadeAnim.setValue(0);
+                  // fadeAnim.setValue(0);
                   setMaintenanceSelectedPage('Work Order')
                   setSelectedPage("Maintenance")
                 }}
@@ -431,7 +435,7 @@ const DashboardPage = (props) => {
           <TouchableOpacity
             style={{ paddingLeft: 20 }}
             onPress={() => {
-              fadeAnim.setValue(0);
+              // fadeAnim.setValue(0);
               setSelectedPage('Assets')
               // setInspectionOptionExpand(false)
               // setInspectionSelectedPage("")
@@ -469,7 +473,7 @@ const DashboardPage = (props) => {
               <TouchableOpacity
                 style={{ paddingLeft: 20 }}
                 onPress={() => {
-                  fadeAnim.setValue(0);
+                  // fadeAnim.setValue(0);
                   setUsersSelectedPage('Driver')
                   setSelectedPage("Users")
                 }}
@@ -484,7 +488,7 @@ const DashboardPage = (props) => {
               <TouchableOpacity
                 style={{ paddingLeft: 20 }}
                 onPress={() => {
-                  fadeAnim.setValue(0);
+                  // fadeAnim.setValue(0);
                   setUsersSelectedPage('Mechanic')
                   setSelectedPage("Users")
                 }}
@@ -499,7 +503,7 @@ const DashboardPage = (props) => {
               <TouchableOpacity
                 style={{ paddingLeft: 20 }}
                 onPress={() => {
-                  fadeAnim.setValue(0);
+                  // fadeAnim.setValue(0);
                   setUsersSelectedPage('Manager')
                   setSelectedPage("Users")
                 }}

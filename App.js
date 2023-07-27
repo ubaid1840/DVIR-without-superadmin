@@ -6,10 +6,16 @@ import LoginPage from './src/pages/Login';
 import SignupPage from './src/pages/Signup';
 import ForgetPasswordPage from './src/pages/ForgetPassword';
 import DashboardPage from './src/pages/Dashboard';
+import AssetsPage from './src/pages/Assets';
+import CreateNewAssetPage from './src/pages/CreateNewAsset';
 
 const App = () => {
 
   const AppStack = createNativeStackNavigator();
+
+  const AssetStack = createNativeStackNavigator ();
+
+
 
   return (
     <NavigationContainer >
@@ -18,7 +24,10 @@ const App = () => {
         <AppStack.Screen name='Signup' component={SignupPage} options={{ headerShown: false }}></AppStack.Screen>
         <AppStack.Screen name='ForgetPassword' component={ForgetPasswordPage} options={{ headerShown: false }}></AppStack.Screen>
         <AppStack.Screen name='Dashboard' component={DashboardPage} options={{ headerShown: false }}></AppStack.Screen>
-      </AppStack.Navigator>
+        <AppStack.Screen name='CreateNewAsset' component={CreateNewAssetPage} options={{ headerShown: false }}></AppStack.Screen>
+         </AppStack.Navigator>
+
+     
     </NavigationContainer>
   );
 };
