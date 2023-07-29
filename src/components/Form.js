@@ -244,7 +244,7 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
 
                                             }}>
                                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                                <Image style={[{ height: 15, width: 15, tintColor: 'green', }, rowHovered[index] && { tintColor: '#FFFFFF' }]} source={require('../../assets/failed_icon.png')}></Image>
+                                                <Image style={[{ height: 15, width: 15, tintColor: 'red', }, rowHovered[index] && { tintColor: '#FFFFFF' }]} source={require('../../assets/failed_icon.png')}></Image>
                                                 <Text style={[entryText, { paddingLeft: 10 }, rowHovered[index] && { color: '#FFFFFF', fontWeight: '700', fontSize: 14 }]}>{item[column]}</Text>
                                             </View>
                                         </TouchableOpacity>

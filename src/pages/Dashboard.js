@@ -557,6 +557,9 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     borderRightWidth: 1,
     borderRightColor: '#ccc',
+    position:'absolute',
+    zIndex:1,
+    height:'100%'
   },
   navItem: {
     height: 40,

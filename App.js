@@ -8,6 +8,7 @@ import ForgetPasswordPage from './src/pages/ForgetPassword';
 import DashboardPage from './src/pages/Dashboard';
 import AssetsPage from './src/pages/Assets';
 import CreateNewAssetPage from './src/pages/CreateNewAsset';
+import Layout from './src/pages/testpage';
 
 
 
@@ -24,7 +25,7 @@ const App = () => {
 
   return (
     <NavigationContainer >
-      <AppStack.Navigator initialRouteName='Login' options={{}}>
+      <AppStack.Navigator initialRouteName='Dashboard' options={{}}>
         <AppStack.Screen name='Login' component={LoginPage} options={{ headerShown: false }}></AppStack.Screen>
         <AppStack.Screen name='Signup' component={SignupPage} options={{ headerShown: false }}></AppStack.Screen>
         <AppStack.Screen name='ForgetPassword' component={ForgetPasswordPage} options={{ headerShown: false }}></AppStack.Screen>
@@ -34,6 +35,8 @@ const App = () => {
 
      
     </NavigationContainer>
+
+    // <Layout />
   );
 };
 
