@@ -158,6 +158,7 @@ const LoginPage = (props) => {
                         secureTextEntry
                         onFocus={() => { setPasswordTextInputBorderColor(true) }}
                         onBlur={() => { setPasswordTextInputBorderColor(false) }}
+                        onSubmitEditing={handleLogin}
                     />
                 </View>
                 {!isPasswordValid ? <Text style={{ color: 'red', paddingTop: 5, paddingLeft: 5, fontSize: 10, alignSelf: 'flex-start' }}>Password length should have 6 to 18 characters</Text> : null}

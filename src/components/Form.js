@@ -9,12 +9,43 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
 
     const [isChecked, setChecked] = useState(false);
     const [imageHovered, setImageHovered] = useState({});
+    const [rowHovered, setRowHovered] = useState({});
+
     const [isCheckedSelected, setIsCheckedSelected] = useState(entriesData.map(() => false));
     const [selectedRows, setSelectedRows] = useState([]);
     const [data, setdata] = useState(entriesData)
-  
     const [density, setDensity] = useState(15);
     const densityAnim = useRef(new Animated.Value(density)).current;
+
+    const [colorAnimatePassed] = useState(new Animated.Value(0))
+    const [colorAnimateFailed] = useState(new Animated.Value(0))
+    const [colorAnimation, setColorAnimation] = useState(false)
+
+    const rowHoverColorAnimatePassed = (value) => {
+        Animated.timing(colorAnimatePassed, {
+            toValue: value,
+            duration: 500,
+            useNativeDriver: false
+        }).start()
+    }
+
+    const rowHoverColorAnimateFailed = (value) => {
+        Animated.timing(colorAnimateFailed, {
+            toValue: value,
+            duration: 1000,
+            useNativeDriver: false
+        }).start()
+    }
+
+    // useEffect(() => {
+    //     if (colorAnimation == false) {
+    //         rowHoverColorAnimate()
+    //     }
+    //     else {
+    //         rowHoverColorAnimateBack()
+    //     }
+    // }, [colorAnimation])
+
 
 
     const handleMouseEnter = (column) => {
@@ -24,6 +55,68 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
     const handleMouseLeave = (column) => {
         setImageHovered(prevState => ({ ...prevState, [column]: false }));
     };
+
+    const handleMouseEnterGeneralInspection = (column) => {
+
+        setRowHovered({ [column]: true });
+
+        if (entriesData[column].Status == 'Passed') {
+            Animated.parallel([
+                Animated.timing(colorAnimatePassed, {
+                    toValue: 1,
+                    duration: 500,
+                    useNativeDriver: false,
+                }),
+                Animated.timing(colorAnimateFailed, {
+                    toValue: 0,
+                    duration: 500,
+                    useNativeDriver: false,
+                }),
+            ]).start();
+        } else if (entriesData[column].Status == 'Failed') {
+            Animated.parallel([
+                Animated.timing(colorAnimatePassed, {
+                    toValue: 0,
+                    duration: 500,
+                    useNativeDriver: false,
+                }),
+                Animated.timing(colorAnimateFailed, {
+                    toValue: 1,
+                    duration: 500,
+                    useNativeDriver: false,
+                }),
+            ]).start();
+        }
+    };
+
+    const handleMouseLeaveGeneralInspection = (column) => {
+
+        setRowHovered({ [column]: false });
+
+        Animated.parallel([
+            Animated.timing(colorAnimatePassed, {
+                toValue: 0,
+                duration: 500,
+                useNativeDriver: false,
+            }),
+            Animated.timing(colorAnimateFailed, {
+                toValue: 0,
+                duration: 500,
+                useNativeDriver: false,
+            }),
+        ]).start();
+    };
+
+    const colorInterpolatePassed = colorAnimatePassed.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['white', 'green'],
+    });
+
+    const colorInterpolateFailed = colorAnimateFailed.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['white', 'red'],
+    });
+
 
     const handleValueChange = (value) => {
         onValueChange(value)
@@ -52,12 +145,12 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
     };
 
     const handleDelete = (index) => {
-        
+
         const filteredEntries = entriesData.filter((item, ind) => !index.includes(ind))
 
-        
+
         // Clear the selectedRows state
-       
+
 
         console.log(filteredEntries)
 
@@ -70,55 +163,119 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
 
     const handleDropdownValueChange = (value) => {
         if (value === "Compact") {
-          setDensity(10);
+            setDensity(10);
         } else if (value === "Standard") {
-          setDensity(15);
+            setDensity(15);
         } else if (value === "Comfortable") {
-          setDensity(20);
+            setDensity(20);
         }
-      };
-      
+    };
 
-      useEffect(() => {
+
+    useEffect(() => {
         // Create an animation configuration
         const config = {
-          toValue: density,
-          duration: 500,
-          useNativeDriver: false,
+            toValue: density,
+            duration: 500,
+            useNativeDriver: false,
         };
-      
+
         // Create the animation
         const animation = Animated.timing(densityAnim, config);
-      
+
         // Start the animation
         animation.start();
-      }, [density]);
-      
+    }, [density]);
+
 
 
     if (titleForm == "General Inspection") {
-        const renderRow = ({ item }) => {
+        const renderRow = ({ item, index }) => {
+            const colorStyle = {
+                backgroundColor:
+                    rowHovered[index] == true && entriesData[index].Status == 'Passed'
+                        ? colorInterpolatePassed
+                        : rowHovered[index] == true && entriesData[index].Status == 'Failed'
+                            ? colorInterpolateFailed
+                            : {},
+            };
             return (
-                <View style={row}>
+                <Animated.View style={[row, colorStyle]}>
                     {columns.map((column) => {
                         return (
                             item[column] == undefined ? null :
-                                <TouchableOpacity key={column} style={cell}
-                                    onPress={() => handleValueChange(item)}>
-                                    <Text style={entryText}>{item[column]}</Text>
-                                </TouchableOpacity>
+                                item[column] == 'Passed'
+                                    ?
+                                    <TouchableOpacity key={column} style={cell}
+                                        onPress={() => {
+                                            handleValueChange(item)
+                                        }}
+                                        onMouseEnter={() => {
+                                            handleMouseEnterGeneralInspection(index)
+
+
+                                        }}
+                                        onMouseLeave={() => {
+                                            handleMouseLeaveGeneralInspection(index)
+
+
+                                        }}>
+
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <Image style={[{ height: 15, width: 15, tintColor: 'green', }, rowHovered[index] && { tintColor: '#FFFFFF' }]} source={require('../../assets/completed_icon.png')}></Image>
+                                            <Text style={[entryText, { paddingLeft: 10 }, rowHovered[index] && { color: '#FFFFFF', fontWeight: '700', fontSize: 14 }]}>{item[column]}</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                    :
+                                    item[column] == 'Failed'
+                                        ?
+                                        <TouchableOpacity key={column} style={cell}
+                                            onPress={() => {
+                                                handleValueChange(item)
+                                            }}
+                                            onMouseEnter={() => {
+                                                handleMouseEnterGeneralInspection(index)
+
+
+                                            }}
+                                            onMouseLeave={() => {
+                                                handleMouseLeaveGeneralInspection(index)
+
+
+                                            }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <Image style={[{ height: 15, width: 15, tintColor: 'green', }, rowHovered[index] && { tintColor: '#FFFFFF' }]} source={require('../../assets/failed_icon.png')}></Image>
+                                                <Text style={[entryText, { paddingLeft: 10 }, rowHovered[index] && { color: '#FFFFFF', fontWeight: '700', fontSize: 14 }]}>{item[column]}</Text>
+                                            </View>
+                                        </TouchableOpacity>
+                                        :
+                                        <TouchableOpacity key={column} style={cell}
+                                            onPress={() => {
+                                                handleValueChange(item)
+                                            }}
+                                            onMouseEnter={() => {
+                                                handleMouseEnterGeneralInspection(index)
+                                            }}
+                                            onMouseLeave={() => {
+                                                handleMouseLeaveGeneralInspection(index)
+
+                                            }}>
+                                            <Text style={[entryText, { paddingLeft: 10 }, rowHovered[index] && { color: '#FFFFFF', fontWeight: '700', fontSize: 14 }]}>{item[column]}</Text>
+                                        </TouchableOpacity>
+
                         )
                     })}
-                </View>
+                </Animated.View>
             );
         };
         return (
+
             <ScrollView horizontal>
                 <View>
                     <View style={columnHeaderRow}>
                         {columns.map((column) => (
 
-                            <View key={column} style={columnHeaderCell}>
+                            <View key={column} style={[columnHeaderCell, { zIndex: 2 }]}>
                                 <Text style={columnHeaderText}>{column}</Text>
                             </View>
                         ))}
@@ -132,13 +289,17 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                     />
                 </View>
             </ScrollView>
+
         );
     }
 
     else if (titleForm == "Assets") {
         const renderRow = ({ item, index }) => {
+            const rowStyle = {
+                paddingVertical: densityAnim, // Apply the padding to the entire row
+            };
             return (
-                <Animated.View style={[row, {paddingVertical:(densityAnim)}]}>
+                <Animated.View style={[row, rowStyle]}>
                     {columns.map((column) => {
                         return (
                             item[column] == undefined ? null :
@@ -181,6 +342,7 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                         )
                     })}
                 </Animated.View>
+
             );
         };
         return (
@@ -215,7 +377,7 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                             </TouchableOpacity>
                         )}
                     </View>
-                    <Animated.View style={[columnHeaderRow, {paddingVertical : densityAnim}]}>
+                    <Animated.View style={[columnHeaderRow, { paddingVertical: densityAnim }]}>
                         {columns.map((column) => (
                             <View key={column} style={[columnHeaderCell, column == 'Name' && { minWidth: 300 }, column == 'Forms' && { minWidth: 100 }, column == 'Team Name' && { minWidth: 200 }, column == 'Last Ins.' && { minWidth: 150 }, column == 'License Plate' && { minWidth: 200 }]}>
                                 <Text style={columnHeaderText}>{column}</Text>
@@ -240,10 +402,11 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
 
 const styles = StyleSheet.create({
     btn: {
-        width: 25,
-        height: 25,
+        width: 30,
+        height: 30,
         marginLeft: 15,
         tintColor: '#1E3D5C',
+        resizeMode: 'contain'
     },
     btnHover: {
         tintColor: '#67E9DA'
@@ -333,7 +496,8 @@ const styles = StyleSheet.create({
         // shadowOpacity: 1,
         // shadowRadius: 10,
         // elevation: 0,
-    }
+    },
+
 
 })
 

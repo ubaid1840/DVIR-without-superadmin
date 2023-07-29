@@ -27,7 +27,7 @@ const columns = [
 
 const entriesData = [
     {
-        'Status': 'Completed',
+        'Status': 'Passed',
         'Inspection ID': '12345',
         'Date Inspected': '2023-07-20',
         'Date Received': '2023-07-21',
@@ -44,7 +44,7 @@ const entriesData = [
     },
     // Add more entries
     {
-        'Status': 'In Progress',
+        'Status': 'Passed',
         'Inspection ID': '67890',
         'Date Inspected': '2023-07-22',
         'Date Received': '2023-07-23',
@@ -60,7 +60,7 @@ const entriesData = [
         'Defects Count': '0',
     },
     {
-        'Status': 'Pending',
+        'Status': 'Failed',
         'Inspection ID': '54321',
         'Date Inspected': '2023-07-23',
         'Date Received': '2023-07-24',
@@ -77,7 +77,7 @@ const entriesData = [
     },
     // Add more entries
     {
-        'Status': 'Completed',
+        'Status': 'Passed',
         'Inspection ID': '98765',
         'Date Inspected': '2023-07-25',
         'Date Received': '2023-07-26',
@@ -94,7 +94,7 @@ const entriesData = [
     },
     // Add more entries
     {
-        'Status': 'In Progress',
+        'Status': 'Failed',
         'Inspection ID': '23456',
         'Date Inspected': '2023-07-27',
         'Date Received': '2023-07-28',
@@ -111,7 +111,7 @@ const entriesData = [
     },
     // Add more entries
     {
-        'Status': 'Pending',
+        'Status': 'Failed',
         'Inspection ID': '87654',
         'Date Inspected': '2023-07-29',
         'Date Received': '2023-07-30',
@@ -128,7 +128,7 @@ const entriesData = [
     },
     // Add more entries
     {
-        'Status': 'Completed',
+        'Status': 'Passed',
         'Inspection ID': '34567',
         'Date Inspected': '2023-07-31',
         'Date Received': '2023-08-01',
@@ -145,7 +145,7 @@ const entriesData = [
     },
     // Add more entries
     {
-        'Status': 'In Progress',
+        'Status': 'Failed',
         'Inspection ID': '65432',
         'Date Inspected': '2023-08-02',
         'Date Received': '2023-08-03',
@@ -162,7 +162,7 @@ const entriesData = [
     },
     // Add more entries
     {
-        'Status': 'Pending',
+        'Status': 'Passed',
         'Inspection ID': '12345',
         'Date Inspected': '2023-08-04',
         'Date Received': '2023-08-05',
@@ -179,7 +179,7 @@ const entriesData = [
     },
     // Add more entries
     {
-        'Status': 'Completed',
+        'Status': 'Passed',
         'Inspection ID': '23456',
         'Date Inspected': '2023-08-06',
         'Date Received': '2023-08-07',
@@ -196,7 +196,7 @@ const entriesData = [
     },
     // Add more entries
     {
-        'Status': 'In Progress',
+        'Status': 'Failed',
         'Inspection ID': '54321',
         'Date Inspected': '2023-08-08',
         'Date Received': '2023-08-09',
@@ -213,7 +213,7 @@ const entriesData = [
     },
     // Add more entries
     {
-        'Status': 'Pending',
+        'Status': 'Passed',
         'Inspection ID': '87654',
         'Date Inspected': '2023-08-10',
         'Date Received': '2023-08-11',
@@ -230,7 +230,7 @@ const entriesData = [
     },
     // Add more entries
     {
-        'Status': 'Completed',
+        'Status': 'Passed',
         'Inspection ID': '34567',
         'Date Inspected': '2023-08-12',
         'Date Received': '2023-08-13',
@@ -247,7 +247,7 @@ const entriesData = [
     },
     // Add more entries
     {
-        'Status': 'In Progress',
+        'Status': 'Passed',
         'Inspection ID': '65432',
         'Date Inspected': '2023-08-14',
         'Date Received': '2023-08-15',
@@ -264,7 +264,7 @@ const entriesData = [
     },
     // Add more entries
     {
-        'Status': 'Pending',
+        'Status': 'Passed',
         'Inspection ID': '12345',
         'Date Inspected': '2023-08-16',
         'Date Received': '2023-08-17',
@@ -293,6 +293,7 @@ const GeneralInspectionPage = () => {
     const [inspectionCalendarSelect, setInspectionCalendarSelect] = useState('All')
     const [totalInspections, setTotalInspections] = useState(19)
     const [totalDefects, setTotalDefects] = useState(7)
+    
 
     useEffect(() => {
 
@@ -305,8 +306,8 @@ const GeneralInspectionPage = () => {
         return () => {
           fadeAnim.setValue(0);
         }
-    
       }, [selectedPage])
+
 
       const handleDownloadReportBtn = () => {
 

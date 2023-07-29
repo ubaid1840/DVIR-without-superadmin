@@ -486,7 +486,6 @@ const styles = StyleSheet.create({
     },
     formEntryTextStyle: {
         fontWeight: 'normal',
-        paddingHorizontal: 20,
         fontSize: 13,
     },
 

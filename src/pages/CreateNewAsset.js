@@ -3,9 +3,26 @@ import { View, Text, TouchableOpacity, Modal, StyleSheet, ScrollView, Image, Tex
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import AppBtn from '../components/Button';
+import * as DocumentPicker from 'expo-document-picker';
 
 const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
 
+    const [fileUri, setFileUri] = useState(null);
+    const [textInputBorderColor, setTextInputBorderColor] = useState('')
+
+    const pickDocument = async () => {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: 'image/*', // Change the MIME type to specify the type of files you want to allow
+            });
+
+            if (result.type === 'success') {
+                setFileUri(result.uri);
+            }
+        } catch (error) {
+            console.log('Error picking document:', error);
+        }
+    };
 
     return (
         <Modal
@@ -15,6 +32,7 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
             onRequestClose={onClose}
         >
             <View style={styles.centeredView}>
+                 <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
                 <View style={styles.modalView}>
                     <ScrollView horizontal>
                         <ScrollView>
@@ -34,36 +52,44 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                             <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
 
 
-                            <View style={{ flexDirection: 'row', marginHorizontal: 40, marginTop: 40, alignItems: 'center', justifyContent:'space-between' }}>
+                            <View style={{ flexDirection: 'row', marginHorizontal: 40, marginTop: 40, alignItems: 'center', justifyContent: 'space-between' }}>
                                 <Text style={{ fontSize: 30, color: '#1E3D5C', fontWeight: '900', marginLeft: 10, borderBottomColor: '#67E9DA', paddingBottom: 5, borderBottomWidth: 5 }}>
                                     Create New Asset
                                 </Text>
                                 <View>
-                                <AppBtn
-                                    title="Save"
-                                    btnStyle={[styles.btn, {minWidth:100}]}
-                                    btnTextStyle={styles.btnText}
-                                    onPress={() => console.log("save")} />
-                                    </View>
+                                    <AppBtn
+                                        title="Save"
+                                        btnStyle={[styles.btn, { minWidth: 100 }]}
+                                        btnTextStyle={styles.btnText}
+                                        onPress={() => console.log("save")} />
+                                </View>
                             </View>
                             <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 40, marginTop: 20 }}>
-                                <TouchableOpacity style={{ width: 100, height: 100, borderRadius: 50, borderColor: '#cccccc', borderWidth: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                <View style={{ flexDirection: 'column' }}>
+                                    <TouchableOpacity style={{ width: 100, height: 100, borderRadius: 50, borderColor: '#cccccc', borderWidth: 1, justifyContent: 'center', alignItems: 'center' }} onPress={pickDocument}>
 
-                                    <Image style={{ height: 20, width: 20, tintColor: '#67E9DA' }} source={require('../../assets/add_photo_icon.png')}></Image>
-                                    <Text style={{ color: '#30E0CB' }}>Add Photo</Text>
+                                        <Image style={{ height: 20, width: 20, tintColor: '#67E9DA' }} source={require('../../assets/add_photo_icon.png')}></Image>
+                                        <Text style={{ color: '#30E0CB' }}>Add Photo</Text>
 
-                                </TouchableOpacity>
+                                    </TouchableOpacity>
+                                    {fileUri && (
+                                        <Text style={{ fontWeight: '600', marginTop: 10}}>Image Selected</Text>
+                                    )}
+
+                                </View>
+
                                 <TextInput
-                                    style={[styles.input, { maxWidth: 200, marginBottom: 0, marginLeft: 20 } /*&& styles.withBorderInputContainer*/]}
+                                    style={[styles.input, { maxWidth: 200, marginBottom: 0, marginLeft: 20 }, textInputBorderColor == 'Enter Asset Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                     placeholder="Enter Asset Name"
                                     placeholderTextColor="#868383DC"
                                     // value={""}
                                     // onChangeText={(val) => { console.log(val) }}
-                                    onFocus={() => { }}
-                                    onBlur={() => { }}
-
+                                    onFocus={() => { setTextInputBorderColor('Enter Asset Name')}}
+                                    onBlur={() => {setTextInputBorderColor('') }}
                                 />
                             </View>
+
+
 
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 40 }}>
                                 <View style={styles.contentCardStyle}>
@@ -76,84 +102,84 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                                     <View style={{ flexDirection: 'row', marginTop: 30 }}>
                                         <View style={{ flexDirection: 'column' }}>
                                             <TextInput
-                                                style={[styles.input, {} /*&& styles.withBorderInputContainer*/]}
+                                                style={[styles.input, textInputBorderColor == 'VIN' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                 placeholder="VIN"
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { }}
-                                                onBlur={() => { }}
+                                                onFocus={() => {setTextInputBorderColor('VIN') }}
+                                                onBlur={() => { setTextInputBorderColor('')}}
                                             />
                                             <TextInput
-                                                style={[styles.input, {} /*&& styles.withBorderInputContainer*/]}
+                                                style={[styles.input, textInputBorderColor == 'Make' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                 placeholder="Make"
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { }}
-                                                onBlur={() => { }}
+                                                onFocus={() => { setTextInputBorderColor('Make')}}
+                                                onBlur={() => {setTextInputBorderColor('') }}
                                             />
                                             <TextInput
-                                                style={[styles.input, {} /*&& styles.withBorderInputContainer*/]}
+                                                style={[styles.input, textInputBorderColor == 'Model' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                 placeholder="Model"
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { }}
-                                                onBlur={() => { }}
+                                                onFocus={() => { setTextInputBorderColor('Model')}}
+                                                onBlur={() => {setTextInputBorderColor('') }}
                                             />
                                             <TextInput
-                                                style={[styles.input, {} /*&& styles.withBorderInputContainer*/]}
+                                                style={[styles.input, textInputBorderColor == 'Year' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                 placeholder="Year"
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { }}
-                                                onBlur={() => { }}
+                                                onFocus={() => { setTextInputBorderColor('Year')}}
+                                                onBlur={() => {setTextInputBorderColor('') }}
                                             />
                                         </View>
 
 
                                         <View style={{ flexDirection: 'column', marginLeft: 30 }}>
                                             <TextInput
-                                                style={[styles.input, {} /*&& styles.withBorderInputContainer*/]}
+                                                style={[styles.input, textInputBorderColor == 'License' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                 placeholder="License"
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { }}
-                                                onBlur={() => { }}
+                                                onFocus={() => { setTextInputBorderColor('License')}}
+                                                onBlur={() => { setTextInputBorderColor('')}}
                                             />
                                             <TextInput
-                                                style={[styles.input, {} /*&& styles.withBorderInputContainer*/]}
+                                                style={[styles.input, textInputBorderColor == 'Tire size' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                 placeholder="Tire size"
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { }}
-                                                onBlur={() => { }}
+                                                onFocus={() => { setTextInputBorderColor('Tire size') }}
+                                                onBlur={() => {setTextInputBorderColor('') }}
                                             />
                                             <TextInput
-                                                style={[styles.input, {} /*&& styles.withBorderInputContainer*/]}
+                                                style={[styles.input, textInputBorderColor == 'Color' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                 placeholder="Color"
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { }}
-                                                onBlur={() => { }}
+                                                onFocus={() => { setTextInputBorderColor('Color')}}
+                                                onBlur={() => {setTextInputBorderColor('') }}
                                             />
                                         </View>
                                     </View>
 
                                     <TextInput
-                                        style={[styles.input, {} /*&& styles.withBorderInputContainer*/]}
+                                        style={[styles.input, textInputBorderColor == 'Notes' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                         placeholder="Notes"
                                         multiline
                                         placeholderTextColor="#868383DC"
                                         value={""}
                                         onChangeText={(val) => { console.log(val) }}
-                                        onFocus={() => { }}
-                                        onBlur={() => { }}
+                                        onFocus={() => {setTextInputBorderColor('Notes') }}
+                                        onBlur={() => { setTextInputBorderColor('')}}
                                     />
                                 </View>
 
@@ -167,88 +193,94 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                                     <View style={{ flexDirection: 'row', marginTop: 30 }}>
                                         <View style={{ flexDirection: 'column', }}>
                                             <TextInput
-                                                style={[styles.input, {} /*&& styles.withBorderInputContainer*/]}
-                                                placeholder="VIN"
+                                                style={[styles.input, {}]}
+                                                placeholder="Company"
                                                 placeholderTextColor="#868383DC"
                                                 value={"Octa Soft"}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { }}
-                                                onBlur={() => { }}
+                                                onFocus={() => {setTextInputBorderColor('Company')}}
+                                                onBlur={() => {setTextInputBorderColor('')}}
                                                 editable={false}
                                             />
                                             <TextInput
-                                                style={[styles.input, {} /*&& styles.withBorderInputContainer*/]}
+                                                style={[styles.input, textInputBorderColor == 'Estimated Cost' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                 placeholder="Estimated Cost"
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { }}
-                                                onBlur={() => { }}
+                                                onFocus={() => {setTextInputBorderColor('Estimated Cost') }}
+                                                onBlur={() => {setTextInputBorderColor('') }}
                                             />
                                             <TextInput
-                                                style={[styles.input, {} /*&& styles.withBorderInputContainer*/]}
+                                                style={[styles.input, textInputBorderColor == 'Asset Type' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                 placeholder="Asset Type"
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { }}
-                                                onBlur={() => { }}
+                                                onFocus={() => {setTextInputBorderColor('Asset Type') }}
+                                                onBlur={() => { setTextInputBorderColor('')}}
+                                                
                                             />
                                             <TextInput
-                                                style={[styles.input, {} /*&& styles.withBorderInputContainer*/]}
+                                                style={[styles.input, textInputBorderColor == 'Asset Subtype' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                 placeholder="Asset Subtype"
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { }}
-                                                onBlur={() => { }}
+                                                onFocus={() => { setTextInputBorderColor('Asset Subtype')}}
+                                                onBlur={() => { setTextInputBorderColor('')}}
+                                                
                                             />
                                         </View>
 
                                         <View style={{ flexDirection: 'column', marginLeft: 30 }}>
                                             <TextInput
-                                                style={[styles.input, {} /*&& styles.withBorderInputContainer*/]}
+                                                style={[styles.input, textInputBorderColor == 'Mileage' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                 placeholder="Mileage"
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { }}
-                                                onBlur={() => { }}
+                                                onFocus={() => { setTextInputBorderColor('Mileage')}}
+                                                onBlur={() => { setTextInputBorderColor('')}}
+                                                
                                             />
                                             <TextInput
-                                                style={[styles.input, {} /*&& styles.withBorderInputContainer*/]}
+                                                style={[styles.input, textInputBorderColor == 'Engine Hours' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                 placeholder="Engine Hours"
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { }}
-                                                onBlur={() => { }}
+                                                onFocus={() => {setTextInputBorderColor('Engine Hours') }}
+                                                onBlur={() => { setTextInputBorderColor('')}}
+                                                
                                             />
                                             <TextInput
-                                                style={[styles.input, {} /*&& styles.withBorderInputContainer*/]}
+                                                style={[styles.input, textInputBorderColor == 'Last service date' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                 placeholder="Last service date"
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { }}
-                                                onBlur={() => { }}
+                                                onFocus={() => {setTextInputBorderColor('Last service date') }}
+                                                onBlur={() => { setTextInputBorderColor('')}}
+                                                
                                             /><TextInput
-                                                style={[styles.input, {} /*&& styles.withBorderInputContainer*/]}
+                                                style={[styles.input, textInputBorderColor == 'Last service mileage' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                 placeholder="Last service mileage"
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { }}
-                                                onBlur={() => { }}
+                                                onFocus={() => { setTextInputBorderColor('Last service mileage')}}
+                                                onBlur={() => { setTextInputBorderColor('')}}
+                                                
                                             />
                                             <TextInput
-                                                style={[styles.input, {} /*&& styles.withBorderInputContainer*/]}
+                                                style={[styles.input, textInputBorderColor == 'Last service engine hours' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                 placeholder="Last service engine hours"
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { }}
-                                                onBlur={() => { }}
+                                                onFocus={() => {setTextInputBorderColor('Last service engine hours') }}
+                                                onBlur={() => { setTextInputBorderColor('')}}
                                             />
                                         </View>
                                     </View>
@@ -256,7 +288,7 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                             </View>
                         </ScrollView>
                     </ScrollView>
-                    <View style={{ flexDirection: 'row' }}>
+                    <View style={{ flexDirection: 'row', marginTop:10 }}>
 
                         <AppBtn
                             title="Close"
@@ -275,7 +307,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        // backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
     modalView: {
         backgroundColor: 'white',
@@ -335,19 +367,31 @@ const styles = StyleSheet.create({
     },
     btn: {
         width: '100%',
-        height: 50,
+        height: 40,
         backgroundColor: '#336699',
         borderRadius: 5,
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: 10,
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 0.9,
+        shadowRadius: 5,
+        elevation: 0,
+        shadowColor: '#575757'
     },
     btnText: {
         color: '#fff',
-        fontSize: 16,
+        fontSize: 20,
         fontWeight: 'bold',
         marginLeft: 10,
-        marginRight: 10
+        marginRight: 15,
+    },
+    withBorderInputContainer: {
+        borderColor: '#558BC1',
+        shadowColor: '#558BC1',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 1,
+        shadowRadius: 10,
+        elevation: 0,
     },
 });
 

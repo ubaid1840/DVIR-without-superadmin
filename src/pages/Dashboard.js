@@ -20,7 +20,7 @@ const assetOptionList = ['Inspection', 'Defects'];
 
 const DashboardPage = (props) => {
 
-  const [selectedPage, setSelectedPage] = useState('Assets');
+  const [selectedPage, setSelectedPage] = useState('Dashboard');
   const [dashboardHovered, setDashboardHovered] = useState(false)
   const [inspectiondHovered, setInspectionHovered] = useState(false)
   const [maintenanceHovered, setMaintenanceHovered] = useState(false)
@@ -47,7 +47,8 @@ const DashboardPage = (props) => {
   const [mechanicHovered, setMechanicHovered] = useState(false)
   const [managerHovered, setManagerHovered] = useState(false)
   const [usersSelectedPage, setUsersSelectedPage] = useState('')
-
+  
+  
 
   useEffect(() => {
 
@@ -125,6 +126,8 @@ const DashboardPage = (props) => {
 
   const [fontsLoaded] = useFonts({
     'futura-extra-black': require('../../assets/fonts/Futura-Extra-Black-font.ttf'),
+    'futura-book': require('../../assets/fonts/futura/Futura-Book-font.ttf'),
+    'futura-heavy-font' : require('../../assets/fonts/futura/Futura-Heavy-font.ttf')
   });
 
   if (!fontsLoaded) {
@@ -305,8 +308,12 @@ const DashboardPage = (props) => {
       <View style={styles.leftSide}>
         <Text style={styles.title}>D V I R</Text>
         <View style={selectedPage == 'Dashboard' ? [styles.navItem, styles.hoverNavItem] : [styles.navItem, dashboardHovered && styles.hoverNavItem]}
-          onMouseEnter={() => { setDashboardHovered(true) }}
-          onMouseLeave={() => { setDashboardHovered(false) }}>
+          onMouseEnter={() => { 
+            setDashboardHovered(true) 
+           }}
+          onMouseLeave={() => { 
+            setDashboardHovered(false) 
+           }}>
           <Image style={selectedPage == 'Dashboard' ? [styles.iconStyle, styles.iconStyleHover] : [styles.iconStyle, dashboardHovered && styles.iconStyleHover]} source={require('../../assets/dashboard_speed_icon.png')}></Image>
           <TouchableOpacity
             style={{ paddingLeft: 20 }}
@@ -552,7 +559,7 @@ const styles = StyleSheet.create({
     borderRightColor: '#ccc',
   },
   navItem: {
-    height: 50,
+    height: 40,
     width: '90%',
     marginLeft: '5%',
     marginRight: '5%',
@@ -567,7 +574,7 @@ const styles = StyleSheet.create({
   },
   selectedNavItem: {
     // backgroundColor: '#ccc',
-    height: 50,
+    // height: 50,
     width: '90%',
     marginLeft: '5%',
     marginRight: '5%',
@@ -578,16 +585,18 @@ const styles = StyleSheet.create({
 
   },
   navText: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#67E9DA',
-    fontWeight: '700',
-    opacity: 0.6
+    fontWeight: 'bold',
+    opacity: 1,
+    fontFamily:'futura-heavy-font'
+
   },
   navTextHover: {
     color: '#FFFFFF',
     fontWeight: 'bold',
     opacity: 1,
-    fontSize: 16
+    
   },
 
   contentContainer: {
@@ -599,7 +608,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   hoverNavItem: {
-    backgroundColor: '#1383B4',
+    backgroundColor: '#3A71A9',
 
   },
   iconStyle: {
@@ -608,8 +617,8 @@ const styles = StyleSheet.create({
     tintColor: '#67E9DA'
   },
   iconStyleHover: {
-    height: 20,
-    width: 20,
+    // height: 20,
+    // width: 20,
     tintColor: '#FFFFFF'
   },
   dropdown: {
