@@ -30,7 +30,7 @@ const CustomDropdownLeftSide = ({ options, selectedValue, onValueChange, dropdow
                 <Text style={[styles.selectedValue, textStyle]}>
                     {selectedValue}
                 </Text>
-                <Image style={{ width: 20, height: 20 }} source={require(showOptions ? '../../assets/up_arrow_icon.png' : '../../assets/down_arrow_icon.png')}></Image>
+                {/* <Image style={{ width: 20, height: 20 }} source={require(showOptions ? '../../assets/up_arrow_icon.png' : '../../assets/down_arrow_icon.png')}></Image> */}
             </TouchableOpacity>
             {showOptions && (
                 <View style={[styles.optionsContainer]}>

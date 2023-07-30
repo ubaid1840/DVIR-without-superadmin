@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native-web';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LoginPage from './src/pages/Login';
@@ -8,7 +8,6 @@ import ForgetPasswordPage from './src/pages/ForgetPassword';
 import DashboardPage from './src/pages/Dashboard';
 import AssetsPage from './src/pages/Assets';
 import CreateNewAssetPage from './src/pages/CreateNewAsset';
-import Layout from './src/pages/testpage';
 
 
 

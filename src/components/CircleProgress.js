@@ -3,7 +3,6 @@ import { View, Text, Animated, TextInput } from 'react-native'
 import Svg, { G, Circle } from 'react-native-svg'
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle)
-const AnimatedInput = Animated.createAnimatedComponent(TextInput)
 
 export default function CircularProgressBar({
     percentage = 75,
@@ -46,10 +45,6 @@ export default function CircularProgressBar({
             animatedValue.removeAllListeners()
         }
     }, [max, percentage])
-
-
-
-
 
     return (
 
