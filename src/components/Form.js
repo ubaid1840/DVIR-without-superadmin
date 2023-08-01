@@ -314,6 +314,7 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                     >
                                         <Image
                                             style={[styles.btn, imageHovered[index] && styles.btnHover]}
+                                            resizeMode='contain'
                                             source={require('../../assets/action_icon.png')}
                                         />
                                     </TouchableOpacity>
@@ -336,7 +337,9 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                                 </View>
                                             </View>
                                             :
-                                            <Text style={entryText}>{item[column]}</Text>
+                                            <View style={[styles.cell,]}>
+                                                <Text style={entryText}>{item[column]}</Text>
+                                            </View>
                                         }
                                     </View>
                         )
@@ -398,6 +401,178 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
         );
     }
 
+    // else if (titleForm == "Driver") {
+    //     const renderRow = ({ item, index }) => {
+    //         return (
+    //             <Animated.View style={[row, {paddingVertical: 15}]}>
+    //                 {columns.map((column) => {
+    //                     return (
+    //                         item[column] == undefined ? null :
+    //                             column === "Action" ?
+
+    //                                 <TouchableOpacity
+    //                                     onPress={() => handleValueChange(item)}
+    //                                     key={column}
+    //                                     style={[cell, {}]}
+    //                                     onMouseEnter={() => handleMouseEnter(index)}
+    //                                     onMouseLeave={() => handleMouseLeave(index)}
+    //                                 >
+    //                                     <Image
+    //                                         style={[styles.btn, imageHovered[index] && styles.btnHover]}
+    //                                         source={require('../../assets/action_icon.png')}
+    //                                     />
+    //                                 </TouchableOpacity>
+
+    //                                 :
+    //                                 <View
+    //                                     key={column}
+    //                                     style={[cell, column === "Driver Name" && { minWidth: 300 }, column === "Number" && { minWidth: 150 }, column === "Email" && { minWidth: 150 }, column === "Company" && { minWidth: 150 }, column === "Last Inspection" && { minWidth: 200 }]}
+    //                                 >
+    //                                     {column == "Driver Name" ?
+    //                                         <View style={styles.cell}>
+    //                                             <View style={styles.section}>
+    //                                                 <Checkbox
+    //                                                     style={styles.checkbox}
+    //                                                     value={isCheckedSelected[index]}
+    //                                                     onValueChange={() => handleCheck(item, column, index)} // Pass the index to handleCheck function
+    //                                                     color={isCheckedSelected[index] ? '#67E9DA' : undefined}
+    //                                                 />
+    //                                                 <Text style={entryText}>{item[column]}</Text>
+    //                                             </View>
+    //                                         </View>
+    //                                         :
+    //                                         <Text style={entryText}>{item[column]}</Text>
+    //                                     }
+    //                                 </View>
+    //                     )
+    //                 })}
+    //             </Animated.View>
+
+    //         );
+    //     };
+    //     return (
+    //         <ScrollView horizontal>
+    //             <View>
+    //                 <View style={{ flexDirection: 'row', marginBottom: 20 }}>
+
+    //                     <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 }}>
+    //                         <Text style={{ fontSize: 18, fontWeight: '700', color: '#5B5B5B' }}>Export</Text>
+    //                         <Image style={{ height: 15, width: 15, marginLeft: 10 }} source={require('../../assets/export_icon.png')}></Image>
+    //                     </TouchableOpacity>
+    //                     {selectedRows.length > 0 && (
+    //                         <TouchableOpacity onPress={() => { handleDelete(selectedRows) }} style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 }}>
+    //                             <Text style={{ fontSize: 18, fontWeight: '700', color: 'red' }}>Delete</Text>
+    //                             <Image style={{ height: 20, width: 20, tintColor: 'red', marginLeft: 10 }} source={require('../../assets/trash_icon.png')}></Image>
+    //                         </TouchableOpacity>
+    //                     )}
+    //                 </View>
+    //                 <Animated.View style={[columnHeaderRow, { paddingVertical: densityAnim }]}>
+    //                     {columns.map((column) => (
+    //                         <View key={column} style={[columnHeaderCell, column == 'Driver Name' && { minWidth: 300 }, column == 'Number' && { minWidth: 150 }, column == 'Email' && { minWidth: 150 }, column == 'Company' && { minWidth: 150 }, column == 'Last Inspection' && { minWidth: 200 }]}>
+    //                             <Text style={columnHeaderText}>{column}</Text>
+    //                         </View>
+    //                     ))}
+    //                 </Animated.View>
+    //                 <FlatList
+    //                     data={data}
+    //                     keyExtractor={(item, index) => index.toString()}
+    //                     renderItem={renderRow}
+    //                     showsHorizontalScrollIndicator={true}
+    //                 />
+    //             </View>
+
+
+
+    //         </ScrollView>
+    //     );
+    // }
+
+    else if (titleForm == "Driver" || titleForm == 'Mechanic' || titleForm =='Manager') {
+        const renderRow = ({ item, index }) => {
+            return (
+                <Animated.View style={[row, {paddingVertical: 15}]}>
+                    {columns.map((column) => {
+                        return (
+                            item[column] == undefined ? null :
+                                column === "Action" ?
+
+                                    <TouchableOpacity
+                                        onPress={() => handleValueChange(item)}
+                                        key={column}
+                                        style={[cell, {}]}
+                                        onMouseEnter={() => handleMouseEnter(index)}
+                                        onMouseLeave={() => handleMouseLeave(index)}
+                                    >
+                                        <Image
+                                            style={[styles.btn, imageHovered[index] && styles.btnHover]}
+                                            source={require('../../assets/action_icon.png')}
+                                        />
+                                    </TouchableOpacity>
+
+                                    :
+                                    <View
+                                        key={column}
+                                        style={[cell, column === "Name" && { minWidth: 300 }, column === "Number" && { minWidth: 150 }, column === "Email" && { minWidth: 150 }, column === "Company" && { minWidth: 150 }, column === "Role" && { minWidth: 200 }, column === "Last Inspection" && { minWidth: 200 }]}
+                                    >
+                                        {column == "Name" ?
+                                            <View style={styles.cell}>
+                                                <View style={styles.section}>
+                                                    <Checkbox
+                                                        style={styles.checkbox}
+                                                        value={isCheckedSelected[index]}
+                                                        onValueChange={() => handleCheck(item, column, index)} // Pass the index to handleCheck function
+                                                        color={isCheckedSelected[index] ? '#67E9DA' : undefined}
+                                                    />
+                                                    <Text style={entryText}>{item[column]}</Text>
+                                                </View>
+                                            </View>
+                                            :
+                                            <Text style={entryText}>{item[column]}</Text>
+                                        }
+                                    </View>
+                        )
+                    })}
+                </Animated.View>
+
+            );
+        };
+        return (
+            <ScrollView horizontal>
+                <View>
+                    <View style={{ flexDirection: 'row', marginBottom: 20 }}>
+
+                        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 }}>
+                            <Text style={{ fontSize: 18, fontWeight: '700', color: '#5B5B5B' }}>Export</Text>
+                            <Image style={{ height: 15, width: 15, marginLeft: 10 }} source={require('../../assets/export_icon.png')}></Image>
+                        </TouchableOpacity>
+                        {selectedRows.length > 0 && (
+                            <TouchableOpacity onPress={() => { handleDelete(selectedRows) }} style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 }}>
+                                <Text style={{ fontSize: 18, fontWeight: '700', color: 'red' }}>Delete</Text>
+                                <Image style={{ height: 20, width: 20, tintColor: 'red', marginLeft: 10 }} source={require('../../assets/trash_icon.png')}></Image>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                    <Animated.View style={[columnHeaderRow, { paddingVertical: densityAnim }]}>
+                        {columns.map((column) => (
+                            <View key={column} style={[columnHeaderCell, column == 'Name' && { minWidth: 300 }, column == 'Number' && { minWidth: 150 }, column == 'Email' && { minWidth: 150 }, column == 'Company' && { minWidth: 150 }, column == 'Role' && { minWidth: 200 }, column == 'Last Inspection' && { minWidth: 200 }]}>
+                                <Text style={columnHeaderText}>{column}</Text>
+                            </View>
+                        ))}
+                    </Animated.View>
+                    <FlatList
+                        data={data}
+                        keyExtractor={(item, index) => index.toString()}
+                        renderItem={renderRow}
+                        showsHorizontalScrollIndicator={true}
+                    />
+                </View>
+
+
+
+            </ScrollView>
+        );
+    }
+
 };
 
 const styles = StyleSheet.create({
@@ -406,7 +581,7 @@ const styles = StyleSheet.create({
         height: 30,
         marginLeft: 15,
         tintColor: '#1E3D5C',
-        resizeMode: 'contain'
+        
     },
     btnHover: {
         tintColor: '#67E9DA'

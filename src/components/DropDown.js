@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, Image, Animated } from 'react-native';
+import AddBtn from './Button';
+import { v4 as uuidv4 } from 'uuid';
 
-const DropDownComponent = ({ options, onValueChange, title, imageSource, selectedValue, container, dropdownButton, selectedValueStyle, optionsContainer, option, hoveredOption, optionText, hoveredOptionText, dropdownButtonSelect, dropdownStyle }) => {
+const DropDownComponent = React.forwardRef((props, ref) => {
+
+    const { options, onValueChange, title, imageSource, selectedValue, container, dropdownButton, selectedValueStyle, optionsContainer, option, hoveredOption, optionText, hoveredOptionText, dropdownButtonSelect, dropdownStyle } = props
 
     const [showOptions, setShowOptions] = useState(false);
     const [hoveredIndex, setHoveredIndex] = useState(-1);
@@ -29,6 +33,14 @@ const DropDownComponent = ({ options, onValueChange, title, imageSource, selecte
         setDropdownSelect(!dropdownSelect)
     };
 
+    const handleCloseDropdown = () => {
+        setShowOptions(false);
+    };
+
+    React.useImperativeHandle(ref, () => ({
+        handleCloseDropdown,
+    }));
+
     useEffect(() => {
         if (showOptions == false) {
             animation();
@@ -52,13 +64,17 @@ const DropDownComponent = ({ options, onValueChange, title, imageSource, selecte
         outputRange: ['0deg', '180deg'],
     });
 
+    const handleLogout = (value) => {
+        onValueChange(value)
+    }
+
     return (
         <View style={container}>
             <TouchableOpacity
                 style={[dropdownStyle, dropdownSelect && dropdownButtonSelect, { flexDirection: 'row', justifyContent: 'space-between' }]}
-                onPress={()=>handleDropdownToggle()}
+                onPress={() => handleDropdownToggle()}
             >
-                 <Text style={[selectedValueStyle]}>
+                <Text style={[selectedValueStyle]}>
                     {selectedValue}
                 </Text>
                 <Text style={{ fontSize: 18, fontWeight: '700', color: '#5B5B5B' }}>{title}</Text>
@@ -70,28 +86,58 @@ const DropDownComponent = ({ options, onValueChange, title, imageSource, selecte
             {showOptions && (
                 <View style={[optionsContainer, { right: 20 }]}>
                     {options.map((item, index) => (
-                        <TouchableOpacity
-                            key={index}
-                            style={[
-                                option,
-                                hoveredIndex === index && hoveredOption, // Apply the hoveredOption style conditionally
-                            ]}
-                            onPress={() => {
-                                handleOptionSelect(item);
-                            }}
-                            onMouseEnter={() => handleOptionHover(index)}
-                            onMouseLeave={() => handleOptionHover(-1)}
-                        >
-                            <Text style={[optionText, hoveredIndex === index && hoveredOptionText]}>
-                                {item}
-                            </Text>
-                        </TouchableOpacity>
+                        item == 'Logout'
+                            ?
+                            <View key={item} style={{ justifyContent: 'center', alignItems: 'center' }}>
+                                <AddBtn
+                                    title="Logout"
+                                    imgSource={require('../../assets/logout_icon.png')}
+                                    btnStyle={styles.btn}
+                                    btnTextStyle={styles.btnText}
+                                    onPress={() => { handleLogout(item) }} />
+                            </View>
+                            :
+                            <TouchableOpacity
+                                key={item}
+                                style={[
+                                    option,
+                                    hoveredIndex === index && hoveredOption, // Apply the hoveredOption style conditionally
+                                ]}
+                                onPress={() => {
+                                    handleOptionSelect(item);
+                                }}
+                                onMouseEnter={() => handleOptionHover(index)}
+                                onMouseLeave={() => handleOptionHover(-1)}
+                            >
+                                <Text style={[optionText, hoveredIndex === index && hoveredOptionText]}>
+                                    {item}
+                                </Text>
+                            </TouchableOpacity>
                     ))}
                 </View>
             )}
         </View>
     );
-};
+});
+
+const styles = StyleSheet.create({
+    btn: {
+        width: '90%',
+        height: 40,
+        backgroundColor: '#336699',
+        borderRadius: 5,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginVertical: 10
+
+    },
+    btnText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginLeft: 10
+    },
+})
 
 // const styles = StyleSheet.create({
 //     container: {

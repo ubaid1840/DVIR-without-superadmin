@@ -68,7 +68,9 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                                 <View style={{ flexDirection: 'column' }}>
                                     <TouchableOpacity style={{ width: 100, height: 100, borderRadius: 50, borderColor: '#cccccc', borderWidth: 1, justifyContent: 'center', alignItems: 'center' }} onPress={pickDocument}>
 
-                                        <Image style={{ height: 20, width: 20, tintColor: '#67E9DA' }} source={require('../../assets/add_photo_icon.png')}></Image>
+                                        <Image style={{ height: 20, width: 20 }} 
+                                        source={require('../../assets/add_photo_icon.png')}
+                                        tintColor='#67E9DA'></Image>
                                         <Text style={{ color: '#30E0CB' }}>Add Photo</Text>
 
                                     </TouchableOpacity>

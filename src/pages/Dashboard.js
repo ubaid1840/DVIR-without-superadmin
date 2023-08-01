@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated, Pressable } from 'react-native';
 import { useFonts } from 'expo-font';
 import CircularProgressBar from '../components/CircleProgress'
@@ -12,6 +12,10 @@ import MainDashboard from './MainDashboard';
 import GeneralInspectionPage from './GeneralInspection';
 import CustomDropdownLeftSide from '../components/DropDownComponentLeftSide';
 import AssetsPage from './Assets';
+import DriverPage from './Driver';
+import MechanicPage from './Mechanic';
+import ManagerPage from './Manager';
+import { TouchableWithoutFeedback } from 'react-native-web';
 
 
 const driverOptionList = ['Inspection'];
@@ -46,13 +50,15 @@ const DashboardPage = (props) => {
   const [driverHovered, setDriverHovered] = useState(false)
   const [mechanicHovered, setMechanicHovered] = useState(false)
   const [managerHovered, setManagerHovered] = useState(false)
-  const [usersSelectedPage, setUsersSelectedPage] = useState('')
+  const [usersSelectedPage, setUsersSelectedPage] = useState('Manager')
   const [animateLeftSide] = useState(new Animated.Value(260))
   const [openLeftSide, setOpenLeftSide] = useState(true)
   const [collapseHovered, setCollapseHovered] = useState(false)
   const [collapseBtnClick, setCollapseBtnClick] = useState(false)
   const [collapseAndHoverLeftSide, setCollapseAndHoverLeftSide] = useState(false)
   const colorAnimation = new Animated.Value(0);
+ 
+  
 
   const backgroundColor = colorAnimation.interpolate({
     inputRange: [0, 1],
@@ -305,27 +311,23 @@ const DashboardPage = (props) => {
     else if (selectedPage == "Users") {
       if (usersSelectedPage == 'Driver') {
         return (
-          <View style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}>
-            <Text>Driver</Text>
-          </View>
+          <DriverPage />
+          
         )
       }
       else if (usersSelectedPage == 'Mechanic') {
         return (
-          <View style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}>
-            <Text>Mechanic</Text>
-          </View>
+        <MechanicPage />
         )
       }
       else if (usersSelectedPage == 'Manager') {
         return (
-          <View style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}>
-            <Text>Manager</Text>
-          </View>
+         <ManagerPage />
         )
       }
     }
   };
+  
 
 
   const handleHeaderValue = (value) => {
@@ -337,8 +339,8 @@ const DashboardPage = (props) => {
     props.navigation.navigate('CreateNewAsset')
   }
 
-
   return (
+    <TouchableWithoutFeedback onPress={()=>{console.log('Need to Solve mouse click issue')}}>
     <View style={styles.container}>
       <Animated.View style={[styles.leftSide, { width: animateLeftSide }, {backgroundColor}]}
         onMouseEnter={() => {
@@ -592,7 +594,9 @@ const DashboardPage = (props) => {
             <View style={{ flexDirection: 'row' }}
               onMouseEnter={() => setCollapseHovered(true)}
               onMouseLeave={() => setCollapseHovered(false)}>
-              <Image style={[{ height: 30, width: 30, tintColor: 'white' }, collapseHovered && { tintColor: '#67E9DA' }]} source={require('../../assets/left_right_arrow_icon.png')}></Image>
+              <Image style={[{ height: 30, width: 30 }]} 
+              source={require('../../assets/left_right_arrow_icon.png')}
+              tintColor={collapseHovered ? '#67E9DA' : '#FFFFFF'}></Image>
 
               {openLeftSide ?
                 <Text style={[{ color: '#FFFFFF', fontSize: 16, marginLeft: 10 }, collapseHovered && { color: '#67E9DA' }]}>Collapse Menu</Text> : null}
@@ -602,13 +606,15 @@ const DashboardPage = (props) => {
       </Animated.View>
       <View style={{ flexDirection: 'column', flex: 1, }}>
         <View style={{ zIndex: 1 }}>
-          <Header onValueChange={handleHeaderValue} />
+          <Header 
+          onValueChange={handleHeaderValue} />
         </View>
         {renderPage()}
 
       </View>
 
     </View>
+    </TouchableWithoutFeedback>
   );
 };
 

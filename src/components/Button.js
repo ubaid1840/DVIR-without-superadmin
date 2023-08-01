@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { TouchableOpacity, Text, StyleSheet } from "react-native"
+import { TouchableOpacity, Text, StyleSheet, Image, View } from "react-native"
 
 
 const AppBtn = (props) => {
@@ -13,13 +13,17 @@ const AppBtn = (props) => {
         onMouseEnter={() => setBtnHovered(true)}
         onMouseLeave={() => setBtnHovered(false)}
     >
+        <View style={{flexDirection:'row', alignItems:'center'}}>
+        {props.imgSource ? <Image style = {{width:20, height:20, tintColor:'#FFFFFF', marginRight:10}} source = {props.imgSource}></Image> : null}
         <Text style={props.btnTextStyle}>{props.title}</Text>
+        </View>
     </TouchableOpacity>
     )
 }
 
 const styles = StyleSheet.create({
     btnHover: {
+        
         backgroundColor: '#558BC1',
     },
 })

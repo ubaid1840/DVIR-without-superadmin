@@ -376,7 +376,8 @@ const GeneralInspectionPage = () => {
                 <View style={{ flexDirection: 'row', marginLeft: 40, marginTop: 40, marginRight: 40, justifyContent: 'space-between' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <View style={{ backgroundColor: '#67E9DA', borderRadius: 15, }}>
-                            <Image style={{ width: 30, height: 30, tintColor: "#FFFFFF", margin: 10 }}
+                            <Image style={{ width: 30, height: 30, margin: 10 }}
+                            tintColor='#FFFFFF'
                                 source={require('../../assets/inspection_icon.png')}></Image>
                         </View>
                         <Text style={{ fontSize: 40, color: '#1E3D5C', fontWeight: '900', marginLeft: 10 }}>
@@ -506,16 +507,6 @@ const styles = StyleSheet.create({
     hoverNavItem: {
         backgroundColor: '#1383B4',
 
-    },
-    iconStyle: {
-        height: 18,
-        width: 18,
-        tintColor: '#67E9DA'
-    },
-    iconStyleHover: {
-        height: 20,
-        width: 20,
-        tintColor: '#FFFFFF'
     },
     dropdown: {
         // Custom styles for the dropdown container

@@ -92,18 +92,19 @@ const LoginPage = (props) => {
 
     const handleLogin = () => {
         // TODO: Implement login logic
-        let i=0
-        loginList.map((item)=>{
-            if(item.email == email && item.password == password)
-            i++
-        })
-        if (i == 1) {
-            console.log("Login successful")
-            props.navigation.navigate('Dashboard');
-        }   
-        else {
-            console.log("Login failed")
-        }
+        // let i=0
+        // loginList.map((item)=>{
+        //     if(item.email == email && item.password == password)
+        //     i++
+        // })
+        // if (i == 1) {
+        //     console.log("Login successful")
+        //     props.navigation.navigate('Dashboard');
+        // }   
+        // else {
+        //     console.log("Login failed")
+        // }
+        props.navigation.navigate('Dashboard');
          
     };
 

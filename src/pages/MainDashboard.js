@@ -132,7 +132,8 @@ const MainDashboard = (props) => {
 
         <View style={{ flexDirection: 'row', marginLeft: 40, marginTop: 40, alignItems: 'center' }}>
           <View style={{ backgroundColor: '#67E9DA', borderRadius: 15, }}>
-            <Image style={{ width: 30, height: 30, tintColor: "#FFFFFF", margin: 10 }}
+            <Image style={{ width: 30, height: 30, margin: 10 }}
+            tintColor='#FFFFFF'
               source={require('../../assets/dashboard_speed_icon.png')}></Image>
           </View>
           <Text style={{ fontSize: 40, color: '#1E3D5C', fontWeight: '900', marginLeft: 10 }}>
@@ -167,12 +168,12 @@ const MainDashboard = (props) => {
               </Text>
             </TouchableOpacity>
           </View>
-          <View >
+          <View>
             <AppBtn
               title="Download Report"
               btnStyle={styles.btn}
               btnTextStyle={styles.btnText}
-              onPress={handleDownloadReportBtn}></AppBtn>
+              onPress={handleDownloadReportBtn} />
           </View>
         </View>
         <View style={styles.contentCardStyle}>
@@ -193,7 +194,7 @@ const MainDashboard = (props) => {
               </Text>
             </View>
             <View style={{ marginLeft: 10, marginRight: 10 }}>
-              <CircularProgressBar percentage='87' />
+              <CircularProgressBar percentage='100' />
               <Text style={styles.subHeadingText}>
                 Assets with defects
               </Text>
@@ -395,16 +396,6 @@ const styles = StyleSheet.create({
   hoverNavItem: {
     backgroundColor: '#1383B4',
 
-  },
-  iconStyle: {
-    height: 18,
-    width: 18,
-    tintColor: '#67E9DA'
-  },
-  iconStyleHover: {
-    height: 20,
-    width: 20,
-    tintColor: '#FFFFFF'
   },
   dropdown: {
     // Custom styles for the dropdown container

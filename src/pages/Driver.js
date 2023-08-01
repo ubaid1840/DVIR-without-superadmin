@@ -1,99 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated, Platform, TextInput } from 'react-native';
+import { useState, useEffect } from 'react';
+import { Text, View, ScrollView, StyleSheet, Image, Animated } from 'react-native';
 import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import AppBtn from '../components/Button';
 import Form from '../components/Form';
-import Header from '../components/Header';
-import MainDashboard from './MainDashboard';
-import DropDownComponent from '../components/DropDown';
-import CreateNewAssetModal from './CreateNewAsset';
 
 const columns = [
     'Name',
-    'Forms',
-    'Team Name',
-    'Last Ins.',
-    'License Plate',
+    'Number',
+    'Email',
+    'Company',
+    'Last Inspection',
     'Action'
-
 ];
 
 const entriesData = [
     {
-        'Name': 'Truck 1',
-        'Forms': 1,
-        'Team Name': 'Octa Soft',
-        'Last Ins.': '14-01-2017',
-        'License Plate': 'ABC-123',
-        'Action': 'Button',
-        'Hover': '#558BC1'
+        'Name': 'Johny boy',
+        'Number': '001002003',
+        'Email': 'abc@gmail.com',
+        'Company': 'Octa Soft',
+        'Last Inspection': '21-04-2021',
+        'Action' : 'Button'
     },
     // Add more entries
-    {
-        'Name': 'Truck 2',
-        'Forms': 1,
-        'Team Name': 'Octa Soft',
-        'Last Ins.': '22-10-2022',
-        'License Plate': 'LEV-875',
-        'Action': 'Button'
-    },
-    {
-        'Name': 'Truck 3',
-        'Forms': 1,
-        'Team Name': 'Octa Soft',
-        'Last Ins.': '15-04-2023',
-        'License Plate': 'AA-567',
-        'Action': 'Button'
-    },
-    // Add more entries
-    {
-        'Name': 'Truck 4',
-        'Forms': 1,
-        'Team Name': 'Octa Soft',
-        'Last Ins.': '1-5-2021',
-        'License Plate': 'ZRYU-9458',
-        'Action': 'Button'
-    },
-    // Add more entries
-    {
-        'Name': 'Truck 5',
-        'Forms': 1,
-        'Team Name': 'Octa Soft',
-        'Last Ins.': '14-07-2022',
-        'License Plate': 'LKG-7654',
-        'Action': 'Button'
-    },
+   
 ];
 
-
-const AssetsPage = (props) => {
-
-    const [selectedPage, setSelectedPage] = useState('Dashboard');
-    const [dashboardHovered, setDashboardHovered] = useState(false)
-    const [inspectiondHovered, setInspectionHovered] = useState(false)
-    const [maintenanceHovered, setMaintenanceHovered] = useState(false)
+const DriverPage = () => {
     const [fadeAnim] = useState(new Animated.Value(0));
-    const [assetsHovered, setAssetsHovered] = useState(false)
-    const [usersHovered, setUsersHovered] = useState(false)
-    const [inspectionCalendarSelect, setInspectionCalendarSelect] = useState('All')
-    const [totalAssets, setTotalAssets] = useState(19)
-    const [totalAssetsInspected, setTotalAssetsInspected] = useState(2)
-    const [assetsWithDefects, setAssetsWithDefects] = useState(1)
-    const [search, setSearch] = useState('')
-    const [searchTextInputBorderColor, setSearchTextInputBorderColor] = useState(false)
-    const [searchAssetSelectedOption, setSearchAssetSelectedOption] = useState("Select")
-    const [searchBtnHover, setSearchBtnHover] = useState(false)
-    const [createNewAssetModalVisible, setCreateNewAssetModalVisible] = useState(false);
-
-    const showCreateNewAssetModal = () => {
-        setCreateNewAssetModalVisible(true);
-    };
-
-    const closeCreateNewAssetModal = () => {
-        setCreateNewAssetModalVisible(false);
-    };
 
     useEffect(() => {
 
@@ -107,11 +43,8 @@ const AssetsPage = (props) => {
             fadeAnim.setValue(0);
         }
 
-    }, [selectedPage])
+    }, [])
 
-    const handleDownloadReportBtn = () => {
-
-    }
 
     const [fontsLoaded] = useFonts({
         'futura-extra-black': require('../../assets/fonts/Futura-Extra-Black-font.ttf'),
@@ -121,49 +54,9 @@ const AssetsPage = (props) => {
         return null;
     }
 
-    let driver = [{
-        name: "Ubaid",
-        company: "DVIR",
-        inspection: 5
-    },
-    {
-        name: "John",
-        company: "DVIR",
-        inspection: 2
-    },
-    {
-        name: "Doe",
-        company: "DVIR",
-        inspection: 0
-    }]
-
-    const asset = [{
-        name: "Truck1",
-        company: "DVIR",
-        inspection: 4,
-        defects: 1
-    },
-    {
-        name: "Truck2",
-        company: "DVIR",
-        inspection: 2,
-        defects: 3
-    }]
-
-    const handleAssetsAppBtn = () => {
-        // props.onAddAssetBtn('CreateNewAsset')
-        setCreateNewAssetModalVisible(true)
-    }
-
-    const handleFormValue = (value) => {
+    const handleDriverFormValueChange = (value) => {
         console.log(value)
     }
-
-    const handleSearchAssetValueChange = (value) => {
-        setSearchAssetSelectedOption(value)
-    }
-
-    const searchAssetOptionList = ["Name", "License Plate",]
 
     return (
 
@@ -184,89 +77,39 @@ const AssetsPage = (props) => {
                 </View>
                 <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
 
-                <View style={{ flexDirection: 'row', marginLeft: 40, marginTop: 40, marginRight: 40, justifyContent: 'space-between' }}>
+                <View style={{ flexDirection: 'row', marginLeft: 40, marginVertical: 40, marginRight: 40, justifyContent: 'space-between', alignItems:'center' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <View style={{ backgroundColor: '#67E9DA', borderRadius: 15, }}>
                             <Image style={{ width: 30, height: 30, margin: 10 }}
-                            tintColor='#FFFFFF'
-                                source={require('../../assets/vehicle_icon.png')}></Image>
+                            tintColor="#FFFFFF"
+                                source={require('../../assets/driver_icon.png')}></Image>
                         </View>
                         <Text style={{ fontSize: 40, color: '#1E3D5C', fontWeight: '900', marginLeft: 10 }}>
-                            Assets
+                            Driver
                         </Text>
                     </View>
-                    <View style={{ flexDirection: 'row' }}>
-                        <Text style={{ fontSize: 45, color: '#1E3D5C' }}>{totalAssets}</Text>
-                        <Text style={{ fontSize: 15, color: '#5B5B5B', marginHorizontal: 10, marginTop: 10, fontWeight: '700' }}>Total assets</Text>
-                        <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 20, opacity: 0.5 }}></View>
-                        <Text style={{ fontSize: 45, color: '#1E3D5C' }}>{totalAssetsInspected}</Text>
-                        <Text style={{ fontSize: 15, color: '#5B5B5B', marginHorizontal: 10, marginTop: 10, fontWeight: '700' }}>Assets inspected </Text>
-                        <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 20, opacity: 0.5 }}></View>
-                        <Text style={{ fontSize: 45, color: '#D60000' }}>{assetsWithDefects}</Text>
-                        <Text style={{ fontSize: 15, color: '#5B5B5B', marginHorizontal: 10, marginTop: 10, fontWeight: '700' }}>Assets with active defects</Text>
-                    </View>
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingTop: 30, paddingLeft: 40, paddingRight: 40, zIndex: 1 }}>
-                    <View style={{ marginRight: 10 }}>
-                        <TextInput
-                            style={[styles.input, searchTextInputBorderColor && styles.withBorderInputContainer]}
-                            placeholder="Type to search"
-                            placeholderTextColor="#868383DC"
-                            value={search}
-                            onChangeText={(val) => { setSearch(val) }}
-                            onFocus={() => { setSearchTextInputBorderColor(true) }}
-                            onBlur={() => { setSearchTextInputBorderColor(false) }}
-                        />
-                    </View>
-                    <View style={{ marginRight: 10 }}>
-                        <DropDownComponent
-                            options={searchAssetOptionList}
-                            onValueChange={handleSearchAssetValueChange}
-                            // title="Ubaid Arshad"
-                            selectedValue={searchAssetSelectedOption}
-                            imageSource={require('../../assets/up_arrow_icon.png')}
-                            container={styles.dropdownContainer}
-                            dropdownButton={styles.dropdownButton}
-                            selectedValueStyle={styles.dropdownSelectedValueStyle}
-                            optionsContainer={styles.dropdownOptionsContainer}
-                            option={styles.dropdownOption}
-                            hoveredOption={styles.dropdownHoveredOption}
-                            optionText={styles.dropdownOptionText}
-                            hoveredOptionText={styles.dropdownHoveredOptionText}
-                            dropdownButtonSelect={styles.dropdownButtonSelect}
-                            dropdownStyle={styles.dropdown}
-                        />
-                    </View>
-                    <View style={{ marginRight: 10 }}>
-                        <TouchableOpacity
-                            onMouseEnter={() => setSearchBtnHover(true)}
-                            onMouseLeave={() => setSearchBtnHover(false)}
-                            onPress={() => {
-                                setSearchAssetSelectedOption('Select')
-                                setSearch('')
-                            }}
-                        >
-                            <Image style={[{ width: 40, height: 40 }]} 
-                            tintColor= {searchBtnHover ? '#67E9DA' : '#336699' }
-                            source={require('../../assets/search_icon.png')}></Image>
-                        </TouchableOpacity>
-                    </View>
-
-                    <View >
-                        <AppBtn
-                            title="Asset"
-                            imgSource = {require('../../assets/add_plus_btn_icon.png')}
-                            btnStyle={styles.btn}
-                            btnTextStyle={styles.btnText}
-                            onPress={()=>{handleAssetsAppBtn()}} />
+                    <View style={{flexDirection:'row', alignItems:'center'}}>
+                        <View style={{ alignItems: 'center' }}>
+                            <Text style={{ color: '#5B5B5B', fontSize: 20, fontWeight:'bold' }}>1</Text>
+                            <Text style={{ color: '#5B5B5B', fontSize: 17 }}>Driver</Text>
+                        </View>
+                        <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 60, opacity: 0.5 }}></View>
+                        <View >
+                            <AppBtn
+                                title="Driver"
+                                imgSource = {require('../../assets/add_plus_btn_icon.png')}
+                                btnStyle={styles.btn}
+                                btnTextStyle={styles.btnText}
+                                onPress={() => { }} />
+                        </View>
                     </View>
                 </View>
                 <View style={styles.contentCardStyle}>
-                    <Form
+                <Form
                         columns={columns}
                         entriesData={entriesData}
-                        titleForm="Assets"
-                        onValueChange={handleFormValue}
+                        titleForm="Driver"
+                        onValueChange={handleDriverFormValueChange}
                         row={styles.formRowStyle}
                         cell={styles.formCellStyle}
                         entryText={styles.formEntryTextStyle}
@@ -276,10 +119,6 @@ const AssetsPage = (props) => {
                     />
                 </View>
             </ScrollView>
-            <CreateNewAssetModal
-                isVisible={createNewAssetModalVisible}
-                onClose={closeCreateNewAssetModal}
-            />
         </Animated.View>
 
     );
@@ -457,7 +296,6 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 20,
         fontWeight: 'bold',
-        marginLeft: 10,
     },
     formRowStyle: {
         flexDirection: 'row',
@@ -538,11 +376,7 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         backgroundColor: '#fff',
         marginTop: 4,
-        ...Platform.select({
-            web: {
-                boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)', // Add boxShadow for web
-            },
-        }),
+        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)', // Add boxShadow for web
 
     },
     dropdownOption: {
@@ -551,19 +385,18 @@ const styles = StyleSheet.create({
         borderColor: '#ccc',
     },
     dropdownHoveredOption: {
-        ...(Platform.OS === 'web' && {
-            backgroundColor: '#67E9DA',
-            cursor: 'pointer',
-            transitionDuration: '0.2s',
-        }),
+
+        backgroundColor: '#67E9DA',
+        cursor: 'pointer',
+        transitionDuration: '0.2s',
+
     },
     dropdownOptionText: {
         fontSize: 16,
     },
     dropdownHoveredOptionText: {
-        ...(Platform.OS === 'web' && {
-            color: '#FFFFFF',
-        }),
+
+        color: '#FFFFFF',
     },
     dropdownButtonSelect: {
         borderColor: '#558BC1',
@@ -577,4 +410,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default AssetsPage
+export default DriverPage

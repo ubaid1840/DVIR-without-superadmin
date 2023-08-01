@@ -1,17 +1,30 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { View, Text, Animated, TextInput } from 'react-native'
-import Svg, { G, Circle } from 'react-native-svg'
+import Svg, { G, Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
+
+const oceanBlueGradient = ['#00A8FF', '#0077B6'];
+const sunnyOrangeGradient = ['#FFA500', '#FFC300'];
+const purpleHazeGradient = ['#6A0572', '#490057'];
+const tealDreamGradient = ['#03DAC6', '#018786'];
+const berryBurstGradient = ['#D93A86', '#FF5A6D'];
+const mintyFreshGradient = ['#00EAD3', '#00917C'];
+const sunsetVibesGradient = ['#FFD54F', '#FF6D00'];
+const roseGoldGradient = ['#EAB0D5', '#F7C1BB'];
+const tropicalParadiseGradient = ['#56CCF2', '#2F80ED'];
+const pastelDelightGradient = ['#FFD26F', '#3670FF'];
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle)
 
 export default function CircularProgressBar({
     percentage = 75,
     radius = 80,
-    strokeWidth = 10,
+    strokeWidth = 13,
     duration = 1000,
     color = 'tomato',
+    colors = berryBurstGradient,
+    gradientAngle = 90,
     delay = 0,
-    textColor,
+    textColor = '#D93A86',
     max = 100
 
 }) {
@@ -48,17 +61,25 @@ export default function CircularProgressBar({
 
     return (
 
-        <View style={{justifyContent:'center',  alignItems:'center'}}>
+        <View style={{ justifyContent: 'center', alignItems: 'center' }}>
             <Svg
                 width={radius * 2}
                 height={radius * 2}
                 viewBox={`0 0 ${halfCircle * 2} ${halfCircle * 2}`}
-                style={{transform: [{ rotate: '270deg' }], }}>
+                style={{ transform: [{ rotate: '270deg' }], }}>
+                <Defs>
+                    {/* Define the linear gradient */}
+                    <LinearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%" gradientTransform={`rotate(${gradientAngle})`}>
+                        {colors.map((color, index) => (
+                            <Stop key={index} offset={`${index * (100 / (colors.length - 1))}%`} stopColor={color} />
+                        ))}
+                    </LinearGradient>
+                </Defs>
                 <G>
                     <Circle
                         cx='50%'
                         cy='50%'
-                        stroke={color}
+                        stroke='#C0BEBE'
                         strokeWidth={strokeWidth}
                         r={radius}
                         strokeOpacity={0.2}
@@ -68,7 +89,7 @@ export default function CircularProgressBar({
                     <AnimatedCircle
                         cx='50%'
                         cy='50%'
-                        stroke={color}
+                        stroke="url(#progressGradient)"
                         strokeWidth={strokeWidth}
                         r={radius}
                         fill='transparent'
@@ -86,10 +107,12 @@ export default function CircularProgressBar({
                 style={[StyleSheet.absoluteFillObject, { fontSize: radius / 2, color: textColor ?? color }, { fontWeight: 'bold', textAlign: 'center', position:'absolute' }]}
             >
             </TextInput> */}
-
-            <Text style={[StyleSheet.absoluteFillObject, { fontSize: radius / 2, color: textColor ?? color }, { fontWeight: 'bold', textAlign: 'center', position:'absolute' }]}>
-            {`${Math.round(inputProgress)}%`}
-            </Text>
+            <View style={{ flexDirection: 'row', position: 'absolute', }}>
+                <Text style={[StyleSheet.absoluteFillObject, { fontSize: radius / 2, color: textColor ?? color }, { fontWeight: 'bold' }]}>
+                    {`${Math.round(inputProgress)}`}
+                </Text>
+                <Text style={[StyleSheet.absoluteFillObject, { color: textColor ?? color }, { fontWeight: 'bold', fontSize: radius / 4 }]}>%</Text>
+            </View>
         </View>
     )
 }
