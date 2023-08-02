@@ -4,7 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useFonts } from 'expo-font';
 import { useIsFocused } from '@react-navigation/native';
-import AppBtn from '../components/Button';
+import AppBtn from '../../components/Button';
+import { Link } from 'expo-router';
 
 const loginList = [{
     id: '1',
@@ -13,49 +14,49 @@ const loginList = [{
     company: 'Example Inc.',
     email: 'john.doe@gmail.com',
     password: 'password123',
-    designation:'Owner',
-    Access:'Full'
-  },
-  {
+    designation: 'Owner',
+    Access: 'Full'
+},
+{
     id: '2',
     firstName: 'Jane',
     lastName: 'Smith',
     company: 'Sample Co.',
     email: 'jane.smith@gmail.com',
     password: 'myp@ssword',
-    designation:'Manager',
-    Access:'Full'
-  },
-  {
+    designation: 'Manager',
+    Access: 'Full'
+},
+{
     id: '3',
     firstName: 'Michael',
     lastName: 'Johnson',
     company: 'Tech Solutions',
     email: 'michael.johnson@gmail.com',
     password: 'pass1234',
-    designation:'Driver',
-    Access:'Limited'
-  },
-  {
+    designation: 'Driver',
+    Access: 'Limited'
+},
+{
     id: '4',
     firstName: 'Emily',
     lastName: 'Brown',
     company: 'Design Studio',
     email: 'emily.brown@gmail.com',
     password: 'securePwd',
-    designation:'Mechanic',
-    Access:'Limited'
-  },
-  {
+    designation: 'Mechanic',
+    Access: 'Limited'
+},
+{
     id: '5',
     firstName: 'David',
     lastName: 'Lee',
     company: 'Marketing Hub',
     email: 'david.lee@gmail.com',
     password: 'hello123',
-    designation:'Mechanic',
-    Access:'Full'
-  }]
+    designation: 'Mechanic',
+    Access: 'Full'
+}]
 
 const LoginPage = (props) => {
 
@@ -104,8 +105,9 @@ const LoginPage = (props) => {
         // else {
         //     console.log("Login failed")
         // }
-        props.navigation.navigate('Dashboard');
-         
+        // props.navigation.navigate('Dashboard');
+        console.log('enter pressed')
+
     };
 
     const handleForgetPasswod = () => {
@@ -163,34 +165,31 @@ const LoginPage = (props) => {
                     />
                 </View>
                 {!isPasswordValid ? <Text style={{ color: 'red', paddingTop: 5, paddingLeft: 5, fontSize: 10, alignSelf: 'flex-start' }}>Password length should have 6 to 18 characters</Text> : null}
+                <Link href='/dashboard' style={{width:'100%'}}>
                 <AppBtn
                     title="Login"
-                    btnStyle = {styles.btn}
-                    btnTextStyle = {styles.btnText}
-                    onPress={handleLogin}
+                    btnStyle={styles.btn}
+                    btnTextStyle={styles.btnText}
                 >
                 </AppBtn>
-                <TouchableOpacity
-                    style={styles.forgetPasswordButton}
-                    onPress={handleForgetPasswod}
-                    activeOpacity={0.7}
-                    onMouseEnter={() => setForgetPasswordHovered(true)}
-                    onMouseLeave={() => setForgetPasswordHovered(false)}
-                >
-                    <Text style={[styles.forgetPasswordText, forgetPasswordHovered && styles.forgetPasswordTextHover]}>
-                        Forget Password?
-                    </Text>
-                </TouchableOpacity>
+                </Link>
+                <View style={styles.forgetPasswordButton}>
+                    <Link
+                        href="/forgetpassword"
+                        style={[styles.forgetPasswordText, forgetPasswordHovered && styles.forgetPasswordTextHover]}
+                        activeOpacity={0.7}
+                        onMouseEnter={() => setForgetPasswordHovered(true)}
+                        onMouseLeave={() => setForgetPasswordHovered(false)}>Forget Password?</Link>
+                </View>
+
                 <View style={styles.signupContainer}>
                     <Text style={{}}>Don't have an account? </Text>
-                    <TouchableOpacity
-                        onPress={handleSignup}
-                        activeOpacity={0.7}
-                        onMouseEnter={() => setSignupHovered(true)}
-                        onMouseLeave={() => setSignupHovered(false)}
-                    >
-                        <Text style={[styles.signupText, signupHovered && styles.signupTextHover]}>Sign Up</Text>
-                    </TouchableOpacity>
+
+                    <Link href='/signup' style={[styles.signupText, signupHovered && styles.signupTextHover]}
+                    activeOpacity={0.7}
+                    onMouseEnter={() => setSignupHovered(true)}
+                    onMouseLeave={() => setSignupHovered(false)}>Sign Up</Link>
+
                 </View>
             </BlurView>
         </Animated.View>
@@ -330,8 +329,8 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontWeight: 'bold',
-        marginLeft:10,
-        marginRight:10
+        marginLeft: 10,
+        marginRight: 10
     },
 });
 

@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet,ScrollView, Image, FlatList, Animated, Platform } from 'react-native';
 import { useFonts } from 'expo-font';
-import CircularProgressBar from '../components/CircleProgress'
+import CircularProgressBar from '../../components/CircleProgress'
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import AppBtn from '../components/Button';
-import NameAvatar from '../components/NameAvatar';
-import Header from '../components/Header';
-import DropDownComponent from '../components/DropDown';
+import AppBtn from '../../components/Button';
+import NameAvatar from '../../components/NameAvatar';
+import Header from '../../components/Header';
+import DropDownComponent from '../../components/DropDown';
+import { Dimensions } from 'react-native';
 
 const driverOptionList = ['Inspection'];
 const assetOptionList = ['Inspection', 'Defects'];
 
 const MainDashboard = (props) => {
+  
 
   const [selectedPage, setSelectedPage] = useState('Inspection');
   const [dashboardHovered, setDashboardHovered] = useState(false)
@@ -24,6 +26,7 @@ const MainDashboard = (props) => {
   const [driverSelectedOption, setDriverSelectedOption] = useState('Inspection');
   const [assetSelectedOption, setAssetSelectedOption] = useState('Inspection');
   const [dashboardCalendarSelect, setDashboardCalendarSelect] = useState('Today')
+  const { height, width } = Dimensions.get('window');
 
   useEffect(() => {
 
@@ -112,16 +115,9 @@ const MainDashboard = (props) => {
 
 
   return (
-    <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
-      <ScrollView>
-        <View style={{
-          position: 'absolute',
-          top: 0,
-          bottom: 0,
-          left: 0,
-          right: 0,
-          overflow: 'hidden'
-        }}>
+    <View style={[styles.contentContainer, { opacity: fadeAnim }]}>
+      {/* <ScrollView style={{height:100}}> */}
+        <View style={{position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, overflow: 'hidden', height:height}}>
           <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
           <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
           <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
@@ -129,11 +125,11 @@ const MainDashboard = (props) => {
         </View>
         <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
 
-
+        <ScrollView style={{height:100}}>
         <View style={{ flexDirection: 'row', marginLeft: 40, marginTop: 40, alignItems: 'center' }}>
           <View style={{ backgroundColor: '#67E9DA', borderRadius: 15, }}>
             <Image style={{ width: 30, height: 30, margin: 10 }}
-            tintColor='#FFFFFF'
+              tintColor='#FFFFFF'
               source={require('../../assets/dashboard_speed_icon.png')}></Image>
           </View>
           <Text style={{ fontSize: 40, color: '#1E3D5C', fontWeight: '900', marginLeft: 10 }}>
@@ -320,8 +316,8 @@ const MainDashboard = (props) => {
           </View>
 
         </View>
-      </ScrollView>
-    </Animated.View>
+        </ScrollView>
+    </View>
 
   );
 }
@@ -386,8 +382,8 @@ const styles = StyleSheet.create({
   },
 
   contentContainer: {
-    flex: 1,
-    overflow: 'hidden',
+    flex:1,
+    overflow:'hidden'
   },
   screenTitle: {
     fontSize: 24,

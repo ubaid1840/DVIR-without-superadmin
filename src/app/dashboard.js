@@ -1,25 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated, Pressable, TouchableWithoutFeedback } from 'react-native';
 import { useFonts } from 'expo-font';
-import CircularProgressBar from '../components/CircleProgress'
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
-import AppBtn from '../components/Button';
-import NameAvatar from '../components/NameAvatar';
-import Form from '../components/Form';
-import Header from '../components/Header';
-import MainDashboard from './MainDashboard';
-import GeneralInspectionPage from './GeneralInspection';
-import CustomDropdownLeftSide from '../components/DropDownComponentLeftSide';
-import AssetsPage from './Assets';
-import DriverPage from './Driver';
-import MechanicPage from './Mechanic';
-import ManagerPage from './Manager';
-import { TouchableWithoutFeedback } from 'react-native-web';
-
-
-const driverOptionList = ['Inspection'];
-const assetOptionList = ['Inspection', 'Defects'];
+import Header from '../../components/Header';
+import MainDashboard from '../dashboard/mainDashboard';
+import GeneralInspectionPage from '../dashboard/generalInspection';
+import AssetsPage from '../dashboard/assets';
+import DriverPage from '../dashboard/driver';
+import MechanicPage from '../dashboard/mechanic';
+import ManagerPage from '../dashboard/manager';
 
 
 const DashboardPage = (props) => {
@@ -50,7 +38,7 @@ const DashboardPage = (props) => {
   const [driverHovered, setDriverHovered] = useState(false)
   const [mechanicHovered, setMechanicHovered] = useState(false)
   const [managerHovered, setManagerHovered] = useState(false)
-  const [usersSelectedPage, setUsersSelectedPage] = useState('Manager')
+  const [usersSelectedPage, setUsersSelectedPage] = useState('')
   const [animateLeftSide] = useState(new Animated.Value(260))
   const [openLeftSide, setOpenLeftSide] = useState(true)
   const [collapseHovered, setCollapseHovered] = useState(false)
@@ -233,8 +221,8 @@ const DashboardPage = (props) => {
     else if (value == 'Inspection') {
       setMaintenanceOptionExpand(false)
       setUsersOptionExpand(false)
-      // setMaintenanceSelectedPage("")
-      // setUsersSelectedPage("")
+    //   setMaintenanceSelectedPage("")
+    //   setUsersSelectedPage("")
     }
     else if (value == 'Maintenance') {
       setInspectionOptionExpand(false)
@@ -349,12 +337,30 @@ const DashboardPage = (props) => {
             animationLeftSide(260)
             setCollapseAndHoverLeftSide(true)
           }
+          if (selectedPage == 'Maintenance'){
+            setMaintenanceOptionExpand(true)
+          }
+          if (selectedPage == "Inspection") {
+            setInspectionOptionExpand(true)
+          }
+          if( selectedPage == 'Users') {
+            setUsersOptionExpand(true)
+          }
         }}
         onMouseLeave={() => {
           if (collapseBtnClick == true) {
             setOpenLeftSide(false)
             animationLeftSide(60)
             setCollapseAndHoverLeftSide(false)
+          }
+          if (selectedPage == 'Maintenance' && collapseBtnClick == true){
+            setMaintenanceOptionExpand(false)
+          }
+          if (selectedPage == "Inspection" && collapseBtnClick == true) {
+            setInspectionOptionExpand(false)
+          }
+          if( selectedPage == 'Users' && collapseBtnClick == true) {
+            setUsersOptionExpand(false)
           }
         }}>
         <>
@@ -575,7 +581,7 @@ const DashboardPage = (props) => {
             </View>
             :
             null}
-          <TouchableOpacity style={{ position: 'absolute', bottom: 30, left: 15, flexDirection: 'row' }} onPress={() => {
+          <TouchableOpacity style={{ position: 'absolute',bottom:30, left: 15, flexDirection: 'row' }} onPress={() => {
             if (collapseAndHoverLeftSide == true) {
               setCollapseBtnClick(false)
               setCollapseAndHoverLeftSide(false)
@@ -583,6 +589,9 @@ const DashboardPage = (props) => {
             }
             if (openLeftSide == true) {
               animationLeftSide(60)
+              setMaintenanceOptionExpand(false)
+              setInspectionOptionExpand(false)
+              setUsersOptionExpand(false)
             }
             if (openLeftSide == false) {
               animationLeftSide(260)
@@ -590,16 +599,19 @@ const DashboardPage = (props) => {
             setOpenLeftSide(!openLeftSide)
             setCollapseBtnClick(!collapseBtnClick)
 
+
           }}>
             <View style={{ flexDirection: 'row' }}
               onMouseEnter={() => setCollapseHovered(true)}
-              onMouseLeave={() => setCollapseHovered(false)}>
-              <Image style={[{ height: 30, width: 30 }]} 
+              onMouseLeave={() => setCollapseHovered(false)
+                }>
+              <Image style={{ height: 30, width: 30 }}
+              tintColor= {collapseHovered ? '#67E9DA' : '#FFFFFF'} 
               source={require('../../assets/left_right_arrow_icon.png')}
-              tintColor={collapseHovered ? '#67E9DA' : '#FFFFFF'}></Image>
+             ></Image>
 
               {openLeftSide ?
-                <Text style={[{ color: '#FFFFFF', fontSize: 16, marginLeft: 10 }, collapseHovered && { color: '#67E9DA' }]}>Collapse Menu</Text> : null}
+                <Text style={[{ color: '#FFFFFF', fontSize: 16, marginLeft: 10, }, collapseHovered && { color: '#67E9DA' }]}>Collapse Menu</Text> : null}
             </View>
           </TouchableOpacity>
         </>

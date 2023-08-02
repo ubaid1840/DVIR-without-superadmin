@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, Image, Animated } from 'react-native';
 import AddBtn from './Button';
 import { v4 as uuidv4 } from 'uuid';
+import { Link, useRouter } from 'expo-router';
 
-const DropDownComponent = React.forwardRef((props, ref) => {
+const DropDownComponent = (props) => {
 
     const { options, onValueChange, title, imageSource, selectedValue, container, dropdownButton, selectedValueStyle, optionsContainer, option, hoveredOption, optionText, hoveredOptionText, dropdownButtonSelect, dropdownStyle } = props
 
@@ -11,6 +12,8 @@ const DropDownComponent = React.forwardRef((props, ref) => {
     const [hoveredIndex, setHoveredIndex] = useState(-1);
     const [arrowAnimate] = useState(new Animated.Value(0));
     const [dropdownSelect, setDropdownSelect] = useState(false)
+
+    const router = useRouter()
 
     const animation = () => {
         Animated.timing(arrowAnimate, {
@@ -36,10 +39,6 @@ const DropDownComponent = React.forwardRef((props, ref) => {
     const handleCloseDropdown = () => {
         setShowOptions(false);
     };
-
-    React.useImperativeHandle(ref, () => ({
-        handleCloseDropdown,
-    }));
 
     useEffect(() => {
         if (showOptions == false) {
@@ -89,12 +88,15 @@ const DropDownComponent = React.forwardRef((props, ref) => {
                         item == 'Logout'
                             ?
                             <View key={item} style={{ justifyContent: 'center', alignItems: 'center' }}>
-                                <AddBtn
+
+                                <Link href='/' style={{width:'90%', marginVertical:10}}>
+                                 <AddBtn
                                     title="Logout"
-                                    imgSource={require('../../assets/logout_icon.png')}
+                                    imgSource={require('../assets/logout_icon.png')}
                                     btnStyle={styles.btn}
                                     btnTextStyle={styles.btnText}
-                                    onPress={() => { handleLogout(item) }} />
+                                     />
+                                    </Link>
                             </View>
                             :
                             <TouchableOpacity
@@ -118,17 +120,16 @@ const DropDownComponent = React.forwardRef((props, ref) => {
             )}
         </View>
     );
-});
+}
 
 const styles = StyleSheet.create({
     btn: {
-        width: '90%',
+        width: '100%',
         height: 40,
         backgroundColor: '#336699',
         borderRadius: 5,
         alignItems: 'center',
         justifyContent: 'center',
-        marginVertical: 10
 
     },
     btnText: {

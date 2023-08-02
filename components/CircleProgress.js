@@ -68,7 +68,6 @@ export default function CircularProgressBar({
                 viewBox={`0 0 ${halfCircle * 2} ${halfCircle * 2}`}
                 style={{ transform: [{ rotate: '270deg' }], }}>
                 <Defs>
-                    {/* Define the linear gradient */}
                     <LinearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%" gradientTransform={`rotate(${gradientAngle})`}>
                         {colors.map((color, index) => (
                             <Stop key={index} offset={`${index * (100 / (colors.length - 1))}%`} stopColor={color} />

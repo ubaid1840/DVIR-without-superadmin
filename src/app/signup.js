@@ -3,8 +3,8 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated } from 'r
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useFonts } from 'expo-font';
-import AppBtn from '../components/Button';
-
+import AppBtn from '../../components/Button';
+import { useRouter } from 'expo-router';
 
 const SignupPage = (props) => {
     const [email, setEmail] = useState('');
@@ -19,6 +19,8 @@ const SignupPage = (props) => {
     const [firstNameTextInputBorderColor, setFirstNameTextInputBorderColor] = useState(false)
     const [lastNameTextInputBorderColor, setLastNameTextInputBorderColor] = useState(false)
     const [companyTextInputBorderColor, setCompanyTextInputBorderColor] = useState(false)
+
+    const router = useRouter()
 
     useEffect(() => {
         Animated.timing(fadeAnim, {
@@ -51,7 +53,7 @@ const SignupPage = (props) => {
     });
 
     if (!fontsLoaded) {
-        return null; // Render nothing until the fonts are loaded
+        return null;
     }
 
 
@@ -135,7 +137,7 @@ const SignupPage = (props) => {
                 />
                 <View style={{ marginTop: 10, flexDirection: 'row' }}>
                     <Text style={{ fontSize: 14 }}>Already have an account? </Text>
-                    <TouchableOpacity onPress={handleLogin} activeOpacity={0.7} onMouseEnter={() => setLoginHovered(true)} onMouseLeave={() => setLoginHovered(false)}>
+                    <TouchableOpacity onPress={()=> router.back()} activeOpacity={0.7} onMouseEnter={() => setLoginHovered(true)} onMouseLeave={() => setLoginHovered(false)}>
                         <Text style={[styles.loginText, loginHovered && styles.loginTextHover]}>Login</Text>
                     </TouchableOpacity>
                 </View>

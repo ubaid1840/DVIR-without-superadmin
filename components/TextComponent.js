@@ -4,7 +4,7 @@ import {useFonts} from 'expo-font'
 
 const CustomText = ({ style, ...props }) => {
     const [fontsLoaded] = useFonts({
-        'futura-book': require('../../assets/fonts/futura/Futura-Book-font.ttf'),
+        'futura-book': require('../assets/fonts/futura/Futura-Book-font.ttf'),
       });
     
       if (!fontsLoaded) {

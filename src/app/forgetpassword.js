@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import AppBtn from '../components/Button';
+import AppBtn from '../../components/Button';
+import { useRouter } from 'expo-router';
 
 
 
@@ -12,6 +13,8 @@ const ForgetPasswordPage = (props) => {
     const [emailTextInputBorderColor, setEmailTextInputBorderColor] = useState(false)
     const [loginHovered, setLoginHovered] = useState(false);
     const fadeAnim = useState(new Animated.Value(0))[0];
+
+    const router = useRouter()
 
     useEffect(() => {
         Animated.timing(fadeAnim, {
@@ -65,7 +68,7 @@ const ForgetPasswordPage = (props) => {
                 <View style={{ marginTop: 10, flexDirection: 'row' }}>
                     <Text style={{ fontSize: 14 }}>Already have an account? </Text>
                     <TouchableOpacity
-                        onPress={handleLogin}
+                        onPress={()=> router.back()}
                         activeOpacity={0.7}
                         onMouseEnter={() => setLoginHovered(true)}
                         onMouseLeave={() => setLoginHovered(false)}

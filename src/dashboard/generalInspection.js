@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated, Dimensions } from 'react-native';
 import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import AppBtn from '../components/Button';
-import Form from '../components/Form';
-import Header from '../components/Header';
-import MainDashboard from './MainDashboard';
+import AppBtn from '../../components/Button';
+import Form from '../../components/Form';
+
 
 const columns = [
     'Status',
@@ -293,6 +292,7 @@ const GeneralInspectionPage = () => {
     const [inspectionCalendarSelect, setInspectionCalendarSelect] = useState('All')
     const [totalInspections, setTotalInspections] = useState(19)
     const [totalDefects, setTotalDefects] = useState(7)
+    const {width, height} = Dimensions.get('window')
     
 
     useEffect(() => {
@@ -357,14 +357,15 @@ const GeneralInspectionPage = () => {
     return (
 
         <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
-            <ScrollView>
+          
                 <View style={{
                     position: 'absolute',
                     top: 0,
                     bottom: 0,
                     left: 0,
                     right: 0,
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    height:height
                 }}>
                     <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
                     <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
@@ -372,7 +373,7 @@ const GeneralInspectionPage = () => {
                     <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
                 </View>
                 <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
-
+                <ScrollView style={{height:100}}>
                 <View style={{ flexDirection: 'row', marginLeft: 40, marginTop: 40, marginRight: 40, justifyContent: 'space-between' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <View style={{ backgroundColor: '#67E9DA', borderRadius: 15, }}>

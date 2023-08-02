@@ -14,7 +14,7 @@ const AppBtn = (props) => {
         onMouseLeave={() => setBtnHovered(false)}
     >
         <View style={{flexDirection:'row', alignItems:'center'}}>
-        {props.imgSource ? <Image style = {{width:20, height:20, tintColor:'#FFFFFF', marginRight:10}} source = {props.imgSource}></Image> : null}
+        {props.imgSource ? <Image style = {{width:20, height:20, marginRight:10}} source = {props.imgSource} tintColor='#FFFFFF'></Image> : null}
         <Text style={props.btnTextStyle}>{props.title}</Text>
         </View>
     </TouchableOpacity>

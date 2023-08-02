@@ -17,10 +17,10 @@ const Header = (props) => {
     const [inputValue, setInputValue] = useState('');
 
     const [fontsLoaded] = useFonts({
-        'futura-book': require('../../assets/fonts/futura/Futura-Book-font.ttf'),
+        'futura-book': require('../assets/fonts/futura/Futura-Book-font.ttf'),
     });
 
-    const dropDownRef = useRef(null); // Ref for the DropDownComponent
+   
 
 
     // Check if fonts are loaded and return null if not
@@ -30,7 +30,7 @@ const Header = (props) => {
 
     return (
         <TouchableWithoutFeedback onPress={() => { 
-            dropDownRef.current.handleCloseDropdown(); }}>
+            console.log('solve auto close dropdown issue') }}>
             <View style={{ flexDirection: 'row', paddingLeft: 60, paddingRight: 60, paddingTop: 10, paddingBottom: 10, alignItems: 'center', backgroundColor: '#FFFFFF', justifyContent: 'space-between', }}>
                 <View >
                     <Text style={{ fontSize: 18, fontWeight: '600', color: '#5B5B5B', fontFamily: 'futura-book' }}>
@@ -43,11 +43,10 @@ const Header = (props) => {
                     {/* <Text style={{ fontSize: 18, fontWeight: '700', color: '#5B5B5B' }}>Ubaid Arshad</Text> */}
                     <View style={{ marginHorizontal: 10, zIndex: 1 }}>
                         <DropDownComponent
-                            ref={dropDownRef}
                             options={logoutList}
                             onValueChange={handleValueChange}
                             title="Ubaid Arshad"
-                            imageSource={require('../../assets/up_arrow_icon.png')}
+                            imageSource={require('../assets/up_arrow_icon.png')}
                             container={styles.dropdownContainer}
                             dropdownButton={styles.dropdownButton}
                             selectedValueStyle={styles.dropdownSelectedValueStyle}

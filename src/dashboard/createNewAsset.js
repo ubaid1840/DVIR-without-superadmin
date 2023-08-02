@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, ScrollView, Image, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import AppBtn from '../components/Button';
+import AppBtn from '../../components/Button';
 import * as DocumentPicker from 'expo-document-picker';
 
 const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {

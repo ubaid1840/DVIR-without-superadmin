@@ -1,34 +1,43 @@
 import { useState, useEffect } from 'react';
-import { Text, View, ScrollView, StyleSheet, Image, Animated } from 'react-native';
+import { Text, View, ScrollView, StyleSheet, Image, Animated, Dimensions } from 'react-native';
 import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import AppBtn from '../components/Button';
-import Form from '../components/Form';
+import AppBtn from '../../components/Button';
+import Form from '../../components/Form';
 
 const columns = [
     'Name',
     'Number',
     'Email',
     'Company',
-    'Last Inspection',
+    'Role',
     'Action'
 ];
 
 const entriesData = [
     {
-        'Name': 'Johny boy',
+        'Name': 'Brian',
         'Number': '001002003',
         'Email': 'abc@gmail.com',
         'Company': 'Octa Soft',
-        'Last Inspection': '21-04-2021',
+        'Role' : 'Limited',
         'Action' : 'Button'
     },
     // Add more entries
-   
+    {
+        'Name': 'DJ',
+        'Number': '123456',
+        'Email': 'xyz@gmail.com',
+        'Company': 'Octa Soft',
+        'Role' : 'Full Access',
+        'Action' : 'Button'
+    }, 
 ];
 
-const DriverPage = () => {
+const MechanicPage = () => {
+
+    const {width, height} = Dimensions.get('window')
     const [fadeAnim] = useState(new Animated.Value(0));
 
     useEffect(() => {
@@ -54,21 +63,22 @@ const DriverPage = () => {
         return null;
     }
 
-    const handleDriverFormValueChange = (value) => {
+    const handleFormValueChange = (value) => {
         console.log(value)
     }
 
     return (
 
         <Animated.View style={[styles.contentContainer, { opacity: fadeAnim, }]}>
-            <ScrollView>
+           
                 <View style={{
                     position: 'absolute',
                     top: 0,
                     bottom: 0,
                     left: 0,
                     right: 0,
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    height:height
                 }}>
                     <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
                     <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
@@ -76,27 +86,27 @@ const DriverPage = () => {
                     <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
                 </View>
                 <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
-
-                <View style={{ flexDirection: 'row', marginLeft: 40, marginVertical: 40, marginRight: 40, justifyContent: 'space-between', alignItems:'center' }}>
+                <ScrollView style={{height:100}}>
+                <View style={{ flexDirection: 'row', margin: 40, justifyContent: 'space-between', alignItems:'center' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <View style={{ backgroundColor: '#67E9DA', borderRadius: 15, }}>
                             <Image style={{ width: 30, height: 30, margin: 10 }}
-                            tintColor="#FFFFFF"
-                                source={require('../../assets/driver_icon.png')}></Image>
+                            tintColor='#FFFFFF'
+                                source={require('../../assets/mechanic_icon.png')}></Image>
                         </View>
                         <Text style={{ fontSize: 40, color: '#1E3D5C', fontWeight: '900', marginLeft: 10 }}>
-                            Driver
+                            Mechanic
                         </Text>
                     </View>
                     <View style={{flexDirection:'row', alignItems:'center'}}>
                         <View style={{ alignItems: 'center' }}>
                             <Text style={{ color: '#5B5B5B', fontSize: 20, fontWeight:'bold' }}>1</Text>
-                            <Text style={{ color: '#5B5B5B', fontSize: 17 }}>Driver</Text>
+                            <Text style={{ color: '#5B5B5B', fontSize: 17 }}>Mechanic</Text>
                         </View>
                         <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 60, opacity: 0.5 }}></View>
                         <View >
                             <AppBtn
-                                title="Driver"
+                                title="Mechanic"
                                 imgSource = {require('../../assets/add_plus_btn_icon.png')}
                                 btnStyle={styles.btn}
                                 btnTextStyle={styles.btnText}
@@ -108,8 +118,8 @@ const DriverPage = () => {
                 <Form
                         columns={columns}
                         entriesData={entriesData}
-                        titleForm="Driver"
-                        onValueChange={handleDriverFormValueChange}
+                        titleForm="Mechanic"
+                        onValueChange={handleFormValueChange}
                         row={styles.formRowStyle}
                         cell={styles.formCellStyle}
                         entryText={styles.formEntryTextStyle}
@@ -215,7 +225,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#1383B4',
 
     },
-
     text: {
         // Custom styles for the text inside dropdown and selected value
         // For example:
@@ -410,4 +419,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default DriverPage
+export default MechanicPage

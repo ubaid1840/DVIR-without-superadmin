@@ -9,7 +9,7 @@ const Notification = () => {
     const [showNotification, setShowNotification] = useState(false)
 
     const [fontsLoaded] = useFonts({
-        'futura-book': require('../../assets/fonts/futura/Futura-Book-font.ttf'),
+        'futura-book': require('../assets/fonts/futura/Futura-Book-font.ttf'),
     });
 
     if (!fontsLoaded) {
@@ -24,14 +24,16 @@ const Notification = () => {
                 setShowNotification(!showNotification)
 
             }}>
-                <Image style={{ height: 30, width: 30, tintColor: '#5B5B5B' }} source={require('../../assets/notification_icon.png')}></Image>
+                <Image style={{ height: 30, width: 30 }} source={require('../assets/notification_icon.png')}
+                tintColor= '#5B5B5B'></Image>
             </TouchableOpacity>
 
             {showNotification && (
 
                 <View style={styles.container}>
 
-                    <Image style={{ width: 100, height: 100, tintColor: '#B8B8B8', transform: [{ rotate: '325deg' }] }} source={require('../../assets/notification_icon.png')}></Image>
+                    <Image style={{ width: 100, height: 100, transform: [{ rotate: '325deg' }] }} source={require('../assets/notification_icon.png')}
+                    tintColor= '#B8B8B8'></Image>
 
                     <Text style={{ fontFamily: 'futura-book', color: '#5B5B5B', fontSize: 24 }}>No Notifications Yet</Text>
                 </View>
