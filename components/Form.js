@@ -23,6 +23,9 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
 
     const [formRowClick, setFormRowClick] = useState([])
 
+    const [isStatus, setStatus] = useState('')
+    const [rowColor ,setRowColor] = useState([])
+
     const rowHoverColorAnimatePassed = (value) => {
         Animated.timing(colorAnimatePassed, {
             toValue: value,
@@ -200,6 +203,43 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
         revertRowColor(index);
     };
 
+    const setColors = () => {
+
+        let newRowColor = []
+
+        entriesData.map((data, index) => {
+            const today = new Date().getTime(); // Get the current timestamp in milliseconds
+
+            const lastInspectionDate = new Date(data['Last Inspection']).getTime(); // Convert Last Inspection date to timestamp
+            const nextInspectionDate = new Date(data['Next Inspection']).getTime(); // Convert Next Inspection date to timestamp
+            const timeDifferenceInMilliseconds = nextInspectionDate - today;
+            const timeDifferenceInDays = Math.floor(timeDifferenceInMilliseconds / (1000 * 60 * 60 * 24));
+            if (lastInspectionDate > nextInspectionDate) {
+                newRowColor[index] = 'white'
+
+            } else if (timeDifferenceInMilliseconds < 0) {
+                newRowColor[index] = 'pink'
+
+            } else if (timeDifferenceInDays <= 3) {
+                newRowColor[index] = 'orange'
+
+            } else if (timeDifferenceInDays <= 7) {
+
+                newRowColor[index] = 'yellow'
+
+            } else {
+                newRowColor[index] = 'white'
+
+            }
+        })
+        setRowColor(newRowColor)
+    }
+
+    useEffect(() => {
+        setColors()
+    }, [])
+
+
     if (titleForm == "General Inspection") {
         const renderRow = ({ item, index }) => {
             const colorStyle = {
@@ -256,6 +296,104 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                         )
                     })}
                 </Animated.View>
+            );
+        };
+        return (
+
+            <ScrollView horizontal>
+                <View>
+                    <View style={columnHeaderRow}>
+                        {columns.map((column) => (
+
+                            <View key={column} style={[columnHeaderCell, { zIndex: 2 }]}>
+                                <Text style={columnHeaderText}>{column}</Text>
+                            </View>
+                        ))}
+                        {/* <Text style={styles.columnHeaderText}>Action</Text> */}
+                    </View>
+                    <FlatList
+                        data={entriesData}
+                        keyExtractor={(item, index) => index.toString()}
+                        renderItem={renderRow}
+                        showsHorizontalScrollIndicator={false}
+                    />
+                </View>
+            </ScrollView>
+
+        );
+    }
+
+    else if (titleForm == "45 days Inspection") {
+        const renderRow = ({ item, index }) => {
+            const colorStyle = {
+                backgroundColor:
+                rowColor[index]
+            };
+
+            const showRowData = (entry) => {
+
+            const today = new Date().getTime(); // Get the current timestamp in milliseconds
+                const lastInspectionDate = new Date(entry['Last Inspection']).getTime(); // Convert Last Inspection date to timestamp
+                const nextInspectionDate = new Date(entry['Next Inspection']).getTime(); // Convert Next Inspection date to timestamp
+                const timeDifferenceInMilliseconds = nextInspectionDate - today;
+                const timeDifferenceInDays = Math.floor(timeDifferenceInMilliseconds / (1000 * 60 * 60 * 24));
+
+
+                if (lastInspectionDate > nextInspectionDate) {
+                    return (
+                        <View>
+                            <Text>Inspection done</Text>
+                        </View>
+                    )
+                } else if (timeDifferenceInMilliseconds < 0) {
+
+                    return (
+                        <View>
+                            <Text>Inspection due</Text>
+                        </View>
+                    )
+                } else if (timeDifferenceInDays <= 3) {
+                    return (
+                        <View>
+                            <Text>{timeDifferenceInDays} days left</Text>
+                        </View>
+                    )
+                } else if (timeDifferenceInDays <= 7) {
+                    return (
+                        <View>
+                            <Text>{timeDifferenceInDays} days left</Text>
+                        </View>
+                    )
+                } else {
+                    return (
+                        <View>
+                            <Text>Inspection done</Text>
+                        </View>
+                    )
+                }
+            }
+                     
+            return (
+                <View style={[row, colorStyle]}>
+                    {columns.map((column) => {
+                        return (
+                            item[column] == undefined ? null :
+
+                                <Pressable key={column} style={cell}
+                                    onPress={() => {
+                                        handleValueChange(item)
+                                        handleRowPress(index)
+                                    }}>
+
+                                    {item[column] == 'Status'
+                                        ? showRowData(item)
+                                            : <Text style={[entryText, { paddingLeft: 10 }, rowHovered[index] && { color: '#FFFFFF', fontWeight: '700', fontSize: 14 }]}>{item[column]}</Text>
+                                    }
+
+                                </Pressable>
+                        )
+                    })}
+                </View>
             );
         };
         return (
@@ -368,7 +506,7 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                             <TouchableOpacity onPress={() => { handleDelete(selectedRows) }} style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 }}>
                                 <Text style={{ fontSize: 18, fontWeight: '700', color: 'red' }}>Delete</Text>
                                 <Image style={{ height: 20, width: 20, marginLeft: 10 }} source={require('../assets/trash_icon.png')}
-                                tintColor='red'></Image>
+                                    tintColor='red'></Image>
                             </TouchableOpacity>
                         )}
                     </View>
@@ -456,7 +594,7 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                             <TouchableOpacity onPress={() => { handleDelete(selectedRows) }} style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 }}>
                                 <Text style={{ fontSize: 18, fontWeight: '700', color: 'red' }}>Delete</Text>
                                 <Image style={{ height: 20, width: 20, marginLeft: 10 }} source={require('../assets/trash_icon.png')}
-                                tintColor='red'></Image>
+                                    tintColor='red'></Image>
                             </TouchableOpacity>
                         )}
                     </View>

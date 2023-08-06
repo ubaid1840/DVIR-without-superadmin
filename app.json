@@ -1,9 +1,10 @@
 {
   "expo": {
-    "scheme": "acme",
+    "scheme": "dvir",
     "web": {
       "bundler": "metro",
-      "output": "static"
+      "output": "static",
+      "favicon": "./assets/favicon.png"
     },
     "name": "DVIR",
     "slug": "DVIR",
