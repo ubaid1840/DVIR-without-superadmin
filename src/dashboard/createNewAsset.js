@@ -15,9 +15,10 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
             const result = await DocumentPicker.getDocumentAsync({
                 type: 'image/*', // Change the MIME type to specify the type of files you want to allow
             });
-
+          
             if (result.type === 'success') {
-                setFileUri(result.uri);
+                setFileUri(result.assets[0].uri);
+                
             }
         } catch (error) {
             console.log('Error picking document:', error);
@@ -32,7 +33,7 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
             onRequestClose={onClose}
         >
             <View style={styles.centeredView}>
-                 <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+                <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
                 <View style={styles.modalView}>
                     <ScrollView horizontal>
                         <ScrollView>
@@ -68,14 +69,14 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                                 <View style={{ flexDirection: 'column' }}>
                                     <TouchableOpacity style={{ width: 100, height: 100, borderRadius: 50, borderColor: '#cccccc', borderWidth: 1, justifyContent: 'center', alignItems: 'center' }} onPress={pickDocument}>
 
-                                        <Image style={{ height: 20, width: 20 }} 
-                                        source={require('../../assets/add_photo_icon.png')}
-                                        tintColor='#67E9DA'></Image>
+                                        <Image style={{ height: 20, width: 20 }}
+                                            source={require('../../assets/add_photo_icon.png')}
+                                            tintColor='#67E9DA'></Image>
                                         <Text style={{ color: '#30E0CB' }}>Add Photo</Text>
 
                                     </TouchableOpacity>
                                     {fileUri && (
-                                        <Text style={{ fontWeight: '600', marginTop: 10}}>Image Selected</Text>
+                                        <Text style={{ fontWeight: '600', marginTop: 10 }}>Image Selected</Text>
                                     )}
 
                                 </View>
@@ -86,8 +87,8 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                                     placeholderTextColor="#868383DC"
                                     // value={""}
                                     // onChangeText={(val) => { console.log(val) }}
-                                    onFocus={() => { setTextInputBorderColor('Enter Asset Name')}}
-                                    onBlur={() => {setTextInputBorderColor('') }}
+                                    onFocus={() => { setTextInputBorderColor('Enter Asset Name') }}
+                                    onBlur={() => { setTextInputBorderColor('') }}
                                 />
                             </View>
 
@@ -109,8 +110,8 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => {setTextInputBorderColor('VIN') }}
-                                                onBlur={() => { setTextInputBorderColor('')}}
+                                                onFocus={() => { setTextInputBorderColor('VIN') }}
+                                                onBlur={() => { setTextInputBorderColor('') }}
                                             />
                                             <TextInput
                                                 style={[styles.input, textInputBorderColor == 'Make' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
@@ -118,8 +119,8 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { setTextInputBorderColor('Make')}}
-                                                onBlur={() => {setTextInputBorderColor('') }}
+                                                onFocus={() => { setTextInputBorderColor('Make') }}
+                                                onBlur={() => { setTextInputBorderColor('') }}
                                             />
                                             <TextInput
                                                 style={[styles.input, textInputBorderColor == 'Model' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
@@ -127,8 +128,8 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { setTextInputBorderColor('Model')}}
-                                                onBlur={() => {setTextInputBorderColor('') }}
+                                                onFocus={() => { setTextInputBorderColor('Model') }}
+                                                onBlur={() => { setTextInputBorderColor('') }}
                                             />
                                             <TextInput
                                                 style={[styles.input, textInputBorderColor == 'Year' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
@@ -136,8 +137,8 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { setTextInputBorderColor('Year')}}
-                                                onBlur={() => {setTextInputBorderColor('') }}
+                                                onFocus={() => { setTextInputBorderColor('Year') }}
+                                                onBlur={() => { setTextInputBorderColor('') }}
                                             />
                                         </View>
 
@@ -149,8 +150,8 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { setTextInputBorderColor('License')}}
-                                                onBlur={() => { setTextInputBorderColor('')}}
+                                                onFocus={() => { setTextInputBorderColor('License') }}
+                                                onBlur={() => { setTextInputBorderColor('') }}
                                             />
                                             <TextInput
                                                 style={[styles.input, textInputBorderColor == 'Tire size' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
@@ -159,7 +160,7 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
                                                 onFocus={() => { setTextInputBorderColor('Tire size') }}
-                                                onBlur={() => {setTextInputBorderColor('') }}
+                                                onBlur={() => { setTextInputBorderColor('') }}
                                             />
                                             <TextInput
                                                 style={[styles.input, textInputBorderColor == 'Color' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
@@ -167,8 +168,8 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { setTextInputBorderColor('Color')}}
-                                                onBlur={() => {setTextInputBorderColor('') }}
+                                                onFocus={() => { setTextInputBorderColor('Color') }}
+                                                onBlur={() => { setTextInputBorderColor('') }}
                                             />
                                         </View>
                                     </View>
@@ -180,8 +181,8 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                                         placeholderTextColor="#868383DC"
                                         value={""}
                                         onChangeText={(val) => { console.log(val) }}
-                                        onFocus={() => {setTextInputBorderColor('Notes') }}
-                                        onBlur={() => { setTextInputBorderColor('')}}
+                                        onFocus={() => { setTextInputBorderColor('Notes') }}
+                                        onBlur={() => { setTextInputBorderColor('') }}
                                     />
                                 </View>
 
@@ -200,8 +201,8 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                                                 placeholderTextColor="#868383DC"
                                                 value={"Octa Soft"}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => {setTextInputBorderColor('Company')}}
-                                                onBlur={() => {setTextInputBorderColor('')}}
+                                                onFocus={() => { setTextInputBorderColor('Company') }}
+                                                onBlur={() => { setTextInputBorderColor('') }}
                                                 editable={false}
                                             />
                                             <TextInput
@@ -210,8 +211,8 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => {setTextInputBorderColor('Estimated Cost') }}
-                                                onBlur={() => {setTextInputBorderColor('') }}
+                                                onFocus={() => { setTextInputBorderColor('Estimated Cost') }}
+                                                onBlur={() => { setTextInputBorderColor('') }}
                                             />
                                             <TextInput
                                                 style={[styles.input, textInputBorderColor == 'Asset Type' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
@@ -219,9 +220,9 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => {setTextInputBorderColor('Asset Type') }}
-                                                onBlur={() => { setTextInputBorderColor('')}}
-                                                
+                                                onFocus={() => { setTextInputBorderColor('Asset Type') }}
+                                                onBlur={() => { setTextInputBorderColor('') }}
+
                                             />
                                             <TextInput
                                                 style={[styles.input, textInputBorderColor == 'Asset Subtype' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
@@ -229,9 +230,9 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { setTextInputBorderColor('Asset Subtype')}}
-                                                onBlur={() => { setTextInputBorderColor('')}}
-                                                
+                                                onFocus={() => { setTextInputBorderColor('Asset Subtype') }}
+                                                onBlur={() => { setTextInputBorderColor('') }}
+
                                             />
                                         </View>
 
@@ -242,9 +243,9 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { setTextInputBorderColor('Mileage')}}
-                                                onBlur={() => { setTextInputBorderColor('')}}
-                                                
+                                                onFocus={() => { setTextInputBorderColor('Mileage') }}
+                                                onBlur={() => { setTextInputBorderColor('') }}
+
                                             />
                                             <TextInput
                                                 style={[styles.input, textInputBorderColor == 'Engine Hours' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
@@ -252,9 +253,9 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => {setTextInputBorderColor('Engine Hours') }}
-                                                onBlur={() => { setTextInputBorderColor('')}}
-                                                
+                                                onFocus={() => { setTextInputBorderColor('Engine Hours') }}
+                                                onBlur={() => { setTextInputBorderColor('') }}
+
                                             />
                                             <TextInput
                                                 style={[styles.input, textInputBorderColor == 'Last service date' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
@@ -262,18 +263,18 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => {setTextInputBorderColor('Last service date') }}
-                                                onBlur={() => { setTextInputBorderColor('')}}
-                                                
+                                                onFocus={() => { setTextInputBorderColor('Last service date') }}
+                                                onBlur={() => { setTextInputBorderColor('') }}
+
                                             /><TextInput
                                                 style={[styles.input, textInputBorderColor == 'Last service mileage' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                 placeholder="Last service mileage"
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => { setTextInputBorderColor('Last service mileage')}}
-                                                onBlur={() => { setTextInputBorderColor('')}}
-                                                
+                                                onFocus={() => { setTextInputBorderColor('Last service mileage') }}
+                                                onBlur={() => { setTextInputBorderColor('') }}
+
                                             />
                                             <TextInput
                                                 style={[styles.input, textInputBorderColor == 'Last service engine hours' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
@@ -281,8 +282,8 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                                                 placeholderTextColor="#868383DC"
                                                 value={""}
                                                 onChangeText={(val) => { console.log(val) }}
-                                                onFocus={() => {setTextInputBorderColor('Last service engine hours') }}
-                                                onBlur={() => { setTextInputBorderColor('')}}
+                                                onFocus={() => { setTextInputBorderColor('Last service engine hours') }}
+                                                onBlur={() => { setTextInputBorderColor('') }}
                                             />
                                         </View>
                                     </View>
@@ -290,7 +291,7 @@ const CreateNewAssetModal = ({ isVisible, onClose, modalText }) => {
                             </View>
                         </ScrollView>
                     </ScrollView>
-                    <View style={{ flexDirection: 'row', marginTop:10 }}>
+                    <View style={{ flexDirection: 'row', marginTop: 10 }}>
 
                         <AppBtn
                             title="Close"
@@ -346,18 +347,17 @@ const styles = StyleSheet.create({
         elevation: 5,
         margin: 40,
         flex: 1
-    }, input: {
+    },
+    input: {
         width: '100%',
         height: 50,
         backgroundColor: '#fff',
-        borderRadius: 5,
+        borderRadius: 10,
         paddingHorizontal: 10,
         borderWidth: 1,
         borderColor: '#cccccc',
-        borderTopLeftRadius: 20,
-        borderBottomRightRadius: 20,
         outlineStyle: 'none',
-        marginBottom: 20
+        marginVertical:5
     },
     withBorderInputContainer: {
         borderColor: '#558BC1',
@@ -395,6 +395,25 @@ const styles = StyleSheet.create({
         shadowRadius: 10,
         elevation: 0,
     },
+    gradient1: {
+        ...StyleSheet.absoluteFill,
+        opacity: 0.8,
+      },
+      gradient2: {
+        ...StyleSheet.absoluteFill,
+        opacity: 0.6,
+        transform: [{ rotate: '45deg' }],
+      },
+      gradient3: {
+        ...StyleSheet.absoluteFill,
+        opacity: 0.4,
+        transform: [{ rotate: '90deg' }],
+      },
+      gradient4: {
+        ...StyleSheet.absoluteFill,
+        opacity: 0.2,
+        transform: [{ rotate: '135deg' }],
+      },
 });
 
 export default CreateNewAssetModal;

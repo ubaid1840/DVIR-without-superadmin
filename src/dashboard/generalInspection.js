@@ -5,6 +5,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import AppBtn from '../../components/Button';
 import Form from '../../components/Form';
+import { CSVLink } from 'react-csv';
+
 
 
 const columns = [
@@ -292,93 +294,95 @@ const GeneralInspectionPage = () => {
     const [inspectionCalendarSelect, setInspectionCalendarSelect] = useState('All')
     const [totalInspections, setTotalInspections] = useState(19)
     const [totalDefects, setTotalDefects] = useState(7)
-    const {width, height} = Dimensions.get('window')
-    
+    const { width, height } = Dimensions.get('window')
+
 
     useEffect(() => {
 
         Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: false
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: false
         }).start();
-    
+
         return () => {
-          fadeAnim.setValue(0);
+            fadeAnim.setValue(0);
         }
-      }, [selectedPage])
+    }, [selectedPage])
 
 
-      const handleDownloadReportBtn = () => {
+    const handleDownloadReportBtn = () => {
 
-      }
 
-      const [fontsLoaded] = useFonts({
+
+    }
+
+    const [fontsLoaded] = useFonts({
         'futura-extra-black': require('../../assets/fonts/Futura-Extra-Black-font.ttf'),
-      });
-    
-      if (!fontsLoaded) {
+    });
+
+    if (!fontsLoaded) {
         return null;
-      }
-    
-      let driver = [{
+    }
+
+    let driver = [{
         name: "Ubaid",
         company: "DVIR",
         inspection: 5
-      },
-      {
+    },
+    {
         name: "John",
         company: "DVIR",
         inspection: 2
-      },
-      {
+    },
+    {
         name: "Doe",
         company: "DVIR",
         inspection: 0
-      }]
-    
-      const asset = [{
+    }]
+
+    const asset = [{
         name: "Truck1",
         company: "DVIR",
         inspection: 4,
         defects: 1
-      },
-      {
+    },
+    {
         name: "Truck2",
         company: "DVIR",
         inspection: 2,
         defects: 3
-      }]
+    }]
 
-      const handleFormValue = (value) => {
+    const handleFormValue = (value) => {
         console.log(value)
-      }
+    }
 
     return (
 
         <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
-          
-                <View style={{
-                    position: 'absolute',
-                    top: 0,
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    overflow: 'hidden',
-                    height:height
-                }}>
-                    <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
-                    <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
-                    <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
-                    <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
-                </View>
-                <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
-                <ScrollView style={{height:100}}>
+
+            <View style={{
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                left: 0,
+                right: 0,
+                overflow: 'hidden',
+                height: height
+            }}>
+                <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
+                <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
+                <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
+                <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
+            </View>
+            <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
+            <ScrollView style={{ height: 100 }}>
                 <View style={{ flexDirection: 'row', marginLeft: 40, marginTop: 40, marginRight: 40, justifyContent: 'space-between' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <View style={{ backgroundColor: '#67E9DA', borderRadius: 15, }}>
                             <Image style={{ width: 30, height: 30, margin: 10 }}
-                            tintColor='#FFFFFF'
+                                tintColor='#FFFFFF'
                                 source={require('../../assets/inspection_icon.png')}></Image>
                         </View>
                         <Text style={{ fontSize: 40, color: '#1E3D5C', fontWeight: '900', marginLeft: 10 }}>
@@ -412,25 +416,27 @@ const GeneralInspectionPage = () => {
                         </TouchableOpacity>
                     </View>
                     <View >
-                        <AppBtn
-                            title="Download Report"
-                            btnStyle={styles.btn}
-                            btnTextStyle={styles.btnText}
-                            onPress={handleDownloadReportBtn}></AppBtn>
+                        <CSVLink style={{ textDecorationLine: 'none'}} data={entriesData} headers={columns} filename={"general_inspection_report.csv"}>
+                            <AppBtn
+                                title="Download Report"
+                                btnStyle={styles.btn}
+                                btnTextStyle={styles.btnText}
+                                onPress={handleDownloadReportBtn} />
+                        </CSVLink>
                     </View>
                 </View>
                 <View style={styles.contentCardStyle}>
-                    <Form 
-                    columns={columns}
-                    entriesData= {entriesData}
-                    titleForm="General Inspection"
-                    onValueChange={handleFormValue}
-                    row={styles.formRowStyle}
-                    cell={styles.formCellStyle}
-                    entryText={styles.formEntryTextStyle}
-                    columnHeaderRow={styles.formColumnHeaderRowStyle}
-                    columnHeaderCell={styles.formColumnHeaderCellStyle}
-                    columnHeaderText={styles.formColumnHeaderTextStyle}/>
+                    <Form
+                        columns={columns}
+                        entriesData={entriesData}
+                        titleForm="General Inspection"
+                        onValueChange={handleFormValue}
+                        row={styles.formRowStyle}
+                        cell={styles.formCellStyle}
+                        entryText={styles.formEntryTextStyle}
+                        columnHeaderRow={styles.formColumnHeaderRowStyle}
+                        columnHeaderCell={styles.formColumnHeaderCellStyle}
+                        columnHeaderText={styles.formColumnHeaderTextStyle} />
                 </View>
             </ScrollView>
         </Animated.View>
@@ -628,7 +634,7 @@ const styles = StyleSheet.create({
         paddingVertical: 5,
         fontSize: 12
     },
-    
+
     formColumnHeaderRowStyle: {
         flexDirection: 'row',
         backgroundColor: '#f2f2f2',

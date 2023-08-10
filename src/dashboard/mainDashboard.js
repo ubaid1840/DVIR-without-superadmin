@@ -115,7 +115,7 @@ const MainDashboard = (props) => {
 
 
   return (
-    <View style={[styles.contentContainer, { opacity: fadeAnim }]}>
+    <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
       {/* <ScrollView style={{height:100}}> */}
         <View style={{position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, overflow: 'hidden', height:height}}>
           <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
@@ -317,7 +317,7 @@ const MainDashboard = (props) => {
 
         </View>
         </ScrollView>
-    </View>
+    </Animated.View>
 
   );
 }

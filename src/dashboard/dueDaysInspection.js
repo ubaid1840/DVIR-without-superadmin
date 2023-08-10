@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import AppBtn from '../../components/Button';
 import Form from '../../components/Form';
+import { CSVLink } from 'react-csv';
 
 
 const columns = [
@@ -21,7 +22,7 @@ const columns = [
 
 const entriesData = [
     {
-        'Status' : 'Status',
+        'Status': 'Status',
         'Asset Name': 'Asset 1',
         'Last Inspection': '2023-07-15',
         'Next Inspection': '2023-08-16',
@@ -30,9 +31,9 @@ const entriesData = [
         'Asset Type': 'Truck',
         'Asset Make': 'Ford',
         'Asset Model': 'F-150',
-      },
-      {
-        'Status' : 'Status',
+    },
+    {
+        'Status': 'Status',
         'Asset Name': 'Asset 2',
         'Last Inspection': '2023-07-30',
         'Next Inspection': '2023-08-30',
@@ -41,9 +42,9 @@ const entriesData = [
         'Asset Type': 'Car',
         'Asset Make': 'Toyota',
         'Asset Model': 'Corolla',
-      },
-      {
-        'Status' : 'Status',
+    },
+    {
+        'Status': 'Status',
         'Asset Name': 'Asset 3',
         'Last Inspection': '2023-06-01',
         'Next Inspection': '2023-08-08',
@@ -52,9 +53,9 @@ const entriesData = [
         'Asset Type': 'Van',
         'Asset Make': 'Honda',
         'Asset Model': 'Civic',
-      },
-      {
-        'Status' : 'Status',
+    },
+    {
+        'Status': 'Status',
         'Asset Name': 'Asset 4',
         'Last Inspection': '2023-04-05',
         'Next Inspection': '2023-07-17',
@@ -63,9 +64,9 @@ const entriesData = [
         'Asset Type': 'Truck',
         'Asset Make': 'Chevrolet',
         'Asset Model': 'Silverado',
-      },
-      {
-        'Status' : 'Status',
+    },
+    {
+        'Status': 'Status',
         'Asset Name': 'Asset 5',
         'Last Inspection': '2023-07-01',
         'Next Inspection': '2023-08-12',
@@ -74,7 +75,7 @@ const entriesData = [
         'Asset Type': 'Car',
         'Asset Make': 'Ford',
         'Asset Model': 'F-150',
-      },
+    },
 ];
 
 const DueDaysInspectionPage = () => {
@@ -89,93 +90,123 @@ const DueDaysInspectionPage = () => {
     const [inspectionCalendarSelect, setInspectionCalendarSelect] = useState('All')
     const [totalInspections, setTotalInspections] = useState(19)
     const [totalDefects, setTotalDefects] = useState(7)
-    const {width, height} = Dimensions.get('window')
-    
+    const { width, height } = Dimensions.get('window')
+
 
     useEffect(() => {
 
         Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: false
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: false
         }).start();
-    
+
         return () => {
-          fadeAnim.setValue(0);
+            fadeAnim.setValue(0);
         }
-      }, [selectedPage])
+    }, [selectedPage])
 
 
-      const handleDownloadReportBtn = () => {
+    const handleDownloadReportBtn = () => {
 
-      }
+    }
 
-      const [fontsLoaded] = useFonts({
+    const [fontsLoaded] = useFonts({
         'futura-extra-black': require('../../assets/fonts/Futura-Extra-Black-font.ttf'),
-      });
-    
-      if (!fontsLoaded) {
+    });
+
+    if (!fontsLoaded) {
         return null;
-      }
-    
-      let driver = [{
+    }
+
+    let driver = [{
         name: "Ubaid",
         company: "DVIR",
         inspection: 5
-      },
-      {
+    },
+    {
         name: "John",
         company: "DVIR",
         inspection: 2
-      },
-      {
+    },
+    {
         name: "Doe",
         company: "DVIR",
         inspection: 0
-      }]
-    
-      const asset = [{
+    }]
+
+    const asset = [{
         name: "Truck1",
         company: "DVIR",
         inspection: 4,
         defects: 1
-      },
-      {
+    },
+    {
         name: "Truck2",
         company: "DVIR",
         inspection: 2,
         defects: 3
-      }]
+    }]
 
-      const handleFormValue = (value) => {
+    const handleFormValue = (value) => {
         console.log(value)
-      }
+    }
+
+    let newStatus = ''
+
+    const entriesDataCSV = entriesData.map((entry) => {
+
+        const today = new Date().getTime(); // Get the current timestamp in milliseconds
+        const lastInspectionDate = new Date(entry['Last Inspection']).getTime(); // Convert Last Inspection date to timestamp
+        const nextInspectionDate = new Date(entry['Next Inspection']).getTime(); // Convert Next Inspection date to timestamp
+        const timeDifferenceInMilliseconds = nextInspectionDate - today;
+        const timeDifferenceInDays = Math.floor(timeDifferenceInMilliseconds / (1000 * 60 * 60 * 24));
+
+        if (lastInspectionDate > nextInspectionDate) {
+            newStatus = 'Inspection done'
+        } else if (timeDifferenceInMilliseconds < 0) {
+            newStatus = 'Inspection due'
+        } else if (timeDifferenceInDays <= 3) {
+            newStatus = timeDifferenceInDays + ' days left'
+        } else if (timeDifferenceInDays <= 7) {
+            newStatus = timeDifferenceInDays + ' days left'
+        } else {
+            newStatus = 'Inspection done'
+        }
+        return {
+            ...entry,
+            Status: newStatus, // Update the 'Status' property with the new value
+        };
+    });
+
+    // console.log(entriesDataCSV);
+
 
     return (
 
         <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
-          
-                <View style={{
-                    position: 'absolute',
-                    top: 0,
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    overflow: 'hidden',
-                    height:height
-                }}>
-                    <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
-                    <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
-                    <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
-                    <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
-                </View>
-                <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
-                <ScrollView style={{height:100}}>
+
+            <View style={{
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                left: 0,
+                right: 0,
+                overflow: 'hidden',
+                height: height
+            }}>
+                <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
+                <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
+                <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
+                <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
+            </View>
+            <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
+            <ScrollView style={{ height: 100 }}>
                 <View style={{ flexDirection: 'row', marginLeft: 40, marginTop: 40, marginRight: 40, justifyContent: 'space-between' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <View style={{ backgroundColor: '#67E9DA', borderRadius: 15, }}>
                             <Image style={{ width: 30, height: 30, margin: 10 }}
-                            tintColor='#FFFFFF'
+                                tintColor='#FFFFFF'
                                 source={require('../../assets/inspection_icon.png')}></Image>
                         </View>
                         <Text style={{ fontSize: 40, color: '#1E3D5C', fontWeight: '900', marginLeft: 10 }}>
@@ -191,27 +222,28 @@ const DueDaysInspectionPage = () => {
                     </View>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingTop: 30, paddingLeft: 40, paddingRight: 40 }}>
-                   
-                    <View >
-                        <AppBtn
-                            title="Download Report"
-                            btnStyle={styles.btn}
-                            btnTextStyle={styles.btnText}
-                            onPress={handleDownloadReportBtn}></AppBtn>
-                    </View>
+                    <CSVLink style={{ textDecorationLine: 'none' }} data={entriesDataCSV} headers={columns} filename={"45_days_due_report.csv"}>
+                        <View >
+                            <AppBtn
+                                title="Download Report"
+                                btnStyle={styles.btn}
+                                btnTextStyle={styles.btnText}
+                                onPress={handleDownloadReportBtn}></AppBtn>
+                        </View>
+                    </CSVLink>
                 </View>
                 <View style={styles.contentCardStyle}>
-                    <Form 
-                    columns={columns}
-                    entriesData= {entriesData}
-                    titleForm="45 days Inspection"
-                    onValueChange={handleFormValue}
-                    row={styles.formRowStyle}
-                    cell={styles.formCellStyle}
-                    entryText={styles.formEntryTextStyle}
-                    columnHeaderRow={styles.formColumnHeaderRowStyle}
-                    columnHeaderCell={styles.formColumnHeaderCellStyle}
-                    columnHeaderText={styles.formColumnHeaderTextStyle}/>
+                    <Form
+                        columns={columns}
+                        entriesData={entriesDataCSV}
+                        titleForm="45 days Inspection"
+                        onValueChange={handleFormValue}
+                        row={styles.formRowStyle}
+                        cell={styles.formCellStyle}
+                        entryText={styles.formEntryTextStyle}
+                        columnHeaderRow={styles.formColumnHeaderRowStyle}
+                        columnHeaderCell={styles.formColumnHeaderCellStyle}
+                        columnHeaderText={styles.formColumnHeaderTextStyle} />
                 </View>
             </ScrollView>
         </Animated.View>
@@ -401,15 +433,15 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        height: 40
+        height: 40,
     },
     formEntryTextStyle: {
         fontWeight: 'normal',
-        paddingHorizontal: 30,
-        paddingVertical: 5,
+        paddingHorizontal: 0,
+        // paddingVertical: 5,
         fontSize: 12
     },
-    
+
     formColumnHeaderRowStyle: {
         flexDirection: 'row',
         backgroundColor: '#f2f2f2',

@@ -255,12 +255,10 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 50,
         backgroundColor: '#fff',
-        borderRadius: 5,
+        borderRadius: 10,
         paddingHorizontal: 10,
         borderWidth: 1,
         borderColor: '#cccccc',
-        borderTopLeftRadius: 20,
-        borderBottomRightRadius: 20,
         outlineStyle: 'none'
     },
     withBorderInputContainer: {

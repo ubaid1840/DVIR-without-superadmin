@@ -1,12 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, FlatList, StyleSheet, Image, Platform, Animated, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, FlatList, StyleSheet, Image, Platform, Animated, Pressable, Dimensions, Modal } from 'react-native';
 import Checkbox from 'expo-checkbox';
 import AppBtn from './Button';
 import DropDownComponent from './DropDown';
+import { CSVLink } from 'react-csv';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
+import AppModal from './Modal';
 
 const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, columnHeaderCell, columnHeaderText, titleForm, onValueChange }) => {
 
+    const priorityOptionList = ['High', 'Medium', 'Low', 'Undefined'];
+    const severityOptionList = ['Non critical', 'Critical', 'Undefined'];
 
+    const { width, height } = Dimensions.get('window')
     const [isChecked, setChecked] = useState(false);
     const [imageHovered, setImageHovered] = useState({});
     const [rowHovered, setRowHovered] = useState({});
@@ -24,7 +31,24 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
     const [formRowClick, setFormRowClick] = useState([])
 
     const [isStatus, setStatus] = useState('')
-    const [rowColor ,setRowColor] = useState([])
+    const [rowColor, setRowColor] = useState([])
+    const entriesPerPage = 10; // Number of entries to display per page
+    const [currentPage, setCurrentPage] = useState(1);
+
+    const [prioritySelectedOption, setPrioritySelectedOption] = useState('Undefined')
+    const [priorityModalVisible, setPriorityModalVisible] = useState(false)
+    const [priorityIndex, setPriorityIndex] = useState(0)
+
+    const [severityModalVisible, setSeverityModalVisible] = useState(false)
+    const [severityIndex, setSeverityIndex] = useState(0)
+    
+    const [priorityHovered, setPriorityHovered] = useState({})
+    const [severityHovered, setSeverityHovered] = useState({})
+
+    // const [receivedPriorityData, setReceivedPriorityData] = useState('');
+    // const [receivedSeverityData, setReceivedSeverityData] = useState('');
+    
+
 
     const rowHoverColorAnimatePassed = (value) => {
         Animated.timing(colorAnimatePassed, {
@@ -69,25 +93,25 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
             Animated.parallel([
                 Animated.timing(colorAnimatePassed, {
                     toValue: 1,
-                    duration: 500,
+                    duration: 200,
                     useNativeDriver: false,
                 }),
-                Animated.timing(colorAnimateFailed, {
-                    toValue: 0,
-                    duration: 500,
-                    useNativeDriver: false,
-                }),
+                // Animated.timing(colorAnimateFailed, {
+                //     toValue: 0,
+                //     duration: 500,
+                //     useNativeDriver: false,
+                // }),
             ]).start();
         } else if (entriesData[column].Status == 'Failed') {
             Animated.parallel([
-                Animated.timing(colorAnimatePassed, {
-                    toValue: 0,
-                    duration: 500,
-                    useNativeDriver: false,
-                }),
+                // Animated.timing(colorAnimatePassed, {
+                //     toValue: 0,
+                //     duration: 500,
+                //     useNativeDriver: false,
+                // }),
                 Animated.timing(colorAnimateFailed, {
                     toValue: 1,
-                    duration: 500,
+                    duration: 200,
                     useNativeDriver: false,
                 }),
             ]).start();
@@ -101,12 +125,12 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
         Animated.parallel([
             Animated.timing(colorAnimatePassed, {
                 toValue: 0,
-                duration: 500,
+                duration: 200,
                 useNativeDriver: false,
             }),
             Animated.timing(colorAnimateFailed, {
                 toValue: 0,
-                duration: 500,
+                duration: 200,
                 useNativeDriver: false,
             }),
         ]).start();
@@ -239,9 +263,46 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
         setColors()
     }, [])
 
+    const handlePriorityValueChange = (value) => {
+        setPrioritySelectedOption(value);
+    };
+
+    const closePriorityModal = () => {
+        setPriorityModalVisible(false)
+    }
+
+    const closeSeverityModal = () => {
+        setSeverityModalVisible(false)
+    }
+
+    const handleReceivedPriorityData = (data) => {
+        entriesData[priorityIndex].Priority = data
+      };
+
+      const handleReceivedSeverityData = (data) => {
+        entriesData[severityIndex].Severity = data
+      };
+
 
     if (titleForm == "General Inspection") {
+
+        const totalPages = Math.ceil(entriesData.length / entriesPerPage);
+
+        const goToPage = (pageNumber) => {
+            if (pageNumber >= 1 && pageNumber <= totalPages) {
+                setCurrentPage(pageNumber);
+            }
+        };
+
+        const startIndex = (currentPage - 1) * entriesPerPage;
+        const endIndex = startIndex + entriesPerPage;
+        const visibleEntries = entriesData.slice(startIndex, endIndex);
+
         const renderRow = ({ item, index }) => {
+
+            // const itemIndex = startIndex + index; // Adjusted calculation
+
+
             const colorStyle = {
                 backgroundColor:
                     rowHovered[index] == true && entriesData[index].Status == 'Passed' && formRowClick.includes(index)
@@ -254,6 +315,7 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                     ? colorInterpolateFailed
                                     : {}
             };
+
             return (
                 <Animated.View style={[row, colorStyle]}>
                     {columns.map((column) => {
@@ -278,7 +340,7 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                                     source={require('../assets/completed_icon.png')}
                                                     tintColor={rowHovered[index] ? '#FFFFFF' : 'green'}></Image>
                                             </View>
-                                            <Text style={[entryText, { paddingLeft: 10 }, rowHovered[index] && { color: '#FFFFFF', fontWeight: '700', fontSize: 14 }]}>{item[column]}</Text>
+                                            <Text style={[entryText, { paddingLeft: 10 }, rowHovered[index] && { color: '#FFFFFF' }]}>{item[column]}</Text>
                                         </View>
                                         : item[column] == 'Failed'
                                             ? <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -287,9 +349,9 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                                         source={require('../assets/failed_icon.png')}
                                                         tintColor={rowHovered[index] ? '#FFFFFF' : 'red'}></Image>
                                                 </View>
-                                                <Text style={[entryText, { paddingLeft: 10 }, rowHovered[index] && { color: '#FFFFFF', fontWeight: '700', fontSize: 14 }]}>{item[column]}</Text>
+                                                <Text style={[entryText, { paddingLeft: 10 }, rowHovered[index] && { color: '#FFFFFF', }]}>{item[column]}</Text>
                                             </View>
-                                            : <Text style={[entryText, { paddingLeft: 10 }, rowHovered[index] && { color: '#FFFFFF', fontWeight: '700', fontSize: 14 }]}>{item[column]}</Text>
+                                            : <Text style={[entryText, { paddingLeft: 10 }, rowHovered[index] && { color: '#FFFFFF', }]}>{item[column]}</Text>
                                     }
 
                                 </Pressable>
@@ -299,26 +361,46 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
             );
         };
         return (
+            <>
+                <View style={{ flexDirection: 'row', alignSelf: 'flex-end', marginBottom: 20 }}>
+                    <TouchableOpacity onPress={() => goToPage(currentPage - 1)} disabled={currentPage === 1}>
+                        <Text style={{}}>{'<< Previous'}</Text>
+                    </TouchableOpacity>
 
-            <ScrollView horizontal>
-                <View>
-                    <View style={columnHeaderRow}>
-                        {columns.map((column) => (
+                    <Text style={{ paddingHorizontal: 20 }}>{`Page ${currentPage} of ${Math.ceil(
+                        entriesData.length / entriesPerPage
+                    )}`}</Text>
 
-                            <View key={column} style={[columnHeaderCell, { zIndex: 2 }]}>
-                                <Text style={columnHeaderText}>{column}</Text>
-                            </View>
-                        ))}
-                        {/* <Text style={styles.columnHeaderText}>Action</Text> */}
-                    </View>
-                    <FlatList
-                        data={entriesData}
-                        keyExtractor={(item, index) => index.toString()}
-                        renderItem={renderRow}
-                        showsHorizontalScrollIndicator={false}
-                    />
+                    <TouchableOpacity
+                        onPress={() => goToPage(currentPage + 1)}
+                        disabled={currentPage === Math.ceil(entriesData.length / entriesPerPage)}>
+                        <Text style={{}}>{'Next >>'}</Text>
+                    </TouchableOpacity>
                 </View>
-            </ScrollView>
+                <ScrollView horizontal>
+                    <View>
+                        <View style={columnHeaderRow}>
+                            {columns.map((column) => (
+
+                                <View key={column} style={[columnHeaderCell, { zIndex: 2 }]}>
+                                    <Text style={columnHeaderText}>{column}</Text>
+                                </View>
+                            ))}
+                            {/* <Text style={styles.columnHeaderText}>Action</Text> */}
+                        </View>
+                        <FlatList
+                            data={visibleEntries}
+                            keyExtractor={(_, index) => `${startIndex + index}`}
+                            renderItem={renderRow}
+                            showsHorizontalScrollIndicator={false}
+                        />
+                        {/* Pagination */}
+                    </View>
+
+                </ScrollView>
+
+
+            </>
 
         );
     }
@@ -327,52 +409,52 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
         const renderRow = ({ item, index }) => {
             const colorStyle = {
                 backgroundColor:
-                rowColor[index]
+                    rowColor[index]
             };
 
             const showRowData = (entry) => {
 
-            const today = new Date().getTime(); // Get the current timestamp in milliseconds
-                const lastInspectionDate = new Date(entry['Last Inspection']).getTime(); // Convert Last Inspection date to timestamp
-                const nextInspectionDate = new Date(entry['Next Inspection']).getTime(); // Convert Next Inspection date to timestamp
-                const timeDifferenceInMilliseconds = nextInspectionDate - today;
-                const timeDifferenceInDays = Math.floor(timeDifferenceInMilliseconds / (1000 * 60 * 60 * 24));
+                // const today = new Date().getTime(); // Get the current timestamp in milliseconds
+                // const lastInspectionDate = new Date(entry['Last Inspection']).getTime(); // Convert Last Inspection date to timestamp
+                // const nextInspectionDate = new Date(entry['Next Inspection']).getTime(); // Convert Next Inspection date to timestamp
+                // const timeDifferenceInMilliseconds = nextInspectionDate - today;
+                // const timeDifferenceInDays = Math.floor(timeDifferenceInMilliseconds / (1000 * 60 * 60 * 24));
 
 
-                if (lastInspectionDate > nextInspectionDate) {
-                    return (
-                        <View>
-                            <Text>Inspection done</Text>
-                        </View>
-                    )
-                } else if (timeDifferenceInMilliseconds < 0) {
+                // if (lastInspectionDate > nextInspectionDate) {
+                //     return (
+                //         <View>
+                //             <Text>Inspection done</Text>
+                //         </View>
+                //     )
+                // } else if (timeDifferenceInMilliseconds < 0) {
 
-                    return (
-                        <View>
-                            <Text>Inspection due</Text>
-                        </View>
-                    )
-                } else if (timeDifferenceInDays <= 3) {
-                    return (
-                        <View>
-                            <Text>{timeDifferenceInDays} days left</Text>
-                        </View>
-                    )
-                } else if (timeDifferenceInDays <= 7) {
-                    return (
-                        <View>
-                            <Text>{timeDifferenceInDays} days left</Text>
-                        </View>
-                    )
-                } else {
-                    return (
-                        <View>
-                            <Text>Inspection done</Text>
-                        </View>
-                    )
-                }
+                //     return (
+                //         <View>
+                //             <Text>Inspection due</Text>
+                //         </View>
+                //     )
+                // } else if (timeDifferenceInDays <= 3) {
+                //     return (
+                //         <View>
+                //             <Text>{timeDifferenceInDays} days left</Text>
+                //         </View>
+                //     )
+                // } else if (timeDifferenceInDays <= 7) {
+                //     return (
+                //         <View>
+                //             <Text>{timeDifferenceInDays} days left</Text>
+                //         </View>
+                //     )
+                // } else {
+                //     return (
+                //         <View>
+                //             <Text>Inspection done</Text>
+                //         </View>
+                //     )
+                // }
             }
-                     
+
             return (
                 <View style={[row, colorStyle]}>
                     {columns.map((column) => {
@@ -384,11 +466,11 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                         handleValueChange(item)
                                         handleRowPress(index)
                                     }}>
-
-                                    {item[column] == 'Status'
+                                    <Text style={[entryText, rowHovered[index] && { color: '#FFFFFF', fontWeight: '700', fontSize: 14 }]}>{item[column]}</Text>
+                                    {/* {item[column] == 'Status'
                                         ? showRowData(item)
-                                            : <Text style={[entryText, { paddingLeft: 10 }, rowHovered[index] && { color: '#FFFFFF', fontWeight: '700', fontSize: 14 }]}>{item[column]}</Text>
-                                    }
+                                        : <Text style={[entryText, { paddingLeft: 10 }, rowHovered[index] && { color: '#FFFFFF', fontWeight: '700', fontSize: 14 }]}>{item[column]}</Text>
+                                    } */}
 
                                 </Pressable>
                         )
@@ -422,6 +504,16 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
     }
 
     else if (titleForm == "Assets") {
+
+        const columnsCSV = columns.filter((column) => column !== 'Action');
+
+        const entriesDataCSV = entriesData.map((entry) => {
+            // Create a new object without the 'Action' key
+            const { Action, ...newEntry } = entry;
+            return newEntry;
+        });
+
+
         const renderRow = ({ item, index }) => {
             const rowStyle = {
                 paddingVertical: densityAnim, // Apply the padding to the entire row
@@ -497,11 +589,12 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                             hoveredOptionText={styles.dropdownHoveredOptionText}
                             dropdownButtonSelect={styles.dropdownButtonSelect}
                             dropdownStyle={styles.dropdown} />
-
-                        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 }}>
-                            <Text style={{ fontSize: 18, fontWeight: '700', color: '#5B5B5B' }}>Export</Text>
-                            <Image style={{ height: 15, width: 15, marginLeft: 10 }} source={require('../assets/export_icon.png')}></Image>
-                        </TouchableOpacity>
+                        <CSVLink style={{ textDecorationLine: 'none' }} data={entriesDataCSV} headers={columnsCSV} filename={"assets_report.csv"}>
+                            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 }}>
+                                <Text style={{ fontSize: 18, fontWeight: '700', color: '#5B5B5B' }}>Export</Text>
+                                <Image style={{ height: 15, width: 15, marginLeft: 10 }} source={require('../assets/export_icon.png')}></Image>
+                            </TouchableOpacity>
+                        </CSVLink>
                         {selectedRows.length > 0 && (
                             <TouchableOpacity onPress={() => { handleDelete(selectedRows) }} style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 }}>
                                 <Text style={{ fontSize: 18, fontWeight: '700', color: 'red' }}>Delete</Text>
@@ -524,14 +617,19 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                         showsHorizontalScrollIndicator={true}
                     />
                 </View>
-
-
-
             </ScrollView>
         );
     }
 
     else if (titleForm == "Driver" || titleForm == 'Mechanic' || titleForm == 'Manager') {
+
+        const columnsCSV = columns.filter((column) => column !== 'Action');
+
+        const entriesDataCSV = entriesData.map((entry) => {
+            // Create a new object without the 'Action' key
+            const { Action, ...newEntry } = entry;
+            return newEntry;
+        });
         const renderRow = ({ item, index }) => {
             return (
                 <Animated.View style={[row, { paddingVertical: 15 }]}>
@@ -585,11 +683,12 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
             <ScrollView horizontal>
                 <View>
                     <View style={{ flexDirection: 'row', marginBottom: 20 }}>
-
-                        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 }}>
-                            <Text style={{ fontSize: 18, fontWeight: '700', color: '#5B5B5B' }}>Export</Text>
-                            <Image style={{ height: 15, width: 15, marginLeft: 10 }} source={require('../assets/export_icon.png')}></Image>
-                        </TouchableOpacity>
+                        <CSVLink style={{ textDecorationLine: 'none' }} data={entriesDataCSV} headers={columnsCSV} filename={`${titleForm}_report.csv`}>
+                            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 }}>
+                                <Text style={{ fontSize: 18, fontWeight: '700', color: '#5B5B5B' }}>Export</Text>
+                                <Image style={{ height: 15, width: 15, marginLeft: 10 }} source={require('../assets/export_icon.png')}></Image>
+                            </TouchableOpacity>
+                        </CSVLink>
                         {selectedRows.length > 0 && (
                             <TouchableOpacity onPress={() => { handleDelete(selectedRows) }} style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 }}>
                                 <Text style={{ fontSize: 18, fontWeight: '700', color: 'red' }}>Delete</Text>
@@ -619,6 +718,140 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
         );
     }
 
+    else if (titleForm == "Defects") {
+
+        const columnsCSV = columns.filter((column) => column !== 'Action');
+
+        const entriesDataCSV = entriesData.map((entry) => {
+            // Create a new object without the 'Action' key
+            const { Action, ...newEntry } = entry;
+            return newEntry;
+        });
+        const renderRow = ({ item, index }) => {
+            return (
+                <Animated.View style={[row, { paddingVertical: 15 }]}>
+                    {columns.map((column) => {
+                        return (
+                            item[column] == undefined ? null :
+                                column === "Action" ?
+                                    <TouchableOpacity
+                                        onPress={() => handleValueChange(item)}
+                                        key={column}
+                                        style={[cell,]}
+                                        onMouseEnter={() => handleMouseEnter(index)}
+                                        onMouseLeave={() => handleMouseLeave(index)}
+                                    >
+                                        <Image
+                                            style={styles.btn}
+                                            source={require('../assets/action_icon.png')}
+                                            resizeMode='contain'
+                                            tintColor={imageHovered[index] ? '#67E9DA' : '#1E3D5C'}
+                                        />
+                                    </TouchableOpacity>
+
+                                    :
+                                    <View
+                                        key={column}
+                                        style={[cell, column == 'Defects ID' && { minWidth: 100 }, column == 'Asset' && { minWidth: 100 }, column == 'Date Created' && { minWidth: 150 }, column == 'Priority' && { minWidth: 150 }, column == 'Severity' && { minWidth: 150 }, column == 'Defect' && { minWidth: 100 }, column == 'Driver' && { minWidth: 100 }, column == 'Mechanic' && { minWidth: 100 }, column == 'Action' && { minWidth: 100 }]}
+                                    >
+                                        {column == "Defects ID"
+                                            ?
+                                            <View style={styles.section}>
+                                                <Checkbox
+                                                    style={styles.checkbox}
+                                                    value={isCheckedSelected[index]}
+                                                    onValueChange={() => handleCheck(item, column, index)} // Pass the index to handleCheck function
+                                                    color={isCheckedSelected[index] ? '#67E9DA' : undefined}
+                                                />
+                                                <Text style={[entryText, { marginLeft: 10 }]}>{item[column]}</Text>
+                                            </View>
+                                            :
+                                            column == 'Priority'
+                                                ?
+                                                <TouchableOpacity 
+                                                onMouseEnter={()=> setPriorityHovered(prevState => ({ ...prevState, [index]: true }))}
+                                                onMouseLeave={()=> setPriorityHovered(prevState => ({ ...prevState, [index]: false }))} 
+                                                style={[{ borderWidth: 1, height: 30, width: 100, borderRadius: 5, opacity: 1, borderColor: '#A2A2A2', justifyContent: 'center', paddingLeft: 10 }, priorityHovered[index] && {backgroundColor:'#67E9DA', borderWidth:0}]} onPress={() => {
+                                                    setPriorityIndex(index)
+                                                    setPriorityModalVisible(true)
+                                                }}>
+                                                    <Text style={[entryText, priorityHovered[index] && {color:'white'}]}>{item[column]}</Text>
+                                                </TouchableOpacity>
+                                                :
+                                                column == 'Severity'
+                                                    ?
+                                                    <TouchableOpacity 
+                                                    onMouseEnter={()=> setSeverityHovered(prevState => ({ ...prevState, [index]: true }))}
+                                                    onMouseLeave={()=> setSeverityHovered(prevState => ({ ...prevState, [index]: false }))} 
+                                                    style={[{ borderWidth: 1, height: 30, width: 100, borderRadius: 5, opacity: 1, borderColor: '#A2A2A2', justifyContent: 'center', paddingLeft: 10 }, severityHovered[index] && {backgroundColor:'#67E9DA', borderWidth:0}]} onPress={() => {
+                                                        setSeverityIndex(index)
+                                                        setSeverityModalVisible(true)
+                                                    }}>
+                                                        <Text style={[entryText, severityHovered[index] && {color:'white'}]}>{item[column]}</Text>
+                                                    </TouchableOpacity>
+                                                    :
+                                                    <Text style={entryText}>{item[column]}</Text>
+                                        }
+
+                                    </View>
+                        )
+                    })}
+                </Animated.View>
+
+            );
+        };
+        return (
+            <ScrollView horizontal>
+                <View>
+                    <View style={{ flexDirection: 'row', marginBottom: 20 }}>
+                        <CSVLink style={{ textDecorationLine: 'none' }} data={entriesDataCSV} headers={columnsCSV} filename={`${titleForm}_report.csv`}>
+                            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 }}>
+                                <Text style={{ fontSize: 18, fontWeight: '700', color: '#5B5B5B' }}>Export</Text>
+                                <Image style={{ height: 15, width: 15, marginLeft: 10 }} source={require('../assets/export_icon.png')}></Image>
+                            </TouchableOpacity>
+                        </CSVLink>
+                        {selectedRows.length > 0 && (
+                            <TouchableOpacity onPress={() => { handleDelete(selectedRows) }} style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 }}>
+                                <Text style={{ fontSize: 18, fontWeight: '700', color: 'red' }}>Delete</Text>
+                                <Image style={{ height: 20, width: 20, marginLeft: 10 }} source={require('../assets/trash_icon.png')}
+                                    tintColor='red'></Image>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                    <Animated.View style={[columnHeaderRow, { paddingVertical: densityAnim }]}>
+                        {columns.map((column) => (
+                            <View key={column} style={[columnHeaderCell, column == 'Defects ID' && { minWidth: 100 }, column == 'Asset' && { minWidth: 100 }, column == 'Date Created' && { minWidth: 150 }, column == 'Priority' && { minWidth: 150 }, column == 'Severity' && { minWidth: 150 }, column == 'Defect' && { minWidth: 100 }, column == 'Driver' && { minWidth: 100 }, column == 'Mechanic' && { minWidth: 100 }, column == 'Action' && { minWidth: 100 }]}>
+                                <Text style={columnHeaderText}>{column}</Text>
+                            </View>
+                        ))}
+                    </Animated.View>
+                    <FlatList
+                        data={data}
+                        keyExtractor={(item, index) => index.toString()}
+                        renderItem={renderRow}
+                        showsHorizontalScrollIndicator={true}
+                    />
+                </View>
+
+            <AppModal 
+            isVisible={priorityModalVisible}
+            onClose={closePriorityModal}
+            optionList={priorityOptionList}
+            entryText={entryText}
+            sendData={handleReceivedPriorityData}/>
+
+            <AppModal 
+            isVisible={severityModalVisible}
+            onClose={closeSeverityModal}
+            optionList={severityOptionList}
+            entryText={entryText}
+            sendData={handleReceivedSeverityData}/>
+
+                
+            </ScrollView>
+        );
+    }
+
 };
 
 const styles = StyleSheet.create({
@@ -627,6 +860,14 @@ const styles = StyleSheet.create({
         height: 30,
         marginLeft: 15,
 
+    },
+
+    btnText: {
+        color: '#fff',
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginLeft: 10,
+        marginRight: 15,
     },
 
     container: {
@@ -642,7 +883,7 @@ const styles = StyleSheet.create({
         fontSize: 15,
     },
     checkbox: {
-        margin: 8,
+        marginRight:5,
     },
     deleteButton: {
         backgroundColor: '#FF0000',
@@ -711,9 +952,38 @@ const styles = StyleSheet.create({
         width: 20,
         height: 20,
         resizeMode: 'contain'
-    }
-
-
+    },
+    centeredView: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        // backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalView: {
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 20,
+        alignItems: 'center',
+        elevation: 5,
+        maxHeight: '90%',
+        maxWidth: '90%',
+        overflow: 'hidden'
+    },
+    modalText: {
+        fontSize: 18,
+        marginBottom: 20,
+        textAlign: 'center',
+    },
+    closeButton: {
+        backgroundColor: '#1E90FF',
+        borderRadius: 8,
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+    },
+    closeButtonText: {
+        color: 'white',
+        fontSize: 16,
+    },
 })
 
 export default Form;
