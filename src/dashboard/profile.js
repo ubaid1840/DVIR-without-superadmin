@@ -10,12 +10,16 @@ import Header from '../../components/Header';
 import DropDownComponent from '../../components/DropDown';
 import { Dimensions } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
+import { collection, getDocs, getFirestore } from 'firebase/firestore';
+import app from '../config/firebase';
+import { getAuth } from 'firebase/auth';
 
 const driverOptionList = ['Inspection'];
 const assetOptionList = ['Inspection', 'Defects'];
 
 const ProfilePage = (props) => {
 
+  db = getFirestore(app)
 
   const [selectedPage, setSelectedPage] = useState('Inspection');
   const [dashboardHovered, setDashboardHovered] = useState(false)
@@ -30,9 +34,33 @@ const ProfilePage = (props) => {
   const { height, width } = Dimensions.get('window');
   const [textInputBorderColor, setTextInputBorderColor] = useState('')
   const [fileUri, setFileUri] = useState(null)
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [email, setEmail] = useState('')
+  const [company, setCompany] = useState('')
+  const [number, setNumber] = useState('')
+  const [workPhone, setWorkPhone] = useState('')
+  const [dob, setDob] = useState('')
+
+  const fetchData = async () => {
+    const querySnapshot = await getDocs(collection(db, 'DVIR'));
+    const dbData = []
+    let i = 0
+    querySnapshot.forEach((doc) => {
+      if (getAuth().currentUser.email == doc.data().Email) {
+        setFirstName(doc.data().FirstName)
+        setLastName(doc.data().LastName)
+        setEmail(doc.data().Email)
+        setCompany(doc.data().Company)
+        setNumber(doc.data().Number)
+        setWorkPhone(doc.data().WorkPhone)
+        setDob(doc.data().dob)
+      }
+    });
+  }
 
   useEffect(() => {
-
+    fetchData()
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 1000,
@@ -93,139 +121,120 @@ const ProfilePage = (props) => {
         </View>
 
         <View style={styles.contentCardStyle}>
-          <View style={{ flexDirection: 'row', justifyContent:'space-between' }}>
+          <ScrollView horizontal >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
 
-            <View style={{ flexDirection: 'column' }}>
-              <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 16, fontWeight: '500' }}>Employee Number*</Text>
-                <TextInput
-                  style={[styles.input, textInputBorderColor == 'Employee Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                  placeholderTextColor="#868383DC"
-                  value=""
-                  onChangeText={{}}
-                  onFocus={() => { setTextInputBorderColor('Employee Number') }}
-                  onBlur={() => { setTextInputBorderColor('') }}
-                />
-              </View>
-              <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 16, fontWeight: '500' }}>First Name*</Text>
-                <TextInput
-                  style={[styles.input, textInputBorderColor == 'First Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                  placeholderTextColor="#868383DC"
-                  value=""
-                  onChangeText={{}}
-                  onFocus={() => { setTextInputBorderColor('First Name') }}
-                  onBlur={() => { setTextInputBorderColor('') }}
-                />
-              </View>
+              <View style={{ flexDirection: 'column', }}>
+                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 16, fontWeight: '500' }}>First Name*</Text>
+                  <TextInput
+                    style={[styles.input, textInputBorderColor == 'First Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                    placeholderTextColor="#868383DC"
+                    value={firstName}
+                    // onChangeText={{}}
+                    onFocus={() => { setTextInputBorderColor('First Name') }}
+                    onBlur={() => { setTextInputBorderColor('') }}
+                  />
+                </View>
 
-              <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 16, fontWeight: '500' }}>Last Name*</Text>
-                <TextInput
-                  style={[styles.input, textInputBorderColor == 'Last Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                  placeholderTextColor="#868383DC"
-                  value=""
-                  onChangeText={{}}
-                  onFocus={() => { setTextInputBorderColor('Last Name') }}
-                  onBlur={() => { setTextInputBorderColor('') }}
-                />
-              </View>
+                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 16, fontWeight: '500' }}>Last Name*</Text>
+                  <TextInput
+                    style={[styles.input, textInputBorderColor == 'Last Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                    placeholderTextColor="#868383DC"
+                    value={lastName}
+                    // onChangeText={{}}
+                    onFocus={() => { setTextInputBorderColor('Last Name') }}
+                    onBlur={() => { setTextInputBorderColor('') }}
+                  />
+                </View>
 
-              <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 16, fontWeight: '500' }}>Email</Text>
-                <TextInput
-                  style={[styles.input, textInputBorderColor == 'Email' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                  placeholderTextColor="#868383DC"
-                  value=""
-                  onChangeText={{}}
-                  onFocus={() => { setTextInputBorderColor('Email') }}
-                  onBlur={() => { setTextInputBorderColor('') }}
-                />
-              </View>
+                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 16, fontWeight: '500' }}>Email</Text>
+                  <TextInput
+                    style={[styles.input, textInputBorderColor == 'Email' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                    placeholderTextColor="#868383DC"
+                    value={email}
+                    // onChangeText={{}}
+                    onFocus={() => { setTextInputBorderColor('Email') }}
+                    onBlur={() => { setTextInputBorderColor('') }}
+                  />
+                </View>
 
-              <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 16, fontWeight: '500' }}>Company</Text>
-                <TextInput
-                  style={[styles.input, textInputBorderColor == 'Company' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                  placeholderTextColor="#868383DC"
-                  value=""
-                  onChangeText={{}}
-                  onFocus={() => { setTextInputBorderColor('Company') }}
-                  onBlur={() => { setTextInputBorderColor('') }}
-                />
-              </View>
-              <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 16, fontWeight: '500' }}>Mobile Phone*</Text>
-                <TextInput
-                  style={[styles.input, textInputBorderColor == 'Mobile Phone' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                  placeholderTextColor="#868383DC"
-                  value=""
-                  onChangeText={{}}
-                  onFocus={() => { setTextInputBorderColor('Mobile Phone') }}
-                  onBlur={() => { setTextInputBorderColor('') }}
-                />
-              </View>
-            </View>
-            <View style={{ flexDirection: 'column', marginLeft: 80 }}>
-
-              <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center' }}>
-                <Text style={{ fontSize: 16, fontWeight: '500' }}>Photo</Text>
-                <View style={{ flexDirection: 'column', marginLeft: 100 }}>
-                  {fileUri
-                    ?
-                    <TouchableOpacity onPress={pickDocument}>
-                      <Image style={{ height: 150, width: 150, borderRadius: 75 }} source={{ uri: fileUri }} />
-                    </TouchableOpacity>
-                    :
-                    <TouchableOpacity style={{  height: 150, width: 150, borderRadius: 75 , borderColor: '#cccccc', borderWidth: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }} onPress={pickDocument}>
-
-                      <Image style={{ height: 20, width: 20 }}
-                        source={require('../../assets/add_photo_icon.png')}
-                        tintColor='#67E9DA'></Image>
-                      <Text style={{ color: '#30E0CB' }}>Add Photo</Text>
-
-                    </TouchableOpacity>
-                  }
+                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 16, fontWeight: '500' }}>Company</Text>
+                  <TextInput
+                    style={[styles.input, textInputBorderColor == 'Company' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                    placeholderTextColor="#868383DC"
+                    value={company}
+                    // onChangeText={{}}
+                    onFocus={() => { setTextInputBorderColor('Company') }}
+                    onBlur={() => { setTextInputBorderColor('') }}
+                  />
+                </View>
+                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 16, fontWeight: '500' }}>Mobile Phone*</Text>
+                  <TextInput
+                    style={[styles.input, textInputBorderColor == 'Mobile Phone' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                    placeholderTextColor="#868383DC"
+                    value={number}
+                    // onChangeText={{}}
+                    onFocus={() => { setTextInputBorderColor('Mobile Phone') }}
+                    onBlur={() => { setTextInputBorderColor('') }}
+                  />
                 </View>
               </View>
+              <View style={{ flexDirection: 'column', marginLeft: 80, }}>
+
+                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center' }}>
+                  <Text style={{ fontSize: 16, fontWeight: '500' }}>Photo</Text>
+                  <View style={{ flexDirection: 'column', marginLeft: 100, }}>
+                    {fileUri
+                      ?
+                      <TouchableOpacity onPress={pickDocument}>
+                        <Image style={{ height: 200, width: 200, borderRadius: 5 }} source={{ uri: fileUri }} />
+                      </TouchableOpacity>
+                      :
+                      <TouchableOpacity style={{ height: 180, width: 180, borderRadius: 90, borderColor: '#cccccc', borderWidth: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }} onPress={pickDocument}>
+
+                        <Image style={{ height: 20, width: 20 }}
+                          source={require('../../assets/add_photo_icon.png')}
+                          tintColor='#67E9DA'></Image>
+                        <Text style={{ color: '#30E0CB' }}>Add Photo</Text>
+
+                      </TouchableOpacity>
+                    }
+                  </View>
+                </View>
 
 
-              <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 16, fontWeight: '500' }}>Work Phone</Text>
-                <TextInput
-                  style={[styles.input, textInputBorderColor == 'Work Phone' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                  placeholderTextColor="#868383DC"
-                  value=""
-                  onChangeText={{}}
-                  onFocus={() => { setTextInputBorderColor('Work Phone') }}
-                  onBlur={() => { setTextInputBorderColor('') }}
-                />
-              </View>
+                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 16, fontWeight: '500' }}>Work Phone</Text>
+                  <TextInput
+                    style={[styles.input, textInputBorderColor == 'Work Phone' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                    placeholderTextColor="#868383DC"
+                    value={workPhone}
+                    // onChangeText={{}}
+                    onFocus={() => { setTextInputBorderColor('Work Phone') }}
+                    onBlur={() => { setTextInputBorderColor('') }}
+                  />
+                </View>
 
-              <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 16, fontWeight: '500' }}>Home Phone</Text>
-                <TextInput
-                  style={[styles.input, textInputBorderColor == 'Home Phone' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                  placeholderTextColor="#868383DC"
-                  value=""
-                  onChangeText={{}}
-                  onFocus={() => { setTextInputBorderColor('Home Phone') }}
-                  onBlur={() => { setTextInputBorderColor('') }}
-                />
-              </View>
-              <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 16, fontWeight: '500' }}>Date of Birth</Text>
-                <TextInput
-                  style={[styles.input, textInputBorderColor == 'Date of Birth' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                  placeholderTextColor="#868383DC"
-                  value=""
-                  onChangeText={{}}
-                  onFocus={() => { setTextInputBorderColor('Date of Birth') }}
-                  onBlur={() => { setTextInputBorderColor('') }}
-                />
+
+                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 16, fontWeight: '500' }}>Date of Birth</Text>
+                  <TextInput
+                    style={[styles.input, textInputBorderColor == 'Date of Birth' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                    placeholderTextColor="#868383DC"
+                    value={dob}
+                    // onChangeText={{}}
+                    onFocus={() => { setTextInputBorderColor('Date of Birth') }}
+                    onBlur={() => { setTextInputBorderColor('') }}
+                  />
+                </View>
               </View>
             </View>
-          </View>
+          </ScrollView>
         </View>
       </ScrollView>
     </Animated.View>

@@ -15,9 +15,15 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import AppBtn from '../../components/Button';
 import ProfilePage from '../dashboard/profile';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { router } from 'expo-router';
+import { collection, getDocs, getFirestore } from 'firebase/firestore';
+import app from '../config/firebase';
 
 
 const DashboardPage = (props) => {
+
+  const db = getFirestore(app)
 
   const [selectedPage, setSelectedPage] = useState('Dashboard');
   const [dashboardHovered, setDashboardHovered] = useState(false)
@@ -52,6 +58,7 @@ const DashboardPage = (props) => {
   const [collapseBtnClick, setCollapseBtnClick] = useState(false)
   const [collapseAndHoverLeftSide, setCollapseAndHoverLeftSide] = useState(false)
   const colorAnimation = new Animated.Value(0);
+  const [welcome, setWelcome] = useState('')
 
   const [fileUri, setFileUri] = useState(null)
   const [profileIsVisible, setProfileIsVisible] = useState(false)
@@ -94,7 +101,37 @@ const DashboardPage = (props) => {
     }).start()
   }
 
+  const fetchWelcome = async () => {
+    const querySnapshot = await getDocs(collection(db, 'DVIR'))
+    querySnapshot.forEach((doc) => {
+      if(getAuth().currentUser.email == doc.data().Email)
+      {
+        setWelcome(doc.data().Name)
+      }
+    })
+  }
+
   useEffect(() => {
+
+    const auth = getAuth()
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // User is signed in, see docs for a list of available properties
+        // https://firebase.google.com/docs/reference/js/auth.user
+        const uid = user.uid;
+        // console.log(user)
+        // ...
+      } else {
+        // User is signed out
+        // ...
+        console.log('user signed out')
+        router.replace('/')
+      }
+
+     fetchWelcome()
+   
+
+    });
 
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -350,9 +387,6 @@ const DashboardPage = (props) => {
 
 
   const handleHeaderValue = (value) => {
-    if (value == 'Logout') {
-      props.navigation.navigate('Login')
-    }
 
     if (value == 'Profile') {
       // setProfileIsVisible(true)
@@ -366,7 +400,7 @@ const DashboardPage = (props) => {
   }
 
   const handleAddAssetBtn = () => {
-    props.navigation.navigate('CreateNewAsset')
+    // props.navigation.navigate('CreateNewAsset')
   }
 
   return (
@@ -672,13 +706,14 @@ const DashboardPage = (props) => {
         <View style={{ flexDirection: 'column', flex: 1, }}>
           <View style={{ zIndex: 1 }}>
             <Header
-              onValueChange={handleHeaderValue} />
+              onValueChange={handleHeaderValue}
+              title={welcome} />
           </View>
           {profileSelected == true ?
             <ProfilePage />
             :
             renderPage()
-            }
+          }
 
         </View>
       </View>

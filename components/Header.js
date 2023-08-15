@@ -4,14 +4,15 @@ import { useState, useRef, useEffect } from "react"
 import DropDownComponent from "./DropDown"
 import { useFonts } from 'expo-font';
 import Notification from "./Notification";
+import { getAuth } from "firebase/auth";
 
 const logoutList = ['Profile', 'Logout'];
 
 const Header = (props) => {
 
-   
+
     const handleValueChange = (value) => {
-        props.onValueChange(value);
+         props.onValueChange(value);
     };
 
     const [inputValue, setInputValue] = useState('');
@@ -20,7 +21,7 @@ const Header = (props) => {
         'futura-book': require('../assets/fonts/futura/Futura-Book-font.ttf'),
     });
 
-   
+
 
 
     // Check if fonts are loaded and return null if not
@@ -29,13 +30,16 @@ const Header = (props) => {
     }
 
     return (
-        <TouchableWithoutFeedback onPress={() => { 
-            console.log('solve auto close dropdown issue') }}>
+        <TouchableWithoutFeedback onPress={() => {
+            console.log('solve auto close dropdown issue')
+        }}>
             <View style={{ flexDirection: 'row', paddingLeft: 60, paddingRight: 60, paddingTop: 10, paddingBottom: 10, alignItems: 'center', backgroundColor: '#FFFFFF', justifyContent: 'space-between', }}>
                 <View >
-                    <Text style={{ fontSize: 18, fontWeight: '600', color: '#5B5B5B', fontFamily: 'futura-book' }}>
-                        Welcome Ubaid Ur Rehman!
-                    </Text>
+                    
+                        <Text style={{ fontSize: 18, fontWeight: '600', color: '#5B5B5B', fontFamily: 'futura-book' }}>
+                            Welcome {props.title}
+                        </Text>
+
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Notification />

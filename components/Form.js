@@ -7,6 +7,8 @@ import { CSVLink } from 'react-csv';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import AppModal from './Modal';
+import { Firestore, deleteDoc, doc, getFirestore } from 'firebase/firestore';
+import app from '../src/config/firebase';
 
 const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, columnHeaderCell, columnHeaderText, titleForm, onValueChange }) => {
 
@@ -41,13 +43,13 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
 
     const [severityModalVisible, setSeverityModalVisible] = useState(false)
     const [severityIndex, setSeverityIndex] = useState(0)
-    
+
     const [priorityHovered, setPriorityHovered] = useState({})
     const [severityHovered, setSeverityHovered] = useState({})
 
     // const [receivedPriorityData, setReceivedPriorityData] = useState('');
     // const [receivedSeverityData, setReceivedSeverityData] = useState('');
-    
+
 
 
     const rowHoverColorAnimatePassed = (value) => {
@@ -173,20 +175,27 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
         });
     };
 
-    const handleDelete = (index) => {
+    const handleDelete = async (index) => {
 
-        const filteredEntries = entriesData.filter((item, ind) => !index.includes(ind))
+        const db = getFirestore(app)
+
+        // const filteredEntries = entriesData.filter((item, ind) => !index.includes(ind))
 
 
-        // Clear the selectedRows state
+        // // Clear the selectedRows state
 
+        // console.log(index)
+        // console.log(filteredEntries)
+        // console.log(entriesData[index].Email)
+        // // await deleteDoc(doc(db, "DVIR", "DC"));
 
-        console.log(filteredEntries)
+        // // Update the entriesData with the filtered entries (excluding the selected rows)
+        // // setdata(filteredEntries)
+        // setSelectedRows([]);
+        // setIsCheckedSelected(data.map(() => false))
 
-        // Update the entriesData with the filtered entries (excluding the selected rows)
-        setdata(filteredEntries)
-        setSelectedRows([]);
-        setIsCheckedSelected(data.map(() => false))
+        await deleteDoc(doc(db, "DVIR", entriesData[index].Email));
+        console.log('item deleted')
 
     };
 
@@ -277,11 +286,11 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
 
     const handleReceivedPriorityData = (data) => {
         entriesData[priorityIndex].Priority = data
-      };
+    };
 
-      const handleReceivedSeverityData = (data) => {
+    const handleReceivedSeverityData = (data) => {
         entriesData[severityIndex].Severity = data
-      };
+    };
 
 
     if (titleForm == "General Inspection") {
@@ -768,26 +777,26 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                             :
                                             column == 'Priority'
                                                 ?
-                                                <TouchableOpacity 
-                                                onMouseEnter={()=> setPriorityHovered(prevState => ({ ...prevState, [index]: true }))}
-                                                onMouseLeave={()=> setPriorityHovered(prevState => ({ ...prevState, [index]: false }))} 
-                                                style={[{ borderWidth: 1, height: 30, width: 100, borderRadius: 5, opacity: 1, borderColor: '#A2A2A2', justifyContent: 'center', paddingLeft: 10 }, priorityHovered[index] && {backgroundColor:'#67E9DA', borderWidth:0}]} onPress={() => {
-                                                    setPriorityIndex(index)
-                                                    setPriorityModalVisible(true)
-                                                }}>
-                                                    <Text style={[entryText, priorityHovered[index] && {color:'white'}]}>{item[column]}</Text>
+                                                <TouchableOpacity
+                                                    onMouseEnter={() => setPriorityHovered(prevState => ({ ...prevState, [index]: true }))}
+                                                    onMouseLeave={() => setPriorityHovered(prevState => ({ ...prevState, [index]: false }))}
+                                                    style={[{ borderWidth: 1, height: 30, width: 100, borderRadius: 5, opacity: 1, borderColor: '#A2A2A2', justifyContent: 'center', paddingLeft: 10 }, priorityHovered[index] && { backgroundColor: '#67E9DA', borderWidth: 0 }]} onPress={() => {
+                                                        setPriorityIndex(index)
+                                                        setPriorityModalVisible(true)
+                                                    }}>
+                                                    <Text style={[entryText, priorityHovered[index] && { color: 'white' }]}>{item[column]}</Text>
                                                 </TouchableOpacity>
                                                 :
                                                 column == 'Severity'
                                                     ?
-                                                    <TouchableOpacity 
-                                                    onMouseEnter={()=> setSeverityHovered(prevState => ({ ...prevState, [index]: true }))}
-                                                    onMouseLeave={()=> setSeverityHovered(prevState => ({ ...prevState, [index]: false }))} 
-                                                    style={[{ borderWidth: 1, height: 30, width: 100, borderRadius: 5, opacity: 1, borderColor: '#A2A2A2', justifyContent: 'center', paddingLeft: 10 }, severityHovered[index] && {backgroundColor:'#67E9DA', borderWidth:0}]} onPress={() => {
-                                                        setSeverityIndex(index)
-                                                        setSeverityModalVisible(true)
-                                                    }}>
-                                                        <Text style={[entryText, severityHovered[index] && {color:'white'}]}>{item[column]}</Text>
+                                                    <TouchableOpacity
+                                                        onMouseEnter={() => setSeverityHovered(prevState => ({ ...prevState, [index]: true }))}
+                                                        onMouseLeave={() => setSeverityHovered(prevState => ({ ...prevState, [index]: false }))}
+                                                        style={[{ borderWidth: 1, height: 30, width: 100, borderRadius: 5, opacity: 1, borderColor: '#A2A2A2', justifyContent: 'center', paddingLeft: 10 }, severityHovered[index] && { backgroundColor: '#67E9DA', borderWidth: 0 }]} onPress={() => {
+                                                            setSeverityIndex(index)
+                                                            setSeverityModalVisible(true)
+                                                        }}>
+                                                        <Text style={[entryText, severityHovered[index] && { color: 'white' }]}>{item[column]}</Text>
                                                     </TouchableOpacity>
                                                     :
                                                     <Text style={entryText}>{item[column]}</Text>
@@ -833,21 +842,129 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                     />
                 </View>
 
-            <AppModal 
-            isVisible={priorityModalVisible}
-            onClose={closePriorityModal}
-            optionList={priorityOptionList}
-            entryText={entryText}
-            sendData={handleReceivedPriorityData}/>
+                <AppModal
+                    isVisible={priorityModalVisible}
+                    onClose={closePriorityModal}
+                    optionList={priorityOptionList}
+                    entryText={entryText}
+                    sendData={handleReceivedPriorityData} />
 
-            <AppModal 
-            isVisible={severityModalVisible}
-            onClose={closeSeverityModal}
-            optionList={severityOptionList}
-            entryText={entryText}
-            sendData={handleReceivedSeverityData}/>
+                <AppModal
+                    isVisible={severityModalVisible}
+                    onClose={closeSeverityModal}
+                    optionList={severityOptionList}
+                    entryText={entryText}
+                    sendData={handleReceivedSeverityData} />
 
-                
+
+            </ScrollView>
+        );
+    }
+
+    else if (titleForm == "RegisterCompany") {
+
+        const columnsCSV = columns.filter((column) => column !== 'Action');
+
+        const entriesDataCSV = entriesData.map((entry) => {
+            // Create a new object without the 'Action' key
+            const { Action, ...newEntry } = entry;
+            return newEntry;
+        });
+
+        const renderRow = ({ item, index }) => {
+            const rowStyle = {
+                paddingVertical: densityAnim, // Apply the padding to the entire row
+            };
+            return (
+                <Animated.View style={[row, rowStyle]}>
+                    {columns.map((column) => {
+                        return (
+                            item[column] == undefined ? null :
+                                column === "Action" ?
+
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            // handleDelete(index)
+                                            handleValueChange(entriesData[index].Email)
+                                        }}
+                                        key={column}
+                                        style={[cell, {}]}
+                                        onMouseEnter={() => handleMouseEnter(index)}
+                                        onMouseLeave={() => handleMouseLeave(index)}
+                                    >
+                                        <Image
+                                            style={styles.btn}
+                                            resizeMode='contain'
+                                            source={require('../assets/delete_icon.png')}
+                                            tintColor={imageHovered[index] ? '#67E9DA' : 'red'}
+                                        />
+                                    </TouchableOpacity>
+
+                                    :
+                                    <View
+                                        key={column}
+                                        style={[cell, column === "Company" && { minWidth: 200 }, column === "Name" && { minWidth: 200 }, column === "Email" && { minWidth: 200 }, column === "Industry" && { minWidth: 150 }, column === "Number" && { minWidth: 200 }]}
+                                    >
+                                        
+                                            <View style={[styles.cell,]}>
+                                                <Text style={entryText}>{item[column]}</Text>
+                                            </View>
+                                        
+                                    </View>
+                        )
+                    })}
+                </Animated.View>
+
+            );
+        };
+        return (
+            <ScrollView horizontal>
+                <View>
+                    <View style={{ flexDirection: 'row', zIndex: 1, marginBottom: 20 }}>
+
+                        <DropDownComponent
+                            title="Density"
+                            options={["Compact", "Standard", "Comfortable"]}
+                            imageSource={require('../assets/density_icon.png')}
+                            onValueChange={handleDropdownValueChange}
+                            container={styles.dropdownContainer}
+                            dropdownButton={styles.dropdownButton}
+                            selectedValueStyle={styles.dropdownSelectedValueStyle}
+                            optionsContainer={styles.dropdownOptionsContainer}
+                            option={styles.dropdownOption}
+                            hoveredOption={styles.dropdownHoveredOption}
+                            optionText={styles.dropdownOptionText}
+                            hoveredOptionText={styles.dropdownHoveredOptionText}
+                            dropdownButtonSelect={styles.dropdownButtonSelect}
+                            dropdownStyle={styles.dropdown} />
+                        <CSVLink style={{ textDecorationLine: 'none' }} data={entriesDataCSV} headers={columnsCSV} filename={"assets_report.csv"}>
+                            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 }}>
+                                <Text style={{ fontSize: 18, fontWeight: '700', color: '#5B5B5B' }}>Export</Text>
+                                <Image style={{ height: 15, width: 15, marginLeft: 10 }} source={require('../assets/export_icon.png')}></Image>
+                            </TouchableOpacity>
+                        </CSVLink>
+                        {selectedRows.length > 0 && (
+                            <TouchableOpacity onPress={() => { handleDelete(selectedRows) }} style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 }}>
+                                <Text style={{ fontSize: 18, fontWeight: '700', color: 'red' }}>Delete</Text>
+                                <Image style={{ height: 20, width: 20, marginLeft: 10 }} source={require('../assets/trash_icon.png')}
+                                    tintColor='red'></Image>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                    <Animated.View style={[columnHeaderRow, { paddingVertical: densityAnim }]}>
+                        {columns.map((column) => (
+                            <View key={column} style={[columnHeaderCell, column === "Company" && { minWidth: 200 }, column === "Name" && { minWidth: 200 }, column === "Email" && { minWidth: 200 }, column === "Industry" && { minWidth: 150 }, column === "Number" && { minWidth: 200 }]}>
+                                <Text style={columnHeaderText}>{column}</Text>
+                            </View>
+                        ))}
+                    </Animated.View>
+                    <FlatList
+                        data={entriesData}
+                        keyExtractor={(item, index) => index.toString()}
+                        renderItem={renderRow}
+                        showsHorizontalScrollIndicator={true}
+                    />
+                </View>
             </ScrollView>
         );
     }
@@ -858,7 +975,7 @@ const styles = StyleSheet.create({
     btn: {
         width: 30,
         height: 30,
-        marginLeft: 15,
+        // marginLeft: 15,
 
     },
 
@@ -883,7 +1000,7 @@ const styles = StyleSheet.create({
         fontSize: 15,
     },
     checkbox: {
-        marginRight:5,
+        marginRight: 5,
     },
     deleteButton: {
         backgroundColor: '#FF0000',

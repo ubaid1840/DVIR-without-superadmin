@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated } from 'r
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import AppBtn from '../../components/Button';
-import { useRouter } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 
 
 
@@ -31,11 +31,11 @@ const ForgetPasswordPage = (props) => {
     }, [email])
 
     const handleForgetPasswod = () => {
-        props.navigation.navigate('ForgetPassword');
+        // props.navigation.navigate('ForgetPassword');
     };
 
     const handleLogin = () => {
-        props.navigation.navigate('Login');
+        // props.navigation.navigate('Login');
     };
 
     return (
@@ -67,14 +67,14 @@ const ForgetPasswordPage = (props) => {
                />
                 <View style={{ marginTop: 10, flexDirection: 'row' }}>
                     <Text style={{ fontSize: 14 }}>Already have an account? </Text>
-                    <TouchableOpacity
-                        onPress={()=> router.back()}
-                        activeOpacity={0.7}
-                        onMouseEnter={() => setLoginHovered(true)}
-                        onMouseLeave={() => setLoginHovered(false)}
-                    >
-                        <Text style={[styles.loginText, loginHovered && styles.loginTextHover]}>Login</Text>
-                    </TouchableOpacity>
+                    <View style={{ color: '#333', fontSize: 14, fontWeight: 'bold',}}>
+                            <Link
+                                href="/"
+                                style={[styles.loginText, loginHovered && styles.loginTextHover]}
+                                activeOpacity={0.7}
+                                onMouseEnter={() => setLoginHovered(true)}
+                                onMouseLeave={() => setLoginHovered(false)}>Login</Link>
+                        </View>
                 </View>
             </BlurView>
         </Animated.View>

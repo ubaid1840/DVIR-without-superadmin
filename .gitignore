@@ -16,3 +16,5 @@ web-build/
 dist.zip
 
 .vscode
+
+.env

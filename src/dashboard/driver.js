@@ -74,6 +74,7 @@ const DriverPage = () => {
 
         return () => {
             fadeAnim.setValue(0);
+            setCreateNewDriverIsVisible(false)
         }
 
     }, [])
@@ -134,306 +135,324 @@ const DriverPage = () => {
     }
 
     return (
+        <>
 
-        <Animated.View style={[styles.contentContainer, { opacity: fadeAnim, }]}>
+            {createNewDriverIsVisible ?
+                <Animated.View style={[styles.contentContainer, { opacity: fadeAnim, }]}>
 
-            <View style={{
-                position: 'absolute',
-                top: 0,
-                bottom: 0,
-                left: 0,
-                right: 0,
-                overflow: 'hidden',
-                height: height
-            }}>
-                <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
-                <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
-                <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
-                <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
-            </View>
-            <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
-            <ScrollView style={{ height: 100 }}>
-                <View style={{ flexDirection: 'row', marginLeft: 40, marginVertical: 40, marginRight: 40, justifyContent: 'space-between', alignItems: 'center' }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <View style={{ backgroundColor: '#67E9DA', borderRadius: 15, }}>
-                            <Image style={{ width: 30, height: 30, margin: 10 }}
-                                tintColor="#FFFFFF"
-                                source={require('../../assets/driver_icon.png')}></Image>
-                        </View>
-                        <Text style={{ fontSize: 40, color: '#1E3D5C', fontWeight: '900', marginLeft: 10 }}>
-                            Driver
-                        </Text>
+                    <View style={{
+                        position: 'absolute',
+                        top: 0,
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        overflow: 'hidden',
+                        height: height
+                    }}>
+                        <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
+                        <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
+                        <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
+                        <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
                     </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <View style={{ alignItems: 'center' }}>
-                            <Text style={{ color: '#5B5B5B', fontSize: 20, fontWeight: 'bold' }}>{totalDrivers}</Text>
-                            <Text style={{ color: '#5B5B5B', fontSize: 17 }}>Driver</Text>
+                    <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
+                    <ScrollView style={{ height: 100 }}>
+                        <View style={{ flexDirection: 'row', marginHorizontal: 40, marginTop: 40, alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Text style={{ fontSize: 30, color: '#1E3D5C', fontWeight: '900', marginLeft: 10, borderBottomColor: '#67E9DA', paddingBottom: 5, borderBottomWidth: 5 }}>
+                                Create New Driver
+                            </Text>
                         </View>
-                        <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 60, opacity: 0.5 }}></View>
-                        <View >
-                            <AppBtn
-                                title="Driver"
-                                imgSource={require('../../assets/add_plus_btn_icon.png')}
-                                btnStyle={styles.btn}
-                                btnTextStyle={styles.btnText}
-                                onPress={() => setCreateNewDriverIsVisible(true)} />
-                        </View>
-                    </View>
-                </View>
-                <View style={styles.contentCardStyle}>
-                    <Form
-                        columns={columns}
-                        entriesData={entriesData}
-                        titleForm="Driver"
-                        onValueChange={handleDriverFormValueChange}
-                        row={styles.formRowStyle}
-                        cell={styles.formCellStyle}
-                        entryText={styles.formEntryTextStyle}
-                        columnHeaderRow={styles.formColumnHeaderRowStyle}
-                        columnHeaderCell={styles.formColumnHeaderCellStyle}
-                        columnHeaderText={styles.formColumnHeaderTextStyle}
-                    />
-                </View>
-            </ScrollView>
 
-            <Modal
-                animationType="fade"
-                transparent={true}
-                visible={createNewDriverIsVisible}
-                onRequestClose={closeCreateNewDriver}>
-                <View style={styles.centeredView}>
-                    <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
-                    <View style={[styles.modalView]}>
-                        <ScrollView horizontal>
-                            <ScrollView>
-                                <View style={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    bottom: 0,
-                                    left: 0,
-                                    right: 0,
-                                    overflow: 'hidden'
-                                }}>
-                                    <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
-                                    <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
-                                    <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
-                                    <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
-                                </View>
-                                <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
-
-
-                                <View style={{ flexDirection: 'row', marginHorizontal: 40, marginTop: 40, alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <Text style={{ fontSize: 30, color: '#1E3D5C', fontWeight: '900', marginLeft: 10, borderBottomColor: '#67E9DA', paddingBottom: 5, borderBottomWidth: 5 }}>
-                                        Create New Driver
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <View style={styles.contentCardStyle}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <View style={{ height: 10, width: 10, borderRadius: 5, backgroundColor: '#67E9DA' }}></View>
+                                    <Text style={{ color: '#1E3D5C', fontSize: 20, fontWeight: 'bold', marginLeft: 10 }}>
+                                        Personal details
                                     </Text>
-
-                                    <View style={{ flexDirection: 'row' }}>
-                                        <View>
-                                            <AppBtn
-                                                title="Close"
-                                                btnStyle={[styles.btn, { minWidth: 100 }]}
-                                                btnTextStyle={styles.btnText}
-                                                onPress={() => {
-                                                    setCreateNewDriverIsVisible(false)
-                                                    clearAllValues()}} />
-                                        </View>
-                                        <View style={{ marginLeft: 20 }}>
-                                            <AppBtn
-                                                title="Save"
-                                                btnStyle={[styles.btn, { minWidth: 100 }]}
-                                                btnTextStyle={styles.btnText}
-                                                onPress={() => {
-                                                    const temp = entriesData
-                                                    let i = 0
-                                                    temp.map((val) => {
-                                                        if (val.Number == number || val.Email == email) {
-                                                            i++
-                                                            setAlertStatus('failed')
-                                                            setCreateNewDriverIsVisible(false)
-                                                            setAlertIsVisible(true)
-                                                            clearAllValues()
-                                                        }
-                                                    })
-                                                    if (i == 0 && number != "" ) {
-                                                        temp.push({
-                                                            'Name': `${firstName}  ${lastName}`,
-                                                            'Number': number,
-                                                            'Email': email,
-                                                            'Company': company,
-                                                            'Last Inspection': "",
-                                                            'Action': 'Button'
-                                                        })
-                                                        setTotalDrivers(totalDrivers + 1)
-                                                        setEntriesData(temp)
-                                                        setCreateNewDriverIsVisible(false)
-                                                        setAlertStatus('successful')
-                                                        setAlertIsVisible(true)
-                                                        clearAllValues()
-                                                    }
-                                                    else{
-                                                        setCreateNewDriverIsVisible(false)
-                                                        clearAllValues()
-                                                    }
-
-                                                }} />
-                                        </View>
-                                    </View>
                                 </View>
+                                <ScrollView horizontal>
+                                    <View style={{ flexDirection: 'row', }}>
 
+                                        <View style={{ flexDirection: 'column' }}>
+                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Employee Number*</Text>
+                                                <TextInput
+                                                    style={[styles.input, textInputBorderColor == 'Employee Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    placeholderTextColor="#868383DC"
+                                                    value={employeeNumber}
+                                                    onChangeText={(val) => { setEmployeeNumber(val) }}
+                                                    onFocus={() => { setTextInputBorderColor('Employee Number') }}
+                                                    onBlur={() => { setTextInputBorderColor('') }}
+                                                />
+                                            </View>
+                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>First Name*</Text>
+                                                <TextInput
+                                                    style={[styles.input, textInputBorderColor == 'First Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    placeholderTextColor="#868383DC"
+                                                    value={firstName}
+                                                    onChangeText={(val) => { setFirstName(val) }}
+                                                    onFocus={() => { setTextInputBorderColor('First Name') }}
+                                                    onBlur={() => { setTextInputBorderColor('') }}
+                                                />
+                                            </View>
 
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 40 }}>
-                                    <View style={styles.contentCardStyle}>
-                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <View style={{ height: 10, width: 10, borderRadius: 5, backgroundColor: '#67E9DA' }}></View>
-                                            <Text style={{ color: '#1E3D5C', fontSize: 20, fontWeight: 'bold', marginLeft: 10 }}>
-                                                Personal details
-                                            </Text>
+                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Last Name*</Text>
+                                                <TextInput
+                                                    style={[styles.input, textInputBorderColor == 'Last Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    placeholderTextColor="#868383DC"
+                                                    value={lastName}
+                                                    onChangeText={(val) => { setLastName(val) }}
+                                                    onFocus={() => { setTextInputBorderColor('Last Name') }}
+                                                    onBlur={() => { setTextInputBorderColor('') }}
+                                                />
+                                            </View>
+
+                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Email</Text>
+                                                <TextInput
+                                                    style={[styles.input, textInputBorderColor == 'Email' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    placeholderTextColor="#868383DC"
+                                                    value={email}
+                                                    onChangeText={(val) => { setEmail(val) }}
+                                                    onFocus={() => { setTextInputBorderColor('Email') }}
+                                                    onBlur={() => { setTextInputBorderColor('') }}
+                                                />
+                                            </View>
+
+                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Company</Text>
+                                                <TextInput
+                                                    style={[styles.input, textInputBorderColor == 'Company' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    placeholderTextColor="#868383DC"
+                                                    value={company}
+                                                    onChangeText={(val) => { setCompany(val) }}
+                                                    onFocus={() => { setTextInputBorderColor('Company') }}
+                                                    onBlur={() => { setTextInputBorderColor('') }}
+                                                />
+                                            </View>
+                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Mobile Phone*</Text>
+                                                <TextInput
+                                                    style={[styles.input, textInputBorderColor == 'Mobile Phone' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    placeholderTextColor="#868383DC"
+                                                    value={number}
+                                                    onChangeText={(val) => { setNumber(val) }}
+                                                    onFocus={() => { setTextInputBorderColor('Mobile Phone') }}
+                                                    onBlur={() => { setTextInputBorderColor('') }}
+                                                />
+                                            </View>
                                         </View>
+                                        <View style={{ flexDirection: 'column', marginLeft: 80 }}>
 
-                                        <View style={{ flexDirection: 'row', }}>
+                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center' }}>
+                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Photo</Text>
+                                                <View style={{ flexDirection: 'column', marginLeft: 100 }}>
+                                                    {fileUri
+                                                        ?
+                                                        <TouchableOpacity onPress={pickDocument}>
+                                                            <Image style={{ height: 100, width: 100, borderRadius: 50 }} source={{ uri: fileUri }} />
+                                                        </TouchableOpacity>
+                                                        :
+                                                        <TouchableOpacity style={{ width: 100, height: 100, borderRadius: 50, borderColor: '#cccccc', borderWidth: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }} onPress={pickDocument}>
 
-                                            <View style={{ flexDirection: 'column' }}>
-                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Employee Number*</Text>
-                                                    <TextInput
-                                                        style={[styles.input, textInputBorderColor == 'Employee Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                        placeholderTextColor="#868383DC"
-                                                        value={employeeNumber}
-                                                        onChangeText={(val) => { setEmployeeNumber(val) }}
-                                                        onFocus={() => { setTextInputBorderColor('Employee Number') }}
-                                                        onBlur={() => { setTextInputBorderColor('') }}
-                                                    />
-                                                </View>
-                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>First Name*</Text>
-                                                    <TextInput
-                                                        style={[styles.input, textInputBorderColor == 'First Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                        placeholderTextColor="#868383DC"
-                                                        value={firstName}
-                                                        onChangeText={(val) => { setFirstName(val) }}
-                                                        onFocus={() => { setTextInputBorderColor('First Name') }}
-                                                        onBlur={() => { setTextInputBorderColor('') }}
-                                                    />
-                                                </View>
+                                                            <Image style={{ height: 20, width: 20 }}
+                                                                source={require('../../assets/add_photo_icon.png')}
+                                                                tintColor='#67E9DA'></Image>
+                                                            <Text style={{ color: '#30E0CB' }}>Add Photo</Text>
 
-                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Last Name*</Text>
-                                                    <TextInput
-                                                        style={[styles.input, textInputBorderColor == 'Last Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                        placeholderTextColor="#868383DC"
-                                                        value={lastName}
-                                                        onChangeText={(val) => { setLastName(val) }}
-                                                        onFocus={() => { setTextInputBorderColor('Last Name') }}
-                                                        onBlur={() => { setTextInputBorderColor('') }}
-                                                    />
-                                                </View>
-
-                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Email</Text>
-                                                    <TextInput
-                                                        style={[styles.input, textInputBorderColor == 'Email' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                        placeholderTextColor="#868383DC"
-                                                        value={email}
-                                                        onChangeText={(val) => { setEmail(val) }}
-                                                        onFocus={() => { setTextInputBorderColor('Email') }}
-                                                        onBlur={() => { setTextInputBorderColor('') }}
-                                                    />
-                                                </View>
-
-                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Company</Text>
-                                                    <TextInput
-                                                        style={[styles.input, textInputBorderColor == 'Company' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                        placeholderTextColor="#868383DC"
-                                                        value={company}
-                                                        onChangeText={(val) => { setCompany(val) }}
-                                                        onFocus={() => { setTextInputBorderColor('Company') }}
-                                                        onBlur={() => { setTextInputBorderColor('') }}
-                                                    />
-                                                </View>
-                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Mobile Phone*</Text>
-                                                    <TextInput
-                                                        style={[styles.input, textInputBorderColor == 'Mobile Phone' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                        placeholderTextColor="#868383DC"
-                                                        value={number}
-                                                        onChangeText={(val) => { setNumber(val) }}
-                                                        onFocus={() => { setTextInputBorderColor('Mobile Phone') }}
-                                                        onBlur={() => { setTextInputBorderColor('') }}
-                                                    />
+                                                        </TouchableOpacity>
+                                                    }
                                                 </View>
                                             </View>
-                                            <View style={{ flexDirection: 'column', marginLeft: 80 }}>
-
-                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center' }}>
-                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Photo</Text>
-                                                    <View style={{ flexDirection: 'column', marginLeft: 100 }}>
-                                                        {fileUri
-                                                            ?
-                                                            <TouchableOpacity onPress={pickDocument}>
-                                                                <Image style={{ height: 100, width: 100, borderRadius: 50 }} source={{ uri: fileUri }} />
-                                                            </TouchableOpacity>
-                                                            :
-                                                            <TouchableOpacity style={{ width: 100, height: 100, borderRadius: 50, borderColor: '#cccccc', borderWidth: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }} onPress={pickDocument}>
-
-                                                                <Image style={{ height: 20, width: 20 }}
-                                                                    source={require('../../assets/add_photo_icon.png')}
-                                                                    tintColor='#67E9DA'></Image>
-                                                                <Text style={{ color: '#30E0CB' }}>Add Photo</Text>
-
-                                                            </TouchableOpacity>
-                                                        }
-                                                    </View>
-                                                </View>
 
 
-                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Work Phone</Text>
-                                                    <TextInput
-                                                        style={[styles.input, textInputBorderColor == 'Work Phone' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                        placeholderTextColor="#868383DC"
-                                                        value={workPhone}
-                                                        onChangeText={(val) => { setWorkPhone(val) }}
-                                                        onFocus={() => { setTextInputBorderColor('Work Phone') }}
-                                                        onBlur={() => { setTextInputBorderColor('') }}
-                                                    />
-                                                </View>
+                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Work Phone</Text>
+                                                <TextInput
+                                                    style={[styles.input, textInputBorderColor == 'Work Phone' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    placeholderTextColor="#868383DC"
+                                                    value={workPhone}
+                                                    onChangeText={(val) => { setWorkPhone(val) }}
+                                                    onFocus={() => { setTextInputBorderColor('Work Phone') }}
+                                                    onBlur={() => { setTextInputBorderColor('') }}
+                                                />
+                                            </View>
 
-                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Home Phone</Text>
-                                                    <TextInput
-                                                        style={[styles.input, textInputBorderColor == 'Home Phone' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                        placeholderTextColor="#868383DC"
-                                                        value={homePhone}
-                                                        onChangeText={(val) => { setHomePhone(val) }}
-                                                        onFocus={() => { setTextInputBorderColor('Home Phone') }}
-                                                        onBlur={() => { setTextInputBorderColor('') }}
-                                                    />
-                                                </View>
-                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Date of Birth</Text>
-                                                    <TextInput
-                                                        style={[styles.input, textInputBorderColor == 'Date of Birth' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                        placeholderTextColor="#868383DC"
-                                                        value={dob}
-                                                        onChangeText={(val) => { setDob(val) }}
-                                                        onFocus={() => { setTextInputBorderColor('Date of Birth') }}
-                                                        onBlur={() => { setTextInputBorderColor('') }}
-                                                    />
-                                                </View>
+                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Home Phone</Text>
+                                                <TextInput
+                                                    style={[styles.input, textInputBorderColor == 'Home Phone' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    placeholderTextColor="#868383DC"
+                                                    value={homePhone}
+                                                    onChangeText={(val) => { setHomePhone(val) }}
+                                                    onFocus={() => { setTextInputBorderColor('Home Phone') }}
+                                                    onBlur={() => { setTextInputBorderColor('') }}
+                                                />
+                                            </View>
+                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Date of Birth</Text>
+                                                <TextInput
+                                                    style={[styles.input, textInputBorderColor == 'Date of Birth' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    placeholderTextColor="#868383DC"
+                                                    value={dob}
+                                                    onChangeText={(val) => { setDob(val) }}
+                                                    onFocus={() => { setTextInputBorderColor('Date of Birth') }}
+                                                    onBlur={() => { setTextInputBorderColor('') }}
+                                                />
                                             </View>
                                         </View>
                                     </View>
-                                </View>
-                            </ScrollView>
-                        </ScrollView>
+                                </ScrollView>
+                            </View>
+                        </View>
+
+                    </ScrollView>
+                    <View style={{ flexDirection: 'row', width: '100%', backgroundColor: '#67E9DA', paddingVertical: 20, justifyContent: 'flex-end', paddingRight: 80 }}>
+                        <View>
+                            <AppBtn
+                                title="Close"
+                                btnStyle={[{
+                                    width: '100%',
+                                    height: 40,
+                                    backgroundColor: '#FFFFFF',
+                                    borderRadius: 5,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    shadowOffset: { width: 2, height: 2 },
+                                    shadowOpacity: 0.9,
+                                    shadowRadius: 5,
+                                    elevation: 0,
+                                    shadowColor: '#575757',
+                                    marginHorizontal: 10
+                                }, { minWidth: 100 }]}
+                                btnTextStyle={{ fontSize: 17, fontWeight: '400', color: '#000000' }}
+                                onPress={() => {
+                                    setCreateNewDriverIsVisible(false)
+                                    clearAllValues()
+                                }} />
+                        </View>
+                        <View style={{ marginLeft: 20 }}>
+                            <AppBtn
+                                title="Save"
+                                btnStyle={[{
+                                    width: '100%',
+                                    height: 40,
+                                    backgroundColor: '#FFFFFF',
+                                    borderRadius: 5,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    shadowOffset: { width: 2, height: 2 },
+                                    shadowOpacity: 0.9,
+                                    shadowRadius: 5,
+                                    elevation: 0,
+                                    shadowColor: '#575757',
+                                    marginHorizontal: 10
+                                }, { minWidth: 100 }]}
+                                btnTextStyle={{ fontSize: 17, fontWeight: '400', color: '#000000' }}
+                                onPress={() => {
+                                    const temp = entriesData
+                                    let i = 0
+                                    temp.map((val) => {
+                                        if (val.Number == number || val.Email == email) {
+                                            i++
+                                            setAlertStatus('failed')
+                                            setCreateNewDriverIsVisible(false)
+                                            setAlertIsVisible(true)
+                                            clearAllValues()
+                                        }
+                                    })
+                                    if (i == 0 && number != "") {
+                                        temp.push({
+                                            'Name': `${firstName}  ${lastName}`,
+                                            'Number': number,
+                                            'Email': email,
+                                            'Company': company,
+                                            'Last Inspection': "",
+                                            'Action': 'Button'
+                                        })
+                                        setTotalDrivers(totalDrivers + 1)
+                                        setEntriesData(temp)
+                                        setCreateNewDriverIsVisible(false)
+                                        setAlertStatus('successful')
+                                        setAlertIsVisible(true)
+                                        clearAllValues()
+                                    }
+                                    else {
+                                        setCreateNewDriverIsVisible(false)
+                                        clearAllValues()
+                                    }
+
+                                }} />
+                        </View>
                     </View>
-                </View>
-            </Modal>
+                </Animated.View>
+                :
+                <Animated.View style={[styles.contentContainer, { opacity: fadeAnim, }]}>
+
+                    <View style={{
+                        position: 'absolute',
+                        top: 0,
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        overflow: 'hidden',
+                        height: height
+                    }}>
+                        <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
+                        <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
+                        <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
+                        <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
+                    </View>
+                    <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
+                    <ScrollView style={{ height: 100 }}>
+                        <View style={{ flexDirection: 'row', marginLeft: 40, marginVertical: 40, marginRight: 40, justifyContent: 'space-between', alignItems: 'center' }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <View style={{ backgroundColor: '#67E9DA', borderRadius: 15, }}>
+                                    <Image style={{ width: 30, height: 30, margin: 10 }}
+                                        tintColor="#FFFFFF"
+                                        source={require('../../assets/driver_icon.png')}></Image>
+                                </View>
+                                <Text style={{ fontSize: 40, color: '#1E3D5C', fontWeight: '900', marginLeft: 10 }}>
+                                    Driver
+                                </Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <View style={{ alignItems: 'center' }}>
+                                    <Text style={{ color: '#5B5B5B', fontSize: 20, fontWeight: 'bold' }}>{totalDrivers}</Text>
+                                    <Text style={{ color: '#5B5B5B', fontSize: 17 }}>Driver</Text>
+                                </View>
+                                <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 60, opacity: 0.5 }}></View>
+                                <View >
+                                    <AppBtn
+                                        title="Driver"
+                                        imgSource={require('../../assets/add_plus_btn_icon.png')}
+                                        btnStyle={styles.btn}
+                                        btnTextStyle={styles.btnText}
+                                        onPress={() => setCreateNewDriverIsVisible(true)} />
+                                </View>
+                            </View>
+                        </View>
+                        <View style={styles.contentCardStyle}>
+                            <Form
+                                columns={columns}
+                                entriesData={entriesData}
+                                titleForm="Driver"
+                                onValueChange={handleDriverFormValueChange}
+                                row={styles.formRowStyle}
+                                cell={styles.formCellStyle}
+                                entryText={styles.formEntryTextStyle}
+                                columnHeaderRow={styles.formColumnHeaderRowStyle}
+                                columnHeaderCell={styles.formColumnHeaderCellStyle}
+                                columnHeaderText={styles.formColumnHeaderTextStyle}
+                            />
+                        </View>
+                    </ScrollView>
+                </Animated.View>}
 
             {alertStatus == 'successful'
                 ?
-
                 <AlertModal
                     centeredViewStyle={styles.centeredView}
                     modalViewStyle={styles.modalView}
@@ -441,7 +460,7 @@ const DriverPage = () => {
                     onClose={closeAlert}
                     img={require('../../assets/successful_icon.png')}
                     txt='Successful'
-                    txtStyle={{fontWeight:'500', fontSize:20, marginLeft:10}}
+                    txtStyle={{ fontWeight: '500', fontSize: 20, marginLeft: 10 }}
                     tintColor='green'>
 
                 </AlertModal>
@@ -455,13 +474,12 @@ const DriverPage = () => {
                         onClose={closeAlert}
                         img={require('../../assets/failed_icon.png')}
                         txt='Failed'
-                        txtStyle={{fontFamily : 'futura', fontSize:20, marginLeft:10}}
+                        txtStyle={{ fontFamily: 'futura', fontSize: 20, marginLeft: 10 }}
                         tintColor='red'>
                     </AlertModal>
                     : null
             }
-        </Animated.View>
-
+        </>
     );
 }
 
@@ -473,7 +491,7 @@ const styles = StyleSheet.create({
     input: {
         width: 250,
         height: 40,
-        marginLeft:10,
+        marginLeft: 10,
         backgroundColor: '#fff',
         borderRadius: 10,
         paddingHorizontal: 10,
