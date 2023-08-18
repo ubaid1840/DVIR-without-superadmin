@@ -647,7 +647,10 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                             item[column] == undefined ? null :
                                 column === "Action" ?
                                     <TouchableOpacity
-                                        onPress={() => handleValueChange(item)}
+                                        onPress={() => {
+                                            // handleDelete(index)
+                                            handleValueChange(entriesData[index].Email)
+                                        }}
                                         key={column}
                                         style={[cell, {}]}
                                         onMouseEnter={() => handleMouseEnter(index)}
@@ -655,32 +658,20 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                     >
                                         <Image
                                             style={styles.btn}
-                                            source={require('../assets/action_icon.png')}
                                             resizeMode='contain'
-                                            tintColor={imageHovered[index] ? '#67E9DA' : '#1E3D5C'}
+                                            source={require('../assets/delete_icon.png')}
+                                            tintColor={imageHovered[index] ? '#67E9DA' : 'red'}
                                         />
                                     </TouchableOpacity>
 
                                     :
                                     <View
                                         key={column}
-                                        style={[cell, column === "Name" && { minWidth: 300 }, column === "Number" && { minWidth: 150 }, column === "Email" && { minWidth: 150 }, column === "Company" && { minWidth: 150 }, column === "Role" && { minWidth: 200 }, column === "Last Inspection" && { minWidth: 200 }]}
+                                        style={[cell, column === "Name" && { minWidth: 150 }, column === "Number" && { minWidth: 150 }, column === "Email" && { minWidth: 150 }, column === "Company" && { minWidth: 150 }, column === "Role" && { minWidth: 200 }, column === "Last Inspection" && { minWidth: 200 }]}
                                     >
-                                        {column == "Name" ?
-                                            <View style={styles.cell}>
-                                                <View style={styles.section}>
-                                                    <Checkbox
-                                                        style={styles.checkbox}
-                                                        value={isCheckedSelected[index]}
-                                                        onValueChange={() => handleCheck(item, column, index)} // Pass the index to handleCheck function
-                                                        color={isCheckedSelected[index] ? '#67E9DA' : undefined}
-                                                    />
-                                                    <Text style={entryText}>{item[column]}</Text>
-                                                </View>
-                                            </View>
-                                            :
-                                            <Text style={entryText}>{item[column]}</Text>
-                                        }
+
+                                        <Text style={entryText}>{item[column]}</Text>
+
                                     </View>
                         )
                     })}
@@ -708,13 +699,13 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                     </View>
                     <Animated.View style={[columnHeaderRow, { paddingVertical: densityAnim }]}>
                         {columns.map((column) => (
-                            <View key={column} style={[columnHeaderCell, column == 'Name' && { minWidth: 300 }, column == 'Number' && { minWidth: 150 }, column == 'Email' && { minWidth: 150 }, column == 'Company' && { minWidth: 150 }, column == 'Role' && { minWidth: 200 }, column == 'Last Inspection' && { minWidth: 200 }]}>
+                            <View key={column} style={[columnHeaderCell, column == 'Name' && { minWidth: 150 }, column == 'Number' && { minWidth: 150 }, column == 'Email' && { minWidth: 150 }, column == 'Company' && { minWidth: 150 }, column == 'Role' && { minWidth: 200 }, column == 'Last Inspection' && { minWidth: 200 }]}>
                                 <Text style={columnHeaderText}>{column}</Text>
                             </View>
                         ))}
                     </Animated.View>
                     <FlatList
-                        data={data}
+                        data={entriesData}
                         keyExtractor={(item, index) => index.toString()}
                         renderItem={renderRow}
                         showsHorizontalScrollIndicator={true}
@@ -905,11 +896,11 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                         key={column}
                                         style={[cell, column === "Company" && { minWidth: 200 }, column === "Name" && { minWidth: 200 }, column === "Email" && { minWidth: 200 }, column === "Industry" && { minWidth: 150 }, column === "Number" && { minWidth: 200 }]}
                                     >
-                                        
-                                            <View style={[styles.cell,]}>
-                                                <Text style={entryText}>{item[column]}</Text>
-                                            </View>
-                                        
+
+                                        <View style={[styles.cell,]}>
+                                            <Text style={entryText}>{item[column]}</Text>
+                                        </View>
+
                                     </View>
                         )
                     })}

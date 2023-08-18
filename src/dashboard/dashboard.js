@@ -2,26 +2,30 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated, Pressable, TouchableWithoutFeedback, Modal, TextInput } from 'react-native';
 import { useFonts } from 'expo-font';
 import Header from '../../components/Header';
-import MainDashboard from '../dashboard/mainDashboard';
-import GeneralInspectionPage from '../dashboard/generalInspection';
-import AssetsPage from '../dashboard/assets';
-import DriverPage from '../dashboard/driver';
-import MechanicPage from '../dashboard/mechanic';
-import ManagerPage from '../dashboard/manager';
+import MainDashboard from './mainDashboard';
+import GeneralInspectionPage from './generalInspection';
+import AssetsPage from './assets';
+import DriverPage from './driver';
+import MechanicPage from './mechanic';
+import ManagerPage from './manager';
 import Head from 'expo-router/head';
-import DueDaysInspectionPage from '../dashboard/dueDaysInspection';
-import DefectsPage from '../dashboard/defects';
+import DueDaysInspectionPage from './dueDaysInspection';
+import DefectsPage from './defects';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import AppBtn from '../../components/Button';
-import ProfilePage from '../dashboard/profile';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import ProfilePage from './profile';
+import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 import { router } from 'expo-router';
-import { collection, getDocs, getFirestore } from 'firebase/firestore';
+import { collection, getDoc, getDocs, getFirestore } from 'firebase/firestore';
 import app from '../config/firebase';
 
 
 const DashboardPage = (props) => {
+
+  console.log(props.role)
+
+  // console.log(props.loginDesignation)
 
   const db = getFirestore(app)
 
@@ -59,6 +63,7 @@ const DashboardPage = (props) => {
   const [collapseAndHoverLeftSide, setCollapseAndHoverLeftSide] = useState(false)
   const colorAnimation = new Animated.Value(0);
   const [welcome, setWelcome] = useState('')
+  // const [loginDesignation, setLoginDesignation] = useState('')
 
   const [fileUri, setFileUri] = useState(null)
   const [profileIsVisible, setProfileIsVisible] = useState(false)
@@ -73,7 +78,7 @@ const DashboardPage = (props) => {
 
   const backgroundColor = colorAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: ['#1E3D5C', '#173048'], // Replace these with your desired colors
+    outputRange: ['#1E3D5C', '#1E3D5C'], // Replace these with your desired colors
   });
 
   useEffect(() => {
@@ -102,18 +107,34 @@ const DashboardPage = (props) => {
   }
 
   const fetchWelcome = async () => {
-    const querySnapshot = await getDocs(collection(db, 'DVIR'))
-    querySnapshot.forEach((doc) => {
-      if(getAuth().currentUser.email == doc.data().Email)
-      {
-        setWelcome(doc.data().Name)
-      }
-    })
+    const auth = getAuth()
+    if (auth.currentUser == undefined || auth.currentUser == null) { }
+    else {
+      const querySnapshot = await getDocs(collection(db, 'DVIR'))
+      querySnapshot.forEach(async (doc) => {
+        if (auth.currentUser.email == doc.data().Email) {
+          setWelcome(doc.data().Name)
+          // setLoginDesignation(doc.data().Designation)
+        }
+        await getDocs(collection(db, `DVIR/${doc.data().Email}/users`))
+          .then((newQuery) => {
+            newQuery.forEach((docs)=>{
+              if(getAuth().currentUser.email == docs.data().Email) {
+                setWelcome(docs.data().Name)
+                // setLoginDesignation(doc.data().Designation)
+              }
+            })
+          })
+      })
+
+      // await getDocs(collection(db, `DVIR/${getAuth().currentUser.email}/users`))
+    }
   }
 
   useEffect(() => {
 
     const auth = getAuth()
+    console.log(auth)
     onAuthStateChanged(auth, (user) => {
       if (user) {
         // User is signed in, see docs for a list of available properties
@@ -124,12 +145,12 @@ const DashboardPage = (props) => {
       } else {
         // User is signed out
         // ...
-        console.log('user signed out')
+        // console.log('user signed out')
         router.replace('/')
       }
 
-     fetchWelcome()
-   
+      fetchWelcome()
+
 
     });
 
@@ -387,11 +408,21 @@ const DashboardPage = (props) => {
 
 
   const handleHeaderValue = (value) => {
-
+    
     if (value == 'Profile') {
       // setProfileIsVisible(true)
       setProfileSelected(true)
       setSelectedPage('')
+    }
+
+    if (value == 'Logout') {
+      const auth = getAuth()
+        signOut(auth).then(() => {
+            // Sign-out successful.
+            router.replace('/')
+          }).catch((error) => {
+            // An error happened.
+          });
     }
   }
 
@@ -782,7 +813,7 @@ const styles = StyleSheet.create({
     color: '#67E9DA',
     fontWeight: 'bold',
     opacity: 1,
-    fontFamily: 'futura-heavy-font'
+    // fontFamily: 'futura-heavy-font'
 
   },
   navTextHover: {

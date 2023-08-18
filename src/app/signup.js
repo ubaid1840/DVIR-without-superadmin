@@ -6,7 +6,7 @@ import { useFonts } from 'expo-font';
 import AppBtn from '../../components/Button';
 import { Link, useRouter } from 'expo-router';
 import app from '../../src/config/firebase'
-import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
+import { getAuth, createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth'
 import AlertModal from '../../components/AlertModal';
 import { countrycodelist } from '../../components/codelist';
 import { collection, getDocs, getFirestore, orderBy, query } from 'firebase/firestore';
@@ -52,11 +52,11 @@ const SignupPage = (props) => {
     }
 
     useEffect(() => {
-        Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: false,
-        }).start();
+        // Animated.timing(fadeAnim, {
+        //     toValue: 1,
+        //     duration: 1000,
+        //     useNativeDriver: false,
+        // }).start();
         clearAll()
         return () => clearAll()
     }, []);
@@ -80,69 +80,162 @@ const SignupPage = (props) => {
 
     const handleSignup = async () => {
 
-        db = getFirestore(app)
+        const db = getFirestore(app)
+        const auth = getAuth(app)
 
-        if (isEmailValid == true && isPasswordValid == true) {
+        // const querySnapshot = await getDocs(query(collection(db, 'DVIR'), orderBy("TimeStamp", 'desc')));
+        // const dbData = []
+        // let i = 0
+        // querySnapshot.forEach((doc) => {
+        //     if (email == doc.data().Email) {
+        //         i++
+        //     }
+        // });
+        let i = 0
+        let j = 0
+        let l = 0
+        let data = []
+        // await getDocs(collection(db, 'DVIR'))
+        //     .then((querySnapshotUsers) => {
+        //         querySnapshotUsers.forEach(async (doc) => {
+        //             data.push({ Email: doc.data().Email })
+        //             if (email == doc.data().Email) {
+        //                 j++
+        //                 await createUserWithEmailAndPassword(auth, email, password)
+        //                     .then(async (userCredential) => {
+        //                         setUser(userCredential.user)
+        //                         await sendEmailVerification(auth.currentUser)
+        //                             .then(() => {
+        //                                 l++
+        //                                 // Email verification sent!
+        //                                 // ...
+        //                                 setAlertStatus('successful')
+        //                                 setAlertIsVisible(true)
+        //                                 clearAll()
+        //                                 setLoading(false)
+        //                             });
+        //                     })
+        //                     .catch((error) => {
+        //                         const errorCode = error.code;
+        //                         setUser(error.message.replace('auth/', ""))
+        //                         setAlertStatus('failed')
+        //                         setAlertIsVisible(true)
+        //                         setLoading(false)
 
-            const querySnapshot = await getDocs(query(collection(db, 'DVIR'), orderBy("TimeStamp", 'desc')));
-            const dbData = []
-            let i = 0
-            querySnapshot.forEach((doc) => {
-                if (email == doc.data().Email) {
-                    i++
-                }
-            });
+        //                         // ..
+        //                     });
+        //             }
 
-            if (i == 0) {
-                setAlertStatus('Not Allowed')
-                setAlertIsVisible(true)
-                clearAll()
-                setLoading(false)
-            }
-            else {
+        //             if (l == 0) {
+        //                 data.map(async (val) => {
+        //                     await getDocs(collection(db, `DVIR/${val.Email}/users`))
+        //                         .then((newQuery) => {
+        //                             newQuery.forEach(async (docx) => {
+        //                                 if (email == docx.data().Email) {
+        //                                     console.log('email found')
+        //                                     j++
+        //                                     await createUserWithEmailAndPassword(auth, email, password)
+        //                                         .then(async (userCredential) => {
+        //                                             setUser(userCredential.user)
+        //                                             await sendEmailVerification(auth.currentUser)
+        //                                                 .then(() => {
+        //                                                     // Email verification sent!
+        //                                                     // ...
+        //                                                     setAlertStatus('successful')
+        //                                                     setAlertIsVisible(true)
+        //                                                     clearAll()
+        //                                                     setLoading(false)
+        //                                                 });
+        //                                         })
+        //                                         .catch((error) => {
+        //                                             const errorCode = error.code;
+        //                                             setUser(error.message.replace('auth/', ""))
+        //                                             setAlertStatus('failed')
+        //                                             setAlertIsVisible(true)
+        //                                             setLoading(false)
 
-                const auth = getAuth(app)
-                createUserWithEmailAndPassword(auth, email, password)
-                    .then(async (userCredential) => {
-                        setUser(userCredential.user)
+        //                                             // ..
+        //                                         });
+        //                                 }
+        //                             })
+        //                         })
+
+        //                 })
+        //             }
+        //             // if (email == doc.data().Email) {
+        //             //     i++
+        //             // }
+        //         });
+        //     })
+
+        //     if(j == 0){
+        //         setAlertStatus('Not Allowed')
+        //         setAlertIsVisible(true)
+        //         setLoading(false)
+        //     }
+
+
+        // return j
+        // await getDocs(collection(db, 'AllowedUsers'))
+        //     .then((querySnapshotUsers) => {
+        //         querySnapshotUsers.forEach(async (doc) => {
+        //             // console.log(doc.id)
+        //             if (doc.id == email) {
+        //                 l++
+        //                 await createUserWithEmailAndPassword(auth, email, password)
+        //                     .then(async (userCredential) => {
+        //                         setUser(userCredential.user)
+        //                         await sendEmailVerification(auth.currentUser)
+        //                             .then(() => {
+        //                                 // Email verification sent!
+        //                                 // ...
+        //                                 setAlertStatus('successful')
+        //                                 setAlertIsVisible(true)
+        //                                 clearAll()
+        //                                 setLoading(false)
+        //                             });
+        //                     })
+        //                     .catch((error) => {
+        //                         const errorCode = error.code;
+        //                         setUser(error.message.replace('auth/', ""))
+        //                         setAlertStatus('failed')
+        //                         setAlertIsVisible(true)
+        //                         setLoading(false)
+
+        //                         // ..
+        //                     });
+        //             }
+        //         })
+        //     })
+
+        //     if (l == 0)
+        //     {
+        //         setAlertStatus('Not Allowed')
+        //         setAlertIsVisible(true)
+        //         setLoading(false)  
+        //     }
+        await createUserWithEmailAndPassword(auth, email, password)
+            .then(async (userCredential) => {
+                setUser(userCredential.user)
+                await sendEmailVerification(auth.currentUser)
+                    .then(() => {
+                        // Email verification sent!
+                        // ...
                         setAlertStatus('successful')
                         setAlertIsVisible(true)
                         clearAll()
                         setLoading(false)
-                    })
-                    .catch((error) => {
-                        const errorCode = error.code;
-                        setUser(error.message)
-                        setAlertStatus('failed')
-                        setAlertIsVisible(true)
-                        setLoading(false)
-                        // ..
                     });
+            })
+            .catch((error) => {
+                const errorCode = error.code;
+                setUser(error.message.replace('auth/', ""))
+                setAlertStatus('failed')
+                setAlertIsVisible(true)
+                setLoading(false)
 
-                    // console.log('a')
-                    // console.log(auth)
-                    // console.log('b')
-
-                // updateProfile(auth.currentUser, {
-                //     displayName: "abc"
-                // }).then(() => {
-                //     // Profile updated!
-                //     // ...
-                //     console.log('profile updated')
-                //     setAlertStatus('successful')
-                //     setAlertIsVisible(true)
-                //     clearAll()
-                //     setLoading(false)
-                // }).catch((error) => {
-                //     // An error occurred
-                //     // ...
-                //     console.log(error)
-                // });
-            }
-        }
-
-
-        // props.navigation.navigate('Login');
+                // ..
+            });
     };
 
     const [fontsLoaded] = useFonts({
@@ -175,7 +268,7 @@ const SignupPage = (props) => {
 
     return (
         <>
-            <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+            <View style={[styles.container]}>
                 <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
                 <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
                 <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
@@ -183,7 +276,7 @@ const SignupPage = (props) => {
                 <BlurView intensity={90} tint="light" style={StyleSheet.absoluteFill} />
                 <BlurView intensity={100} style={styles.content}>
                     <Text style={styles.title}>D V I R</Text>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    {/* <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                         <View style={[styles.inputContainer, { width: '45%' }]}>
                             <TextInput
                                 style={[styles.input, firstNameTextInputBorderColor && styles.withBorderInputContainer]}
@@ -206,7 +299,7 @@ const SignupPage = (props) => {
                                 onBlur={() => { setLastNameTextInputBorderColor(false) }}
                             />
                         </View>
-                    </View>
+                    </View> */}
                     <View style={styles.inputContainer}>
                         <TextInput
                             style={[styles.input, emailTextInputBorderColor && styles.withBorderInputContainer]}
@@ -240,29 +333,35 @@ const SignupPage = (props) => {
                         title="Sign Up"
                         btnStyle={styles.btn}
                         btnTextStyle={styles.btnText}
-                        onPress={() => {
-                            setLoading(true)
-                            handleSignup()
+                        onPress={async () => {
+                            if (isEmailValid == true && isPasswordValid == true) {
+                                setLoading(true)
+                                handleSignup()
+                                // else{
+                                //     setLoading(false)
+                                // }
+                            }
+
                         }}
                     />
                     <View style={{ marginTop: 10, flexDirection: 'row' }}>
                         <Text style={{ fontSize: 14 }}>Already have an account? </Text>
                         <View style={{ color: '#333', fontSize: 14, fontWeight: 'bold', }}>
                             <View
-                             onMouseEnter={() => setLoginHovered(true)}
-                             onMouseLeave={() => setLoginHovered(false)}>
-                                <TouchableOpacity onPress={()=>router.replace('/')}>
-                            <Text 
-                            style={[styles.loginText, loginHovered && styles.loginTextHover]}
-                            activeOpacity={0.7}>Login</Text>
-                               </TouchableOpacity>
+                                onMouseEnter={() => setLoginHovered(true)}
+                                onMouseLeave={() => setLoginHovered(false)}>
+                                <TouchableOpacity onPress={() => router.replace('/')}>
+                                    <Text
+                                        style={[styles.loginText, loginHovered && styles.loginTextHover]}
+                                        activeOpacity={0.7}>Login</Text>
+                                </TouchableOpacity>
                             </View>
-                           
+
                         </View>
                     </View>
 
                 </BlurView>
-            </Animated.View>
+            </View>
             {alertStatus == 'successful'
                 ?
                 <AlertModal
@@ -271,7 +370,7 @@ const SignupPage = (props) => {
                     isVisible={alertIsVisible}
                     onClose={closeAlert}
                     img={require('../../assets/successful_icon.png')}
-                    txt='Successful'
+                    txt='Check your email to verify'
                     txtStyle={{ fontWeight: '500', fontSize: 20, marginLeft: 10 }}
                     tintColor='green'>
                 </AlertModal>

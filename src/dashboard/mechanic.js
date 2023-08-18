@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Text, View, ScrollView, StyleSheet, Image, Animated, Dimensions, TextInput, Modal, TouchableOpacity } from 'react-native';
+import { Text, View, ScrollView, StyleSheet, Image, Animated, Dimensions, TextInput, Modal, TouchableOpacity, ActivityIndicator, TouchableWithoutFeedback, FlatList } from 'react-native';
 import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -8,60 +8,27 @@ import Form from '../../components/Form';
 import * as DocumentPicker from 'expo-document-picker';
 import AlertModal from '../../components/AlertModal';
 import DropDownComponent from '../../components/DropDown';
+import { getAuth } from 'firebase/auth';
+import { collection, deleteDoc, doc, getCountFromServer, getDocs, getFirestore, orderBy, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
+import app from '../config/firebase';
+import { countrycodelist } from '../../components/codelist';
 
 const columns = [
     'Name',
     'Number',
     'Email',
-    'Company',
     'Role',
     'Action'
 ];
 
-const entries = [
-    {
-        'Name': 'Brian',
-        'Number': '001002003',
-        'Email': 'abc@gmail.com',
-        'Company': 'Octa Soft',
-        'Role': 'Limited',
-        'Action': 'Button'
-    },
-    // Add more entries
-    {
-        'Name': 'DJ',
-        'Number': '123456',
-        'Email': 'xyz@gmail.com',
-        'Company': 'Octa Soft',
-        'Role': 'Full Access',
-        'Action': 'Button'
-    },
-];
-
 const MechanicPage = () => {
 
+    const db = getFirestore(app)
+    const auth = getAuth()
+
     const { width, height } = Dimensions.get('window')
+
     const [fadeAnim] = useState(new Animated.Value(0));
-    const [totalMechanic, setTotalMechanic] = useState(0)
-    const [entriesData, setEntriesData] = useState([
-        {
-            'Name': 'Brian',
-            'Number': '001002003',
-            'Email': 'abc@gmail.com',
-            'Company': 'Octa Soft',
-            'Role': 'Limited',
-            'Action': 'Button'
-        },
-        // Add more entries
-        {
-            'Name': 'DJ',
-            'Number': '123456',
-            'Email': 'xyz@gmail.com',
-            'Company': 'Octa Soft',
-            'Role': 'Full Access',
-            'Action': 'Button'
-        },
-    ])
 
     const [alertIsVisible, setAlertIsVisible] = useState(false)
     const [alertStatus, setAlertStatus] = useState('')
@@ -74,11 +41,95 @@ const MechanicPage = () => {
     const [number, setNumber] = useState('')
     const [workPhone, setWorkPhone] = useState('')
     const [role, setRole] = useState('')
-    const [dob, setDob] = useState('')
+    const [dobMonth, setDobMonth] = useState('')
+    const [dobDay, setDobDay] = useState('')
+    const [dobYear, setDobYear] = useState('')
+    const [mobileModalVisible, setMobileModalVisible] = useState(false)
+    const [mobileItemHovered, setMobileItemHovered] = useState({})
+    const [searchNumber, setSearchNumber] = useState('')
     const [textInputBorderColor, setTextInputBorderColor] = useState("")
     const [fileUri, setFileUri] = useState(null)
+    const [totalMechanic, setTotalMechanic] = useState(0)
+    const [entriesData, setEntriesData] = useState([])
+    const [deleteAlertVisible, setDeleteAlertVisible] = useState(false)
+    const [deleteOptionHover, setDeleteOptionHover] = useState({})
+    const [numberCode, setNumberCode] = useState('Select')
+    const [loading, setloading] = useState(true)
+    const [deleteUser, setDeleteUser] = useState('')
+    const [isEmailValid, setIsEmailValid] = useState(false)
+    const [dbReference, setDbReference] = useState(null)
+
 
     useEffect(() => {
+        setIsEmailValid(email.includes('.com') && email.includes('@') ? true : false)
+    }, [email])
+
+    const fetchData = async () => {
+        let dbreference = null
+        try {
+            await getDocs(collection(db, 'AllowedUsers'))
+                .then((snapshot) => {
+                    snapshot.forEach((doc) => {
+                        if (auth.currentUser.email == doc.data().Email)
+                            dbreference = doc.data().dbRef
+                        setDbReference(doc.data().dbRef)
+                        setCompany(doc.data().Company)
+                    })
+                })
+            if (dbreference == null) { }
+            else {
+                const coll = collection(db, `${dbreference}/users`);
+                const snapshot = await getCountFromServer(coll);
+                if (snapshot.data().count == 0) {
+                    setEmployeeNumber(1)
+                }
+                // setTotalManager(snapshot.data().count)
+
+                const dbRef = collection(db, `${dbreference}/users`)
+                const q = query(dbRef, where('Designation', '==', 'Mechanic'))
+                const querysnapshot = await getDocs(q)
+                const dbData = []
+                querysnapshot.forEach((doc) => {
+                    dbData.push(doc.data())
+                })
+
+
+
+
+                const sortedArray = dbData.slice().sort((a, b) => b.TimeStamp - a.TimeStamp);
+
+                // const querySnapshot = await getDocs(query(collection(db, dbReference), where('Designation', '==', 'Manager'), orderBy("TimeStamp")));
+                // const dbData = []
+                // querySnapshot.forEach((doc) => {
+                //     dbData.push(doc.data())
+                // });
+
+                let employeeRef = []
+                const querySnapshot = await getDocs(query(collection(db, `${dbreference}/users`), orderBy("TimeStamp", 'desc')));
+                querySnapshot.forEach((doc) => {
+                    employeeRef.push(doc.data())
+                });
+
+                if (employeeRef.length === 0) { }
+                else {
+                    setEmployeeNumber(employeeRef[0].EmployeeNumber + 1)
+                }
+                setTotalMechanic(dbData.length)
+                setEntriesData(sortedArray)
+                setloading(false)
+            }
+
+
+        } catch (e) {
+            console.log(e)
+        }
+
+    }
+
+
+    useEffect(() => {
+
+        fetchData()
 
         Animated.timing(fadeAnim, {
             toValue: 1,
@@ -88,13 +139,23 @@ const MechanicPage = () => {
 
         return () => {
             fadeAnim.setValue(0);
+            setCreateNewMechanicIsVisible(false)
         }
-
     }, [])
 
-    useEffect(() => {
-        setTotalMechanic(entriesData.length)
-    }, [])
+
+    const [fontsLoaded] = useFonts({
+        'futura-extra-black': require('../../assets/fonts/Futura-Extra-Black-font.ttf'),
+    });
+
+    if (!fontsLoaded) {
+        return null;
+    }
+
+    const handleFormValueChange = (value) => {
+        setDeleteUser(value)
+        setDeleteAlertVisible(true)
+    }
 
     const pickDocument = async () => {
         try {
@@ -120,416 +181,432 @@ const MechanicPage = () => {
         setAlertIsVisible(false)
     }
 
-    const clearAllValues = () => {
-        setEmployeeNumber("")
+    const handleRoleValueChange = (val) => {
+        setRole(val)
+    }
+
+    const handleAddNewMechanic = async () => {
+
+        const dbData = []
+        let i = 0
+        await getDocs(query(collection(db, `${dbReference}/users`)))
+            .then((querySnapshot) => {
+                querySnapshot.forEach((doc) => {
+                    if (email == doc.data().Email) {
+                        i++
+                    }
+                    else if (doc.data().Number == numberCode + number) {
+                        i++
+                    }
+                });
+            })
+
+        if (i == 0) {
+            await setDoc(doc(db, `${dbReference}/users`, email), {
+                FirstName: firstName,
+                LastName: lastName,
+                Name: `${firstName} ${lastName}`,
+                Company: company,
+                Email: email,
+                Number: numberCode+number,
+                WorkPhone: workPhone,
+                dob: dobDay + "-" + dobMonth + "-" + dobYear,
+                dobDay: dobDay,
+                dobMonth: dobMonth,
+                dobYear: dobYear,
+                Role: role,
+                Action: 'Button',
+                Designation: 'Mechanic',
+                TimeStamp: serverTimestamp(),
+                EmployeeNumber: employeeNumber
+            });
+
+            await setDoc(doc(db, 'AllowedUsers', email), {
+                Email: email,
+                Number: numberCodenumber,
+                Company: company,
+                TimeStamp: serverTimestamp(),
+                Designation: 'Mechanic',
+                dbRef: dbReference
+            });
+
+            setCreateNewMechanicIsVisible(false)
+            setAlertStatus('successful')
+            setAlertIsVisible(true)
+            console.log('added')
+            fetchData()
+            clearAll()
+            setloading(false)
+        }
+        else {
+            setCreateNewMechanicIsVisible(false)
+            setAlertStatus('failed')
+            setAlertIsVisible(true)
+            clearAll()
+            setloading(false)
+        }
+    }
+
+    const CustomActivityIndicator = () => {
+        return (
+            <View style={styles.activityIndicatorStyle}>
+                <ActivityIndicator color="#FFA600" size="large" />
+            </View>
+        );
+    };
+
+    const clearAll = () => {
         setFirstName('')
         setLastName('')
         setEmail('')
         setCompany('')
         setNumber('')
-        setWorkPhone('')
         setRole('')
-        setDob('')
+        setWorkPhone('')
+        setDobDay('')
+        setDobMonth('')
+        setDobYear('')
+        setNumberCode('Select')
     }
 
+    const closeMobileModal = () => {
+        setMobileModalVisible(false)
+    }
 
-    const [fontsLoaded] = useFonts({
-        'futura-extra-black': require('../../assets/fonts/Futura-Extra-Black-font.ttf'),
+    const formattedCountryCodeList = countrycodelist.map(item => {
+        return {
+            ...item,
+            code: item.code.split(' ').join(''),
+        };
     });
 
-    if (!fontsLoaded) {
-        return null;
-    }
-
-    const handleFormValueChange = (value) => {
-        console.log(value)
-    }
-
-    const handleRoleValueChange = (val) => {
-        setRole(val)
-    }
 
     return (
-        <> {createNewMechanicIsVisible ?
-            <Animated.View style={[styles.contentContainer, { opacity: fadeAnim, }]}>
+        <>
 
-                <View style={{
-                    position: 'absolute',
-                    top: 0,
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    overflow: 'hidden',
-                    height: height
-                }}>
-                    <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
-                    <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
-                    <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
-                    <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
-                </View>
-                <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
-                <ScrollView style={{ height: 100 }}>
-                    <View style={{ flexDirection: 'row', marginHorizontal: 40, marginTop: 40, alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Text style={{ fontSize: 30, color: '#1E3D5C', fontWeight: '900', marginLeft: 10, borderBottomColor: '#67E9DA', paddingBottom: 5, borderBottomWidth: 5 }}>
-                            Create New Mechanic
-                        </Text>
+            {createNewMechanicIsVisible
+                ?
+                <Animated.View style={[styles.contentContainer, { opacity: fadeAnim, }]}>
 
-                        <View style={{ flexDirection: 'row' }}>
-                            <View>
-                                <AppBtn
-                                    title="Close"
-                                    btnStyle={[styles.btn, { minWidth: 100 }]}
-                                    btnTextStyle={styles.btnText}
-                                    onPress={() => {
-                                        setCreateNewMechanicIsVisible(false)
-                                        clearAllValues()
-                                    }} />
-                            </View>
-                            <View style={{ marginLeft: 20 }}>
-                                <AppBtn
-                                    title="Save"
-                                    btnStyle={[styles.btn, { minWidth: 100 }]}
-                                    btnTextStyle={styles.btnText}
-                                    onPress={() => {
-                                        const temp = entriesData
-                                        let i = 0
-                                        temp.map((val) => {
-                                            if (val.Number == number || val.Email == email) {
-                                                i++
-                                                setAlertStatus('failed')
-                                                setCreateNewMechanicIsVisible(false)
-                                                setAlertIsVisible(true)
-                                                clearAllValues()
-                                            }
-                                        })
-                                        if (i == 0 && number != "" && email != '') {
-                                            temp.push({
-                                                'Name': `${firstName}  ${lastName}`,
-                                                'Number': number,
-                                                'Email': email,
-                                                'Company': company,
-                                                'Role': role,
-                                                'Action': 'Button'
-                                            })
-                                            setTotalMechanic(totalMechanic + 1)
-                                            setEntriesData(temp)
-                                            setCreateNewMechanicIsVisible(false)
-                                            setAlertStatus('successful')
-                                            setAlertIsVisible(true)
-                                            clearAllValues()
-                                        }
-                                        else {
-                                            setCreateNewMechanicIsVisible(false)
-                                            clearAllValues()
-                                        }
-
-                                    }} />
-                            </View>
-                        </View>
+                    <View style={{
+                        position: 'absolute',
+                        top: 0,
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        overflow: 'hidden',
+                        height: height
+                    }}>
+                        <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
+                        <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
+                        <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
+                        <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
                     </View>
 
-
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 0 }}>
-                        <View style={styles.contentCardStyle}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <View style={{ height: 10, width: 10, borderRadius: 5, backgroundColor: '#67E9DA' }}></View>
-                                <Text style={{ color: '#1E3D5C', fontSize: 20, fontWeight: 'bold', marginLeft: 10 }}>
-                                    Personal details
-                                </Text>
-                            </View>
-                            <ScrollView horizontal>
-                                <View style={{ flexDirection: 'row', }}>
-
-                                    <View style={{ flexDirection: 'column' }}>
-                                        <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <Text style={{ fontSize: 16, fontWeight: '500' }}>Employee Number*</Text>
-                                            <TextInput
-                                                style={[styles.input, textInputBorderColor == 'Employee Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                placeholderTextColor="#868383DC"
-                                                value={employeeNumber}
-                                                onChangeText={(val) => { setEmployeeNumber(val) }}
-                                                onFocus={() => { setTextInputBorderColor('Employee Number') }}
-                                                onBlur={() => { setTextInputBorderColor('') }}
-                                            />
-                                        </View>
-                                        <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <Text style={{ fontSize: 16, fontWeight: '500' }}>First Name*</Text>
-                                            <TextInput
-                                                style={[styles.input, textInputBorderColor == 'First Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                placeholderTextColor="#868383DC"
-                                                value={firstName}
-                                                onChangeText={(val) => { setFirstName(val) }}
-                                                onFocus={() => { setTextInputBorderColor('First Name') }}
-                                                onBlur={() => { setTextInputBorderColor('') }}
-                                            />
-                                        </View>
-
-                                        <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <Text style={{ fontSize: 16, fontWeight: '500' }}>Last Name*</Text>
-                                            <TextInput
-                                                style={[styles.input, textInputBorderColor == 'Last Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                placeholderTextColor="#868383DC"
-                                                value={lastName}
-                                                onChangeText={(val) => { setLastName(val) }}
-                                                onFocus={() => { setTextInputBorderColor('Last Name') }}
-                                                onBlur={() => { setTextInputBorderColor('') }}
-                                            />
-                                        </View>
-
-                                        <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <Text style={{ fontSize: 16, fontWeight: '500' }}>Email</Text>
-                                            <TextInput
-                                                style={[styles.input, textInputBorderColor == 'Email' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                placeholderTextColor="#868383DC"
-                                                value={email}
-                                                onChangeText={(val) => { setEmail(val) }}
-                                                onFocus={() => { setTextInputBorderColor('Email') }}
-                                                onBlur={() => { setTextInputBorderColor('') }}
-                                            />
-                                        </View>
-
-                                        <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <Text style={{ fontSize: 16, fontWeight: '500' }}>Company</Text>
-                                            <TextInput
-                                                style={[styles.input, textInputBorderColor == 'Company' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                placeholderTextColor="#868383DC"
-                                                value={company}
-                                                onChangeText={(val) => { setCompany(val) }}
-                                                onFocus={() => { setTextInputBorderColor('Company') }}
-                                                onBlur={() => { setTextInputBorderColor('') }}
-                                            />
-                                        </View>
-                                        <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <Text style={{ fontSize: 16, fontWeight: '500' }}>Mobile Phone*</Text>
-                                            <TextInput
-                                                style={[styles.input, textInputBorderColor == 'Mobile Phone' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                placeholderTextColor="#868383DC"
-                                                value={number}
-                                                onChangeText={(val) => { setNumber(val) }}
-                                                onFocus={() => { setTextInputBorderColor('Mobile Phone') }}
-                                                onBlur={() => { setTextInputBorderColor('') }}
-                                            />
-                                        </View>
-                                    </View>
-                                    <View style={{ flexDirection: 'column', marginLeft: 80, }}>
-
-                                        <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center' }}>
-                                            <Text style={{ fontSize: 16, fontWeight: '500' }}>Photo</Text>
-                                            <View style={{ flexDirection: 'column', marginLeft: 100 }}>
-                                                {fileUri
-                                                    ?
-                                                    <TouchableOpacity onPress={pickDocument}>
-                                                        <Image style={{ height: 100, width: 100, borderRadius: 50 }} source={{ uri: fileUri }} />
-                                                    </TouchableOpacity>
-                                                    :
-                                                    <TouchableOpacity style={{ width: 100, height: 100, borderRadius: 50, borderColor: '#cccccc', borderWidth: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }} onPress={pickDocument}>
-
-                                                        <Image style={{ height: 20, width: 20 }}
-                                                            source={require('../../assets/add_photo_icon.png')}
-                                                            tintColor='#67E9DA'></Image>
-                                                        <Text style={{ color: '#30E0CB' }}>Add Photo</Text>
-
-                                                    </TouchableOpacity>
-                                                }
-                                            </View>
-                                        </View>
-                                        <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex:1 }}>
-                                            <Text style={{ fontSize: 16, fontWeight: '500' }}>Role</Text>
-                                            <DropDownComponent
-                                                options={['Limited', 'Full access']}
-                                                onValueChange={handleRoleValueChange}
-                                                // title="Ubaid Arshad"
-                                                selectedValue={role}
-                                                imageSource={require('../../assets/up_arrow_icon.png')}
-                                                container={[styles.dropdownContainer]}
-                                                dropdownButton={styles.dropdownButton}
-                                                selectedValueStyle={styles.dropdownSelectedValueStyle}
-                                                optionsContainer={styles.dropdownOptionsContainer}
-                                                option={styles.dropdownOption}
-                                                hoveredOption={styles.dropdownHoveredOption}
-                                                optionText={styles.dropdownOptionText}
-                                                hoveredOptionText={styles.dropdownHoveredOptionText}
-                                                dropdownButtonSelect={styles.dropdownButtonSelect}
-                                                dropdownStyle={styles.dropdown}
-                                            />
-                                        </View>
-
-                                        <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <Text style={{ fontSize: 16, fontWeight: '500' }}>Work Phone</Text>
-                                            <TextInput
-                                                style={[styles.input, textInputBorderColor == 'Work Phone' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                placeholderTextColor="#868383DC"
-                                                value={workPhone}
-                                                onChangeText={(val) => { setWorkPhone(val) }}
-                                                onFocus={() => { setTextInputBorderColor('Work Phone') }}
-                                                onBlur={() => { setTextInputBorderColor('') }}
-                                            />
-                                        </View>
-
-                                        <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <Text style={{ fontSize: 16, fontWeight: '500' }}>Date of Birth</Text>
-                                            <TextInput
-                                                style={[styles.input, textInputBorderColor == 'Date of Birth' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                placeholderTextColor="#868383DC"
-                                                value={dob}
-                                                onChangeText={(val) => { setDob(val) }}
-                                                onFocus={() => { setTextInputBorderColor('Date of Birth') }}
-                                                onBlur={() => { setTextInputBorderColor('') }}
-                                            />
-                                        </View>
-
-                                    </View>
-                                </View>
-                            </ScrollView>
-                        </View>
-                    </View>
-                </ScrollView>
-
-                <View style={{ flexDirection: 'row', width: '100%', backgroundColor: '#67E9DA', paddingVertical: 20, justifyContent: 'flex-end', paddingRight: 80 }}>
-                    <View>
-                        <AppBtn
-                            title="Close"
-                            btnStyle={[{
-                                width: '100%',
-                                height: 40,
-                                backgroundColor: '#FFFFFF',
-                                borderRadius: 5,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                shadowOffset: { width: 2, height: 2 },
-                                shadowOpacity: 0.9,
-                                shadowRadius: 5,
-                                elevation: 0,
-                                shadowColor: '#575757',
-                                marginHorizontal: 10
-                            }, { minWidth: 100 }]}
-                            btnTextStyle={{ fontSize: 17, fontWeight: '400', color: '#000000' }}
-                            onPress={() => {
-                                setCreateNewMechanicIsVisible(false)
-                                clearAllValues()
-                            }} />
-                    </View>
-                    <View style={{ marginLeft: 20 }}>
-                        <AppBtn
-                            title="Save"
-                            btnStyle={[{
-                                width: '100%',
-                                height: 40,
-                                backgroundColor: '#FFFFFF',
-                                borderRadius: 5,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                shadowOffset: { width: 2, height: 2 },
-                                shadowOpacity: 0.9,
-                                shadowRadius: 5,
-                                elevation: 0,
-                                shadowColor: '#575757',
-                                marginHorizontal: 10
-                            }, { minWidth: 100 }]}
-                            btnTextStyle={{ fontSize: 17, fontWeight: '400', color: '#000000' }}
-                            onPress={() => {
-                                const temp = entriesData
-                                let i = 0
-                                temp.map((val) => {
-                                    if (val.Number == number || val.Email == email) {
-                                        i++
-                                        setAlertStatus('failed')
-                                        setCreateNewMechanicIsVisible(false)
-                                        setAlertIsVisible(true)
-                                        clearAllValues()
-                                    }
-                                })
-                                if (i == 0 && number != "" && email != '') {
-                                    temp.push({
-                                        'Name': `${firstName}  ${lastName}`,
-                                        'Number': number,
-                                        'Email': email,
-                                        'Company': company,
-                                        'Role': role,
-                                        'Action': 'Button'
-                                    })
-                                    setTotalMechanic(totalMechanic + 1)
-                                    setEntriesData(temp)
-                                    setCreateNewMechanicIsVisible(false)
-                                    setAlertStatus('successful')
-                                    setAlertIsVisible(true)
-                                    clearAllValues()
-                                }
-                                else {
-                                    setCreateNewMechanicIsVisible(false)
-                                    clearAllValues()
-                                }
-
-                            }} />
-                    </View>
-                </View>
-
-
-
-            </Animated.View>
-            :
-            <Animated.View style={[styles.contentContainer, { opacity: fadeAnim, }]}>
-
-                <View style={{
-                    position: 'absolute',
-                    top: 0,
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    overflow: 'hidden',
-                    height: height
-                }}>
-                    <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
-                    <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
-                    <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
-                    <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
-                </View>
-                <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
-                <ScrollView style={{ height: 100 }}>
-                    <View style={{ flexDirection: 'row', margin: 40, justifyContent: 'space-between', alignItems: 'center' }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <View style={{ backgroundColor: '#67E9DA', borderRadius: 15, }}>
-                                <Image style={{ width: 30, height: 30, margin: 10 }}
-                                    tintColor='#FFFFFF'
-                                    source={require('../../assets/mechanic_icon.png')}></Image>
-                            </View>
-                            <Text style={{ fontSize: 40, color: '#1E3D5C', fontWeight: '900', marginLeft: 10 }}>
-                                Mechanic
+                    <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
+                    <ScrollView style={{ height: 100 }}>
+                        <View style={{ flexDirection: 'row', marginHorizontal: 40, marginTop: 40, alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Text style={{ fontSize: 30, color: '#1E3D5C', fontWeight: '900', marginLeft: 10, borderBottomColor: '#67E9DA', paddingBottom: 5, borderBottomWidth: 5 }}>
+                                Create New Mechanic
                             </Text>
                         </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <View style={{ alignItems: 'center' }}>
-                                <Text style={{ color: '#5B5B5B', fontSize: 20, fontWeight: 'bold' }}>{totalMechanic}</Text>
-                                <Text style={{ color: '#5B5B5B', fontSize: 17 }}>Mechanic</Text>
-                            </View>
-                            <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 60, opacity: 0.5 }}></View>
-                            <View >
-                                <AppBtn
-                                    title="Mechanic"
-                                    imgSource={require('../../assets/add_plus_btn_icon.png')}
-                                    btnStyle={styles.btn}
-                                    btnTextStyle={styles.btnText}
-                                    onPress={() => setCreateNewMechanicIsVisible(true)} />
+
+
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <View style={styles.contentCardStyle}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <View style={{ height: 10, width: 10, borderRadius: 5, backgroundColor: '#67E9DA' }}></View>
+                                    <Text style={{ color: '#1E3D5C', fontSize: 20, fontWeight: 'bold', marginLeft: 10 }}>
+                                        Personal details
+                                    </Text>
+                                </View>
+                                <ScrollView horizontal style={{ paddingBottom: 10 }} >
+                                    <View style={{ flexDirection: 'row', }}>
+
+                                        <View style={{ flexDirection: 'column' }}>
+                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Employee Number*</Text>
+                                                <TextInput
+                                                    style={[styles.input, textInputBorderColor == 'Employee Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    placeholderTextColor="#868383DC"
+                                                    value={employeeNumber}
+                                                    // onChangeText={(val)=>setEmployeeNumber(val)}
+                                                    onFocus={() => { setTextInputBorderColor('Employee Number') }}
+                                                    onBlur={() => { setTextInputBorderColor('') }}
+                                                />
+                                            </View>
+                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>First Name*</Text>
+                                                <TextInput
+                                                    style={[styles.input, textInputBorderColor == 'First Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    placeholderTextColor="#868383DC"
+                                                    value={firstName}
+                                                    onChangeText={(val) => { setFirstName(val) }}
+                                                    onFocus={() => { setTextInputBorderColor('First Name') }}
+                                                    onBlur={() => { setTextInputBorderColor('') }}
+                                                />
+                                            </View>
+
+                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Last Name*</Text>
+                                                <TextInput
+                                                    style={[styles.input, textInputBorderColor == 'Last Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    placeholderTextColor="#868383DC"
+                                                    value={lastName}
+                                                    onChangeText={(val) => { setLastName(val) }}
+                                                    onFocus={() => { setTextInputBorderColor('Last Name') }}
+                                                    onBlur={() => { setTextInputBorderColor('') }}
+                                                />
+                                            </View>
+
+                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Email</Text>
+                                                <View>
+                                                    <TextInput
+                                                        style={[styles.input, textInputBorderColor == 'Email' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                        placeholderTextColor="#868383DC"
+                                                        value={email}
+                                                        onChangeText={(val) => { setEmail(val) }}
+                                                        onFocus={() => { setTextInputBorderColor('Email') }}
+                                                        onBlur={() => { setTextInputBorderColor('') }}
+                                                    />
+                                                    {!isEmailValid ? <Text style={{ color: 'red', paddingTop: 5, marginLeft: 15, fontSize: 10, alignSelf: 'flex-start' }}>Enter Valid Email</Text> : null}
+                                                </View>
+                                            </View>
+
+
+                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
+                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Mobile Phone*</Text>
+                                                <View style={{ marginLeft: 10 }}>
+                                                    <TouchableOpacity style={[styles.input, { width: 80, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 0 }]} onPress={() => setMobileModalVisible(true)}>
+                                                        <Text>{numberCode}</Text>
+                                                    </TouchableOpacity>
+                                                </View>
+                                                <TextInput
+                                                    style={[styles.input, { width: 150 }, textInputBorderColor == 'Mobile Phone' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    placeholderTextColor="#868383DC"
+                                                    keyboardType='numeric'
+                                                    value={number}
+                                                    onChangeText={(val) => { setNumber(val.replace(/[^0-9]/g, '')) }}
+                                                    onFocus={() => { setTextInputBorderColor('Mobile Phone') }}
+                                                    onBlur={() => { setTextInputBorderColor('') }}
+                                                />
+                                            </View>
+                                        </View>
+                                        <View style={{ flexDirection: 'column', marginLeft: 80 }}>
+
+                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center' }}>
+                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Photo</Text>
+                                                <View style={{ flexDirection: 'column', marginLeft: 100 }}>
+                                                    {fileUri
+                                                        ?
+                                                        <TouchableOpacity onPress={pickDocument}>
+                                                            <Image style={{ height: 100, width: 100, borderRadius: 50 }} source={{ uri: fileUri }} />
+                                                        </TouchableOpacity>
+                                                        :
+                                                        <TouchableOpacity style={{ width: 100, height: 100, borderRadius: 50, borderColor: '#cccccc', borderWidth: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }} onPress={pickDocument}>
+
+                                                            <Image style={{ height: 20, width: 20 }}
+                                                                source={require('../../assets/add_photo_icon.png')}
+                                                                tintColor='#67E9DA'></Image>
+                                                            <Text style={{ color: '#30E0CB' }}>Add Photo</Text>
+
+                                                        </TouchableOpacity>
+                                                    }
+                                                </View>
+                                            </View>
+
+                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
+                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Role</Text>
+                                                <DropDownComponent
+                                                    options={['Limited', 'Full Access']}
+                                                    onValueChange={handleRoleValueChange}
+                                                    // title="Ubaid Arshad"
+                                                    selectedValue={role}
+                                                    imageSource={require('../../assets/up_arrow_icon.png')}
+                                                    container={styles.dropdownContainer}
+                                                    dropdownButton={styles.dropdownButton}
+                                                    selectedValueStyle={styles.dropdownSelectedValueStyle}
+                                                    optionsContainer={styles.dropdownOptionsContainer}
+                                                    option={styles.dropdownOption}
+                                                    hoveredOption={styles.dropdownHoveredOption}
+                                                    optionText={styles.dropdownOptionText}
+                                                    hoveredOptionText={styles.dropdownHoveredOptionText}
+                                                    dropdownButtonSelect={styles.dropdownButtonSelect}
+                                                    dropdownStyle={styles.dropdown}
+                                                />
+                                            </View>
+
+                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Work Phone</Text>
+                                                <TextInput
+                                                    style={[styles.input, textInputBorderColor == 'Work Phone' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    placeholderTextColor="#868383DC"
+                                                    value={workPhone}
+                                                    onChangeText={(val) => { setWorkPhone(val) }}
+                                                    onFocus={() => { setTextInputBorderColor('Work Phone') }}
+                                                    onBlur={() => { setTextInputBorderColor('') }}
+                                                />
+                                            </View>
+
+                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Date of Birth</Text>
+                                                <TextInput
+                                                    style={[styles.input, { width: 50 }, textInputBorderColor == 'day' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    placeholderTextColor="#868383DC"
+                                                    keyboardType='numeric'
+                                                    value={dobDay}
+                                                    placeholder='DD'
+                                                    onChangeText={(val) => setDobDay(val.replace(/[^0-9]/g, ''))}
+                                                    onFocus={() => { setTextInputBorderColor('day') }}
+                                                    onBlur={() => { setTextInputBorderColor('') }}
+                                                />
+                                                <TextInput
+                                                    style={[styles.input, { width: 50 }, textInputBorderColor == 'month' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    placeholderTextColor="#868383DC"
+                                                    keyboardType='numeric'
+                                                    value={dobMonth}
+                                                    placeholder='MM'
+                                                    onChangeText={(val) => setDobMonth(val.replace(/[^0-9]/g, ''))}
+                                                    onFocus={() => { setTextInputBorderColor('month') }}
+                                                    onBlur={() => { setTextInputBorderColor('') }}
+                                                />
+                                                <TextInput
+                                                    style={[styles.input, { width: 80 }, textInputBorderColor == 'year' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    placeholderTextColor="#868383DC"
+                                                    keyboardType='numeric'
+                                                    value={dobYear}
+                                                    placeholder='YYYYY'
+                                                    onChangeText={(val) => setDobYear(val.replace(/[^0-9]/g, ''))}
+                                                    onFocus={() => { setTextInputBorderColor('year') }}
+                                                    onBlur={() => { setTextInputBorderColor('') }}
+                                                />
+                                            </View>
+                                        </View>
+                                    </View>
+                                </ScrollView>
                             </View>
                         </View>
+                    </ScrollView>
+
+                    <View style={{ flexDirection: 'row', width: '100%', backgroundColor: '#67E9DA', paddingVertical: 20, justifyContent: 'flex-end', paddingRight: 80 }}>
+                        <View>
+                            <AppBtn
+                                title="Close"
+                                btnStyle={[{
+                                    width: '100%',
+                                    height: 40,
+                                    backgroundColor: '#FFFFFF',
+                                    borderRadius: 5,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    shadowOffset: { width: 2, height: 2 },
+                                    shadowOpacity: 0.9,
+                                    shadowRadius: 5,
+                                    elevation: 0,
+                                    shadowColor: '#575757',
+                                    marginHorizontal: 10
+                                }, { minWidth: 100 }]}
+                                btnTextStyle={{ fontSize: 17, fontWeight: '400', color: '#000000' }}
+                                onPress={() => {
+                                    setCreateNewMechanicIsVisible(false)
+                                    clearAll()
+                                }} />
+                        </View>
+                        <View style={{ marginLeft: 20 }}>
+                            <AppBtn
+                                title="Save"
+                                btnStyle={[{
+                                    width: '100%',
+                                    height: 40,
+                                    backgroundColor: '#FFFFFF',
+                                    borderRadius: 5,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    shadowOffset: { width: 2, height: 2 },
+                                    shadowOpacity: 0.9,
+                                    shadowRadius: 5,
+                                    elevation: 0,
+                                    shadowColor: '#575757',
+                                    marginHorizontal: 10
+                                }, { minWidth: 100 }]}
+                                btnTextStyle={{ fontSize: 17, fontWeight: '400', color: '#000000' }}
+                                onPress={() => {
+                                    if (firstName == '' || lastName == '' || role == '' || number == '' || numberCode == 'Select') { }
+                                    else {
+                                        if (isEmailValid) {
+                                            setloading(true)
+                                            handleAddNewMechanic()
+                                        }
+                                    }
+                                }} />
+                        </View>
                     </View>
-                    <View style={styles.contentCardStyle}>
-                        <Form
-                            columns={columns}
-                            entriesData={entriesData}
-                            titleForm="Mechanic"
-                            onValueChange={handleFormValueChange}
-                            row={styles.formRowStyle}
-                            cell={styles.formCellStyle}
-                            entryText={styles.formEntryTextStyle}
-                            columnHeaderRow={styles.formColumnHeaderRowStyle}
-                            columnHeaderCell={styles.formColumnHeaderCellStyle}
-                            columnHeaderText={styles.formColumnHeaderTextStyle}
-                        />
+
+                </Animated.View>
+                :
+                <Animated.View style={[styles.contentContainer, { opacity: fadeAnim, }]}>
+
+                    <View style={{
+                        position: 'absolute',
+                        top: 0,
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        overflow: 'hidden',
+                        height: height
+                    }}>
+                        <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
+                        <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
+                        <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
+                        <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
                     </View>
-                </ScrollView>
-            </Animated.View>
-        }
+
+                    <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
+                    <ScrollView style={{ height: 100 }}>
+                        <View style={{ flexDirection: 'row', margin: 40, justifyContent: 'space-between', alignItems: 'center' }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <View style={{ backgroundColor: '#67E9DA', borderRadius: 15, }}>
+                                    <Image style={{ width: 30, height: 30, margin: 10 }}
+                                        tintColor='#FFFFFF'
+                                        source={require('../../assets/mechanic_icon.png')}></Image>
+                                </View>
+                                <Text style={{ fontSize: 40, color: '#1E3D5C', fontWeight: '900', marginLeft: 10 }}>
+                                    Mechanic
+                                </Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <View style={{ alignItems: 'center' }}>
+                                    <Text style={{ color: '#5B5B5B', fontSize: 20, fontWeight: 'bold' }}>{totalMechanic}</Text>
+                                    <Text style={{ color: '#5B5B5B', fontSize: 17 }}>Mechanic</Text>
+                                </View>
+                                <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 60, opacity: 0.5 }}></View>
+                                <View >
+                                    <AppBtn
+                                        title="Mechanic"
+                                        imgSource={require('../../assets/add_plus_btn_icon.png')}
+                                        btnStyle={styles.btn}
+                                        btnTextStyle={styles.btnText}
+                                        onPress={() => setCreateNewMechanicIsVisible(true)} />
+                                </View>
+                            </View>
+                        </View>
+                        <View style={styles.contentCardStyle}>
+                            <Form
+                                columns={columns}
+                                entriesData={entriesData}
+                                titleForm="Mechanic"
+                                onValueChange={handleFormValueChange}
+                                row={styles.formRowStyle}
+                                cell={styles.formCellStyle}
+                                entryText={styles.formEntryTextStyle}
+                                columnHeaderRow={styles.formColumnHeaderRowStyle}
+                                columnHeaderCell={styles.formColumnHeaderCellStyle}
+                                columnHeaderText={styles.formColumnHeaderTextStyle}
+                            />
+                        </View>
+                    </ScrollView>
+                </Animated.View>}
 
             {alertStatus == 'successful'
                 ?
@@ -560,7 +637,152 @@ const MechanicPage = () => {
                     </AlertModal>
                     : null
             }
+
+            <Modal
+                animationType="fade"
+                visible={mobileModalVisible}
+                transparent={true}>
+                <TouchableWithoutFeedback onPress={() => closeMobileModal()}>
+                    <View style={styles.centeredView}>
+                        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+                        <TouchableWithoutFeedback onPress={() => { }}>
+                            <View style={{ backgroundColor: 'white', borderRadius: 8, padding: 20, elevation: 5, maxHeight: '98%', width: 300 }}>
+                                <TextInput
+                                    style={[styles.input, { height: 50, marginVertical: 20 }]}
+                                    placeholder='Search'
+                                    value={searchNumber}
+                                    onChangeText={(val) => {
+                                        setSearchNumber(val.replace(/ /g, ''))
+
+
+                                    }}
+                                />
+                                <ScrollView style={{ height: 200, paddingRight: 10 }}>
+                                    <FlatList
+                                        data={formattedCountryCodeList}
+                                        renderItem={({ item, index }) => {
+
+                                            // const formattedSearchNumber = searchNumber.replace(/ /g, '');
+                                            if (searchNumber === "" || item.code.includes(searchNumber)) {
+                                                return (
+                                                    <View
+                                                        onMouseEnter={() => setMobileItemHovered({ [index]: true })}
+                                                        onMouseLeave={() => setMobileItemHovered({ [index]: false })}
+                                                    >
+                                                        <TouchableOpacity
+                                                            onPress={() => {
+                                                                setNumberCode(item.code.replace(/ /g, ''))
+                                                                closeMobileModal()
+                                                            }}
+                                                            style={[
+                                                                {
+                                                                    marginTop: 15,
+                                                                    borderWidth: 1,
+                                                                    borderColor: '#cccccc',
+                                                                    outlineStyle: 'none',
+                                                                    padding: 10,
+                                                                    borderRadius: 5,
+                                                                },
+                                                                mobileItemHovered[index] && {
+                                                                    backgroundColor: '#67E9DA',
+                                                                    borderColor: '#67E9DA',
+                                                                },
+                                                            ]}
+                                                        >
+                                                            <Text>{item.code} {item.name}</Text>
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                )
+                                            }
+
+                                            else if (item.name.toLowerCase().includes(searchNumber.toLowerCase())) {
+                                                return (
+                                                    <View
+                                                        onMouseEnter={() => setMobileItemHovered({ [index]: true })}
+                                                        onMouseLeave={() => setMobileItemHovered({ [index]: false })}
+                                                    >
+                                                        <TouchableOpacity
+                                                            onPress={() => {
+                                                                setNumberCode(item.code.replace(/ /g, ''))
+                                                                closeMobileModal()
+                                                            }}
+                                                            style={[
+                                                                {
+                                                                    marginTop: 15,
+                                                                    borderWidth: 1,
+                                                                    borderColor: '#cccccc',
+                                                                    outlineStyle: 'none',
+                                                                    padding: 10,
+                                                                    borderRadius: 5,
+                                                                },
+                                                                mobileItemHovered[index] && {
+                                                                    backgroundColor: '#67E9DA',
+                                                                    borderColor: '#67E9DA',
+                                                                },
+                                                            ]}
+                                                        >
+                                                            <Text>{item.code} {item.name}</Text>
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                )
+                                            }
+
+                                        }} />
+                                </ScrollView>
+                            </View>
+                        </TouchableWithoutFeedback>
+                    </View>
+                </TouchableWithoutFeedback>
+            </Modal>
+
+            <Modal
+                animationType="fade"
+                visible={deleteAlertVisible}
+                transparent={true}>
+                <View style={styles.centeredView}>
+                    <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+                    <View style={styles.modalView}>
+                        <View>
+                            <Text style={{ fontSize: 17, fontWeight: '400' }}>Are you sure you want to Delete ?</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', width: 250, justifyContent: 'space-between', marginTop: 20 }}>
+                            <View
+                                onMouseEnter={() => setDeleteOptionHover({ [0]: true })}
+                                onMouseLeave={() => setDeleteOptionHover({ [0]: false })}>
+                                <TouchableOpacity
+                                    onPress={async () => {
+                                        setDeleteAlertVisible(false)
+                                        setloading(true)
+                                        await deleteDoc(doc(db, `${dbReference}/users`, deleteUser));
+                                        await deleteDoc(doc(db, `AllowedUsers`, deleteUser));
+                                        console.log('deleted')
+                                        setAlertStatus('successful')
+                                        setAlertIsVisible(true)
+                                        fetchData()
+                                    }}
+
+                                    style={[{ width: 100, height: 40, backgroundColor: '#FFFFFF', borderRadius: 5, alignItems: 'center', justifyContent: 'center', shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.9, shadowRadius: 5, elevation: 0, shadowColor: '#575757', marginHorizontal: 10 }, deleteOptionHover[0] && { backgroundColor: '#67E9DA', borderColor: '#67E9DA' }]}>
+                                    <Text style={[{ fontSize: 16 }, deleteOptionHover[0] && { color: '#FFFFFF' }]}>Yes</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <View
+                                onMouseEnter={() => setDeleteOptionHover({ [1]: true })}
+                                onMouseLeave={() => setDeleteOptionHover({ [1]: false })}>
+                                <TouchableOpacity
+                                    onPress={() => setDeleteAlertVisible(false)}
+                                    style={[{ width: 100, height: 40, backgroundColor: '#FFFFFF', borderRadius: 5, alignItems: 'center', justifyContent: 'center', shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.9, shadowRadius: 5, elevation: 0, shadowColor: '#575757', marginHorizontal: 10 }, deleteOptionHover[1] && { backgroundColor: '#67E9DA', borderColor: '#67E9DA' }]}>
+                                    <Text style={[{ fontSize: 16 }, deleteOptionHover[1] && { color: '#FFFFFF' }]}>No</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </View>
+
+            </Modal>
+            {loading ? CustomActivityIndicator() : null}
+
         </>
+
     );
 }
 
@@ -788,6 +1010,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#ccc',
         borderRadius: 8,
+        minWidth: 150,
 
     },
     dropdown: {
@@ -814,7 +1037,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         marginTop: 4,
         boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)', // Add boxShadow for web
-        width: 250,
+        width: 250
 
     },
     dropdownOption: {
@@ -860,6 +1083,20 @@ const styles = StyleSheet.create({
         elevation: 5,
         maxHeight: '98%',
         maxWidth: '95%'
+    },
+    activityIndicatorStyle: {
+        flex: 1,
+        position: 'absolute',
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        marginTop: 'auto',
+        marginBottom: 'auto',
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        backgroundColor: '#555555DD',
     },
 });
 

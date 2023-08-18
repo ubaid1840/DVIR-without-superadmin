@@ -12,7 +12,8 @@ const Header = (props) => {
 
 
     const handleValueChange = (value) => {
-         props.onValueChange(value);
+        // console.log(value)
+        props.onValueChange(value);
     };
 
     const [inputValue, setInputValue] = useState('');
@@ -37,7 +38,7 @@ const Header = (props) => {
                 <View >
                     
                         <Text style={{ fontSize: 18, fontWeight: '600', color: '#5B5B5B', fontFamily: 'futura-book' }}>
-                            Welcome {props.title}
+                            Welcome
                         </Text>
 
                 </View>
@@ -49,7 +50,7 @@ const Header = (props) => {
                         <DropDownComponent
                             options={logoutList}
                             onValueChange={handleValueChange}
-                            title="Ubaid Arshad"
+                            title={props.title}
                             imageSource={require('../assets/up_arrow_icon.png')}
                             container={styles.dropdownContainer}
                             dropdownButton={styles.dropdownButton}

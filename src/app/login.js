@@ -9,6 +9,7 @@ import { Link, router } from 'expo-router';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
 import app from '../config/firebase';
 import AlertModal from '../../components/AlertModal';
+import { collection, getDocs, getFirestore } from 'firebase/firestore';
 
 const loginList = [{
     id: '1',
@@ -79,7 +80,7 @@ const LoginPage = (props) => {
     const [alertStatus, setAlertStatus] = useState('')
     const [loading, setLoading] = useState(false)
 
-  
+
 
     useEffect(() => {
         setIsEmailValid(email.includes('.com') && email.includes('@') ? true : false)
@@ -105,14 +106,14 @@ const LoginPage = (props) => {
 
         setEmail("")
         setPassword("")
-        Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: false
-        }).start();
-        return () => {
-            fadeAnim.setValue(0);
-        }
+        // Animated.timing(fadeAnim, {
+        //     toValue: 1,
+        //     duration: 1000,
+        //     useNativeDriver: false
+        // }).start();
+        // return () => {
+        //     fadeAnim.setValue(0);
+        // }
     }, [])
 
     const handleLoginAlreadySignIn = (props) => {
@@ -121,36 +122,69 @@ const LoginPage = (props) => {
             router.replace({ pathname: 'superAdminDashboard', params: { id: 'superAdminLogin' } })
         }
         else {
-            router.replace('/dashboard')
+             router.replace('/dashboardLogin')
         }
 
     }
 
-    const handleLogin = () => {
+    const handleLogin = async () => {
 
+        let i = 0
+        const db = getFirestore(app)
         const auth = getAuth(app);
-        signInWithEmailAndPassword(auth, email, password)
-            .then((userCredential) => {
-                const user = userCredential.user;
-                setLoading(false)
-                if (email === 'superadmin@gmail.com') {
+        if (email == 'superadmin@gmail.com') {
+            signInWithEmailAndPassword(auth, email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    setLoading(false)
                     router.replace({ pathname: 'superAdminDashboard', params: { id: 'superAdminLogin' } })
-                    // Navigate to the dashboard when email matches
-                    // window.location.href = {{pathname:'superAdminDashboard'}}; // Use your navigation method here
-                }
-                else {
-                    router.replace('/dashboard')
-                }
+                })
+                .catch((error) => {
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+                    setError(errorCode.replace('auth/', ""))
+                    setAlertStatus('failed')
+                    setAlertIsVisible(true)
+                    setLoading(false)
+                });
+        }
 
-            })
-            .catch((error) => {
-                const errorCode = error.code;
-                const errorMessage = error.message;
-                setError(errorCode)
-                setAlertStatus('failed')
+        else {
+            await getDocs(collection(db, 'AllowedUsers'))
+                .then(async (snapshot) => {
+                    snapshot.forEach(async (doc) => {
+                        if (email == doc.data().Email) {
+                            i++
+                            signInWithEmailAndPassword(auth, email, password)
+                                .then((userCredential) => {
+                                    const user = userCredential.user;
+                                    setLoading(false)
+                                    if (user.emailVerified == true) {
+                                        router.replace({ pathname: 'dashboardLogin' })
+                                    }
+                                    else if (user.emailVerified == false) {
+                                        setAlertStatus('not verified')
+                                        setAlertIsVisible(true)
+                                        setLoading(false)
+                                    }
+                                })
+                                .catch((error) => {
+                                    const errorCode = error.code;
+                                    const errorMessage = error.message;
+                                    setError(errorCode.replace('auth/', ""))
+                                    setAlertStatus('failed')
+                                    setAlertIsVisible(true)
+                                    setLoading(false)
+                                });
+                        }
+                    })
+                })
+            if (i == 0) {
+                setAlertStatus('Not Allowed')
                 setAlertIsVisible(true)
                 setLoading(false)
-            });
+            }
+        }
 
     };
 
@@ -185,7 +219,7 @@ const LoginPage = (props) => {
 
     return (
         <>
-            <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+            <View style={[styles.container]}>
                 <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
                 <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
                 <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
@@ -226,9 +260,10 @@ const LoginPage = (props) => {
                             title="Login"
                             btnStyle={styles.btn}
                             btnTextStyle={styles.btnText}
-                            onPress={()=>{
+                            onPress={() => {
                                 setLoading(true)
-                                handleLogin()}}
+                                handleLogin()
+                            }}
                         >
                         </AppBtn>
                     </View>
@@ -263,7 +298,7 @@ const LoginPage = (props) => {
 
                     </View>
                 </BlurView>
-            </Animated.View>
+            </View>
 
             {alertStatus == 'successful'
                 ?
@@ -290,8 +325,32 @@ const LoginPage = (props) => {
                         txtStyle={{ fontFamily: 'futura', fontSize: 20, marginLeft: 10 }}
                         tintColor='red'>
                     </AlertModal>
-                    :
-                    null}
+                    : alertStatus == 'not verified'
+                        ?
+                        <AlertModal
+                            centeredViewStyle={styles.centeredView}
+                            modalViewStyle={styles.modalView}
+                            isVisible={alertIsVisible}
+                            onClose={closeAlert}
+                            img={require('../../assets/failed_icon.png')}
+                            txt={'Please verify your email to login'}
+                            txtStyle={{ fontFamily: 'futura', fontSize: 20, marginLeft: 10 }}
+                            tintColor='red'>
+                        </AlertModal>
+                        : alertStatus == 'Not Allowed'
+                            ?
+                            <AlertModal
+                                centeredViewStyle={styles.centeredView}
+                                modalViewStyle={styles.modalView}
+                                isVisible={alertIsVisible}
+                                onClose={closeAlert}
+                                img={require('../../assets/failed_icon.png')}
+                                txt='Contact sales team to register'
+                                txtStyle={{ fontFamily: 'futura', fontSize: 20, marginLeft: 10 }}
+                                tintColor='red'>
+                            </AlertModal>
+                            :
+                            null}
 
             {loading ? CustomActivityIndicator() : null}
 

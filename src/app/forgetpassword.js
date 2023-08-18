@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import AppBtn from '../../components/Button';
 import { Link, useRouter } from 'expo-router';
+import app from '../config/firebase';
+import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
+import AlertModal from '../../components/AlertModal';
 
 
 
@@ -13,61 +16,103 @@ const ForgetPasswordPage = (props) => {
     const [emailTextInputBorderColor, setEmailTextInputBorderColor] = useState(false)
     const [loginHovered, setLoginHovered] = useState(false);
     const fadeAnim = useState(new Animated.Value(0))[0];
+    const [alertIsVisible, setAlertIsVisible] = useState(true)
+    const [error, setError] = useState(null)
+    const [alertStatus, setAlertStatus] = useState('')
+    const [loading, setLoading] = useState(false)
 
     const router = useRouter()
 
     useEffect(() => {
-        Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: false,
-        }).start();
+        // Animated.timing(fadeAnim, {
+        //     toValue: 1,
+        //     duration: 1000,
+        //     useNativeDriver: false,
+        // }).start();
     }, []);
 
     useEffect(() => {
 
         setIsEmailValid(email.includes('.com') && email.includes('@') ? true : false)
-   
+
     }, [email])
 
-    const handleForgetPasswod = () => {
+    const handleForgetPasswod = async () => {
         // props.navigation.navigate('ForgetPassword');
+        if (isEmailValid == true) {
+            const auth = getAuth(app);
+            await sendPasswordResetEmail(auth, email)
+                .then(() => {
+                    // Password reset email sent!
+                    // ..
+                    console.log('Email sent')
+                    setAlertStatus('successful')
+                    setAlertIsVisible(true)
+                    setLoading(false)
+                    setEmail("")
+                })
+                .catch((error) => {
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+                    setError(errorCode.replace('auth/',""))
+                    setAlertStatus('failed')
+                    setAlertIsVisible(true)
+                    setLoading(false)
+                    // ..
+                });
+        }
     };
 
     const handleLogin = () => {
         // props.navigation.navigate('Login');
     };
 
+    const CustomActivityIndicator = () => {
+        return (
+            <View style={styles.activityIndicatorStyle}>
+                <ActivityIndicator color="#FFA600" size="large" />
+            </View>
+        );
+    };
+    const closeAlert = () => {
+        setAlertIsVisible(false)
+    }
+
+
     return (
-        <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-            <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
-            <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
-            <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
-            <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
-            <BlurView intensity={90} tint="light" style={StyleSheet.absoluteFill} />
-            <BlurView intensity={100} style={styles.content}>
-                <Text style={styles.title}>D V I R</Text>
-                <TextInput
-                    style={[styles.input, emailTextInputBorderColor && styles.withBorderInputContainer]}
-                    placeholder="Email"
-                    placeholderTextColor="#868383DC"
-                    value={email}
-                    onChangeText={(val)=>{setEmail(val)}}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    onFocus={()=>{setEmailTextInputBorderColor(true)}}
-                    onBlur={()=>{setEmailTextInputBorderColor(false)}}
-                />
-                 {!isEmailValid ? <Text style={{ color: 'red', paddingTop: 5, paddingLeft: 5, fontSize: 10, alignSelf: 'flex-start' }}>Enter Valid Email</Text> : null}
-               <AppBtn 
-               title = "Reset"
-               btnStyle = {styles.btn}
-               btnTextStyle = {styles.btnText}
-               onPress = {handleForgetPasswod}
-               />
-                <View style={{ marginTop: 10, flexDirection: 'row' }}>
-                    <Text style={{ fontSize: 14 }}>Already have an account? </Text>
-                    <View style={{ color: '#333', fontSize: 14, fontWeight: 'bold',}}>
+        <>
+            <View style={[styles.container]}>
+                <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
+                <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
+                <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
+                <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
+                <BlurView intensity={90} tint="light" style={StyleSheet.absoluteFill} />
+                <BlurView intensity={100} style={styles.content}>
+                    <Text style={styles.title}>D V I R</Text>
+                    <TextInput
+                        style={[styles.input, emailTextInputBorderColor && styles.withBorderInputContainer]}
+                        placeholder="Email"
+                        placeholderTextColor="#868383DC"
+                        value={email}
+                        onChangeText={(val) => { setEmail(val) }}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        onFocus={() => { setEmailTextInputBorderColor(true) }}
+                        onBlur={() => { setEmailTextInputBorderColor(false) }}
+                    />
+                    {!isEmailValid ? <Text style={{ color: 'red', paddingTop: 5, paddingLeft: 5, fontSize: 10, alignSelf: 'flex-start' }}>Enter Valid Email</Text> : null}
+                    <AppBtn
+                        title="Reset"
+                        btnStyle={styles.btn}
+                        btnTextStyle={styles.btnText}
+                        onPress={()=>{
+                            setLoading(true)
+                            handleForgetPasswod()
+                        }}
+                    />
+                    <View style={{ marginTop: 10, flexDirection: 'row' }}>
+                        <Text style={{ fontSize: 14 }}>Already have an account? </Text>
+                        <View style={{ color: '#333', fontSize: 14, fontWeight: 'bold', }}>
                             <Link
                                 href="/"
                                 style={[styles.loginText, loginHovered && styles.loginTextHover]}
@@ -75,9 +120,39 @@ const ForgetPasswordPage = (props) => {
                                 onMouseEnter={() => setLoginHovered(true)}
                                 onMouseLeave={() => setLoginHovered(false)}>Login</Link>
                         </View>
-                </View>
-            </BlurView>
-        </Animated.View>
+                    </View>
+                </BlurView>
+            </View>
+            {alertStatus == 'successful'
+                ?
+                <AlertModal
+                    centeredViewStyle={styles.centeredView}
+                    modalViewStyle={styles.modalView}
+                    isVisible={alertIsVisible}
+                    onClose={closeAlert}
+                    img={require('../../assets/successful_icon.png')}
+                    txt='Check your email'
+                    txtStyle={{ fontWeight: '500', fontSize: 20, marginLeft: 10 }}
+                    tintColor='green'>
+                </AlertModal>
+                :
+                alertStatus == 'failed'
+                    ?
+                    <AlertModal
+                        centeredViewStyle={styles.centeredView}
+                        modalViewStyle={styles.modalView}
+                        isVisible={alertIsVisible}
+                        onClose={closeAlert}
+                        img={require('../../assets/failed_icon.png')}
+                        txt={error}
+                        txtStyle={{ fontFamily: 'futura', fontSize: 20, marginLeft: 10 }}
+                        tintColor='red'>
+                    </AlertModal>
+                        :
+                        null}
+
+            {loading ? CustomActivityIndicator() : null}
+        </>
     );
 };
 
@@ -141,10 +216,10 @@ const styles = StyleSheet.create({
         borderColor: '#cccccc',
         outlineStyle: 'none'
     },
-    withBorderInputContainer:{
-        borderColor:'#558BC1',
+    withBorderInputContainer: {
+        borderColor: '#558BC1',
         shadowColor: '#558BC1',
-        shadowOffset: { width: 0, height:  0},
+        shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 1,
         shadowRadius: 10,
         elevation: 0,
@@ -201,8 +276,37 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontWeight: 'bold',
-        marginLeft:10,
-        marginRight:10
+        marginLeft: 10,
+        marginRight: 10
+    },
+    activityIndicatorStyle: {
+        flex: 1,
+        position: 'absolute',
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        marginTop: 'auto',
+        marginBottom: 'auto',
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        backgroundColor: '#555555DD'
+    },
+    centeredView: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        // backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalView: {
+        backgroundColor: 'white',
+        borderRadius: 8,
+        padding: 20,
+        alignItems: 'center',
+        elevation: 5,
+        maxHeight: '98%',
+        maxWidth: '95%'
     },
 });
 

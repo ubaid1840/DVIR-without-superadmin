@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Text, View, ScrollView, StyleSheet, Image, Animated, Dimensions, TextInput, Modal, TouchableOpacity } from 'react-native';
+import { Text, View, ScrollView, StyleSheet, Image, Animated, Dimensions, TextInput, Modal, TouchableOpacity, ActivityIndicator, TouchableWithoutFeedback, FlatList } from 'react-native';
 import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -8,30 +8,23 @@ import Form from '../../components/Form';
 import * as DocumentPicker from 'expo-document-picker';
 import AlertModal from '../../components/AlertModal';
 import DropDownComponent from '../../components/DropDown';
+import { getAuth } from 'firebase/auth';
+import { collection, deleteDoc, doc, getCountFromServer, getDocs, getFirestore, or, orderBy, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
+import app from '../config/firebase';
+import { countrycodelist } from '../../components/codelist';
 
 const columns = [
     'Name',
     'Number',
     'Email',
-    'Company',
     'Role',
     'Action'
 ];
 
-const entries = [
-    {
-        'Name': 'Osaka',
-        'Number': '7899456',
-        'Email': 'abc@gmail.com',
-        'Company': 'Octa Soft',
-        'Role': 'Manager',
-        'Action': 'Button'
-    },
-    // Add more entries
-
-];
-
 const ManagerPage = () => {
+
+    const db = getFirestore(app)
+    const auth = getAuth()
 
     const { width, height } = Dimensions.get('window')
 
@@ -48,24 +41,96 @@ const ManagerPage = () => {
     const [number, setNumber] = useState('')
     const [workPhone, setWorkPhone] = useState('')
     const [role, setRole] = useState('')
-    const [dob, setDob] = useState('')
+    const [dobMonth, setDobMonth] = useState('')
+    const [dobDay, setDobDay] = useState('')
+    const [dobYear, setDobYear] = useState('')
+    const [mobileModalVisible, setMobileModalVisible] = useState(false)
+    const [mobileItemHovered, setMobileItemHovered] = useState({})
+    const [searchNumber, setSearchNumber] = useState('')
     const [textInputBorderColor, setTextInputBorderColor] = useState("")
     const [fileUri, setFileUri] = useState(null)
     const [totalManager, setTotalManager] = useState(0)
-    const [entriesData, setEntriesData] = useState([
-        {
-            'Name': 'Osaka',
-            'Number': '7899456',
-            'Email': 'abc@gmail.com',
-            'Company': 'Octa Soft',
-            'Role': 'Manager',
-            'Action': 'Button'
-        },
-    ])
+    const [entriesData, setEntriesData] = useState([])
+    const [deleteAlertVisible, setDeleteAlertVisible] = useState(false)
+    const [deleteOptionHover, setDeleteOptionHover] = useState({})
+    const [numberCode, setNumberCode] = useState('Select')
+    const [loading, setloading] = useState(true)
+    const [deleteUser, setDeleteUser] = useState('')
+    const [isEmailValid, setIsEmailValid] = useState(false)
+    const [dbReference, setDbReference] = useState(null)
+
+    useEffect(() => {
+        setIsEmailValid(email.includes('.com') && email.includes('@') ? true : false)
+    }, [email])
+
+    const fetchData = async () => {
+        let dbreference = null
+        try {
+            await getDocs(collection(db, 'AllowedUsers'))
+                .then((snapshot) => {
+                    snapshot.forEach((doc) => {
+                        if (auth.currentUser.email == doc.data().Email)
+                            dbreference = doc.data().dbRef
+                        setDbReference(doc.data().dbRef)
+                        setCompany(doc.data().Company)
+                    })
+                })
+            if (dbreference == null) { }
+            else {
+                // console.log('ubaid')
+                // console.log(dbReference)
+                const coll = collection(db, `${dbreference}/users`);
+                const snapshot = await getCountFromServer(coll);
+                console.log()
+                if (snapshot.data().count == 0) {
+                    setEmployeeNumber(1)
+                }
+                // setTotalManager(snapshot.data().count)
+
+                const dbRef = collection(db, `${dbreference}/users`)
+                const q = query(dbRef, where('Designation', '==', 'Manager'))
+                const querysnapshot = await getDocs(q)
+                const dbData = []
+                querysnapshot.forEach((doc) => {
+                    dbData.push(doc.data())
+                })
+
+
+
+
+                const sortedArray = dbData.slice().sort((a, b) => b.TimeStamp - a.TimeStamp);
+
+                // const querySnapshot = await getDocs(query(collection(db, `DVIR/${auth.currentUser.email}/users`), where('Designation', '==', 'Manager'), orderBy("TimeStamp")));
+                // const dbData = []
+                // querySnapshot.forEach((doc) => {
+                //     dbData.push(doc.data())
+                // });
+
+                let employeeRef = []
+                const querySnapshot = await getDocs(query(collection(db, `${dbreference}/users`), orderBy("TimeStamp", 'desc')));
+                querySnapshot.forEach((doc) => {
+                    employeeRef.push(doc.data())
+                });
+
+                if (employeeRef.length === 0) { }
+                else {
+                    setEmployeeNumber(employeeRef[0].EmployeeNumber + 1)
+                }
+                setTotalManager(dbData.length)
+                setEntriesData(sortedArray)
+                setloading(false)
+            }
+
+
+        } catch (e) {
+            console.log(e)
+        }
+
+    }
 
     useEffect(() => {
 
-        setTotalManager(entriesData.length)
+        fetchData()
 
         Animated.timing(fadeAnim, {
             toValue: 1,
@@ -89,7 +154,8 @@ const ManagerPage = () => {
     }
 
     const handleFormValueChange = (value) => {
-        console.log(value)
+        setDeleteUser(value)
+        setDeleteAlertVisible(true)
     }
 
     const pickDocument = async () => {
@@ -116,21 +182,103 @@ const ManagerPage = () => {
         setAlertIsVisible(false)
     }
 
-    const clearAllValues = () => {
-        setEmployeeNumber("")
+    const handleRoleValueChange = (val) => {
+        setRole(val)
+    }
+
+    const handleAddNewManager = async () => {   
+        const dbData = []
+        let i = 0
+        await getDocs(query(collection(db, `${dbReference}/users`)))
+            .then((querySnapshot) => {
+                querySnapshot.forEach((doc) => {
+                    if (email == doc.data().Email) {
+                        i++
+                    }
+                    else if (doc.data().Number == numberCode+number) {
+                        i++
+                    }
+                });
+            })
+
+        if (i == 0) {
+            await setDoc(doc(db, `${dbReference}/users`, email), {
+                FirstName: firstName,
+                LastName: lastName,
+                Name: `${firstName} ${lastName}`,
+                Company: company,
+                Email: email,
+                Number: numberCode+number,
+                WorkPhone: workPhone,
+                dob: dobDay + "-" + dobMonth + "-" + dobYear,
+                dobDay: dobDay,
+                dobMonth: dobMonth,
+                dobYear: dobYear,
+                Role: role,
+                Designation: 'Manager',
+                Action: 'Button',
+                TimeStamp: serverTimestamp(),
+                EmployeeNumber: employeeNumber,
+            });
+
+            await setDoc(doc(db, 'AllowedUsers', email), {
+                Email: email,
+                Number: numberCode+number,
+                Company: company,
+                Designation: 'Manager',
+                TimeStamp: serverTimestamp(),
+                dbRef: dbReference
+            });
+
+            setCreateNewManagerIsVisible(false)
+            setAlertStatus('successful')
+            setAlertIsVisible(true)
+            console.log('added')
+            fetchData()
+            clearAll()
+            setloading(false)
+        }
+        else {
+            setCreateNewManagerIsVisible(false)
+            setAlertStatus('failed')
+            setAlertIsVisible(true)
+            clearAll()
+            setloading(false)
+        }
+    }
+
+    const CustomActivityIndicator = () => {
+        return (
+            <View style={styles.activityIndicatorStyle}>
+                <ActivityIndicator color="#FFA600" size="large" />
+            </View>
+        );
+    };
+
+    const clearAll = () => {
         setFirstName('')
         setLastName('')
         setEmail('')
         setCompany('')
         setNumber('')
-        setWorkPhone('')
         setRole('')
-        setDob('')
+        setWorkPhone('')
+        setDobDay('')
+        setDobMonth('')
+        setDobYear('')
+        setNumberCode('Select')
     }
 
-    const handleRoleValueChange = (val) => {
-        setRole(val)
+    const closeMobileModal = () => {
+        setMobileModalVisible(false)
     }
+
+    const formattedCountryCodeList = countrycodelist.map(item => {
+        return {
+            ...item,
+            code: item.code.split(' ').join(''),
+        };
+    });
 
 
     return (
@@ -172,7 +320,7 @@ const ManagerPage = () => {
                                         Personal details
                                     </Text>
                                 </View>
-                                <ScrollView horizontal >
+                                <ScrollView horizontal style={{ paddingBottom: 10 }} >
                                     <View style={{ flexDirection: 'row', }}>
 
                                         <View style={{ flexDirection: 'column' }}>
@@ -182,7 +330,7 @@ const ManagerPage = () => {
                                                     style={[styles.input, textInputBorderColor == 'Employee Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                     placeholderTextColor="#868383DC"
                                                     value={employeeNumber}
-                                                    onChangeText={(val) => { setEmployeeNumber(val) }}
+                                                    // onChangeText={(val)=>setEmployeeNumber(val)}
                                                     onFocus={() => { setTextInputBorderColor('Employee Number') }}
                                                     onBlur={() => { setTextInputBorderColor('') }}
                                                 />
@@ -213,34 +361,33 @@ const ManagerPage = () => {
 
                                             <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
                                                 <Text style={{ fontSize: 16, fontWeight: '500' }}>Email</Text>
-                                                <TextInput
-                                                    style={[styles.input, textInputBorderColor == 'Email' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                    placeholderTextColor="#868383DC"
-                                                    value={email}
-                                                    onChangeText={(val) => { setEmail(val) }}
-                                                    onFocus={() => { setTextInputBorderColor('Email') }}
-                                                    onBlur={() => { setTextInputBorderColor('') }}
-                                                />
+                                                <View>
+                                                    <TextInput
+                                                        style={[styles.input, textInputBorderColor == 'Email' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                        placeholderTextColor="#868383DC"
+                                                        value={email}
+                                                        onChangeText={(val) => { setEmail(val) }}
+                                                        onFocus={() => { setTextInputBorderColor('Email') }}
+                                                        onBlur={() => { setTextInputBorderColor('') }}
+                                                    />
+                                                    {!isEmailValid ? <Text style={{ color: 'red', paddingTop: 5, marginLeft: 15, fontSize: 10, alignSelf: 'flex-start' }}>Enter Valid Email</Text> : null}
+                                                </View>
                                             </View>
 
-                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Company</Text>
-                                                <TextInput
-                                                    style={[styles.input, textInputBorderColor == 'Company' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                    placeholderTextColor="#868383DC"
-                                                    value={company}
-                                                    onChangeText={(val) => { setCompany(val) }}
-                                                    onFocus={() => { setTextInputBorderColor('Company') }}
-                                                    onBlur={() => { setTextInputBorderColor('') }}
-                                                />
-                                            </View>
-                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+
+                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
                                                 <Text style={{ fontSize: 16, fontWeight: '500' }}>Mobile Phone*</Text>
+                                                <View style={{ marginLeft: 10 }}>
+                                                    <TouchableOpacity style={[styles.input, { width: 80, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 0 }]} onPress={() => setMobileModalVisible(true)}>
+                                                        <Text>{numberCode}</Text>
+                                                    </TouchableOpacity>
+                                                </View>
                                                 <TextInput
-                                                    style={[styles.input, textInputBorderColor == 'Mobile Phone' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    style={[styles.input, { width: 150 }, textInputBorderColor == 'Mobile Phone' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                     placeholderTextColor="#868383DC"
+                                                    keyboardType='numeric'
                                                     value={number}
-                                                    onChangeText={(val) => { setNumber(val) }}
+                                                    onChangeText={(val) => { setNumber(val.replace(/[^0-9]/g, '')) }}
                                                     onFocus={() => { setTextInputBorderColor('Mobile Phone') }}
                                                     onBlur={() => { setTextInputBorderColor('') }}
                                                 />
@@ -269,7 +416,7 @@ const ManagerPage = () => {
                                                 </View>
                                             </View>
 
-                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex:1 }}>
+                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
                                                 <Text style={{ fontSize: 16, fontWeight: '500' }}>Role</Text>
                                                 <DropDownComponent
                                                     options={['Manager', 'Admin']}
@@ -305,11 +452,33 @@ const ManagerPage = () => {
                                             <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
                                                 <Text style={{ fontSize: 16, fontWeight: '500' }}>Date of Birth</Text>
                                                 <TextInput
-                                                    style={[styles.input, textInputBorderColor == 'Date of Birth' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    style={[styles.input, { width: 50 }, textInputBorderColor == 'day' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                     placeholderTextColor="#868383DC"
-                                                    value={dob}
-                                                    onChangeText={(val) => { setDob(val) }}
-                                                    onFocus={() => { setTextInputBorderColor('Date of Birth') }}
+                                                    keyboardType='numeric'
+                                                    value={dobDay}
+                                                    placeholder='DD'
+                                                    onChangeText={(val) => setDobDay(val.replace(/[^0-9]/g, ''))}
+                                                    onFocus={() => { setTextInputBorderColor('day') }}
+                                                    onBlur={() => { setTextInputBorderColor('') }}
+                                                />
+                                                <TextInput
+                                                    style={[styles.input, { width: 50 }, textInputBorderColor == 'month' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    placeholderTextColor="#868383DC"
+                                                    keyboardType='numeric'
+                                                    value={dobMonth}
+                                                    placeholder='MM'
+                                                    onChangeText={(val) => setDobMonth(val.replace(/[^0-9]/g, ''))}
+                                                    onFocus={() => { setTextInputBorderColor('month') }}
+                                                    onBlur={() => { setTextInputBorderColor('') }}
+                                                />
+                                                <TextInput
+                                                    style={[styles.input, { width: 80 }, textInputBorderColor == 'year' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    placeholderTextColor="#868383DC"
+                                                    keyboardType='numeric'
+                                                    value={dobYear}
+                                                    placeholder='YYYYY'
+                                                    onChangeText={(val) => setDobYear(val.replace(/[^0-9]/g, ''))}
+                                                    onFocus={() => { setTextInputBorderColor('year') }}
                                                     onBlur={() => { setTextInputBorderColor('') }}
                                                 />
                                             </View>
@@ -341,7 +510,7 @@ const ManagerPage = () => {
                                 btnTextStyle={{ fontSize: 17, fontWeight: '400', color: '#000000' }}
                                 onPress={() => {
                                     setCreateNewManagerIsVisible(false)
-                                    clearAllValues()
+                                    clearAll()
                                 }} />
                         </View>
                         <View style={{ marginLeft: 20 }}>
@@ -363,36 +532,12 @@ const ManagerPage = () => {
                                 }, { minWidth: 100 }]}
                                 btnTextStyle={{ fontSize: 17, fontWeight: '400', color: '#000000' }}
                                 onPress={() => {
-                                    const temp = entriesData
-                                    let i = 0
-                                    temp.map((val) => {
-                                        if (val.Number == number || val.Email == email) {
-                                            i++
-                                            setAlertStatus('failed')
-                                            setCreateNewManagerIsVisible(false)
-                                            setAlertIsVisible(true)
-                                            clearAllValues()
-                                        }
-                                    })
-                                    if (i == 0 && number != "" && email != '') {
-                                        temp.push({
-                                            'Name': `${firstName}  ${lastName}`,
-                                            'Number': number,
-                                            'Email': email,
-                                            'Company': company,
-                                            'Role': role,
-                                            'Action': 'Button'
-                                        })
-                                        setTotalManager(totalManager + 1)
-                                        setEntriesData(temp)
-                                        setCreateNewManagerIsVisible(false)
-                                        setAlertStatus('successful')
-                                        setAlertIsVisible(true)
-                                        clearAllValues()
-                                    }
+                                    if (firstName == '' || lastName == '' || role == '' || number == '' || numberCode == 'Select') { }
                                     else {
-                                        setCreateNewManagerIsVisible(false)
-                                        clearAllValues()
+                                        if (isEmailValid) {
+                                            setloading(true)
+                                            handleAddNewManager()
+                                        }
                                     }
 
                                 }} />
@@ -433,7 +578,7 @@ const ManagerPage = () => {
                             </View>
                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                 <View style={{ alignItems: 'center' }}>
-                                    <Text style={{ color: '#5B5B5B', fontSize: 20, fontWeight: 'bold' }}>1</Text>
+                                    <Text style={{ color: '#5B5B5B', fontSize: 20, fontWeight: 'bold' }}>{totalManager}</Text>
                                     <Text style={{ color: '#5B5B5B', fontSize: 17 }}>Manager</Text>
                                 </View>
                                 <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 60, opacity: 0.5 }}></View>
@@ -464,35 +609,179 @@ const ManagerPage = () => {
                     </ScrollView>
                 </Animated.View>}
 
-                {alertStatus == 'successful'
-                        ?
+            {alertStatus == 'successful'
+                ?
 
-                        <AlertModal
-                            centeredViewStyle={styles.centeredView}
-                            modalViewStyle={styles.modalView}
-                            isVisible={alertIsVisible}
-                            onClose={closeAlert}
-                            img={require('../../assets/successful_icon.png')}
-                            txt='Successful'
-                            txtStyle={{ fontWeight: '500', fontSize: 20, marginLeft: 10 }}
-                            tintColor='green'>
+                <AlertModal
+                    centeredViewStyle={styles.centeredView}
+                    modalViewStyle={styles.modalView}
+                    isVisible={alertIsVisible}
+                    onClose={closeAlert}
+                    img={require('../../assets/successful_icon.png')}
+                    txt='Successful'
+                    txtStyle={{ fontWeight: '500', fontSize: 20, marginLeft: 10 }}
+                    tintColor='green'>
 
-                        </AlertModal>
-                        :
-                        alertStatus == 'failed'
-                            ?
-                            <AlertModal
-                                centeredViewStyle={styles.centeredView}
-                                modalViewStyle={styles.modalView}
-                                isVisible={alertIsVisible}
-                                onClose={closeAlert}
-                                img={require('../../assets/failed_icon.png')}
-                                txt='Failed'
-                                txtStyle={{ fontFamily: 'futura', fontSize: 20, marginLeft: 10 }}
-                                tintColor='red'>
-                            </AlertModal>
-                            : null
-                    }
+                </AlertModal>
+                :
+                alertStatus == 'failed'
+                    ?
+                    <AlertModal
+                        centeredViewStyle={styles.centeredView}
+                        modalViewStyle={styles.modalView}
+                        isVisible={alertIsVisible}
+                        onClose={closeAlert}
+                        img={require('../../assets/failed_icon.png')}
+                        txt='Failed'
+                        txtStyle={{ fontFamily: 'futura', fontSize: 20, marginLeft: 10 }}
+                        tintColor='red'>
+                    </AlertModal>
+                    : null
+            }
+
+            <Modal
+                animationType="fade"
+                visible={mobileModalVisible}
+                transparent={true}>
+                <TouchableWithoutFeedback onPress={() => closeMobileModal()}>
+                    <View style={styles.centeredView}>
+                        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+                        <TouchableWithoutFeedback onPress={() => { }}>
+                            <View style={{ backgroundColor: 'white', borderRadius: 8, padding: 20, elevation: 5, maxHeight: '98%', width: 300 }}>
+                                <TextInput
+                                    style={[styles.input, { height: 50, marginVertical: 20 }]}
+                                    placeholder='Search'
+                                    value={searchNumber}
+                                    onChangeText={(val) => {
+                                        setSearchNumber(val.replace(/ /g, ''))
+
+
+                                    }}
+                                />
+                                <ScrollView style={{ height: 200, paddingRight: 10 }}>
+                                    <FlatList
+                                        data={formattedCountryCodeList}
+                                        renderItem={({ item, index }) => {
+
+                                            // const formattedSearchNumber = searchNumber.replace(/ /g, '');
+                                            if (searchNumber === "" || item.code.includes(searchNumber)) {
+                                                return (
+                                                    <View
+                                                        onMouseEnter={() => setMobileItemHovered({ [index]: true })}
+                                                        onMouseLeave={() => setMobileItemHovered({ [index]: false })}
+                                                    >
+                                                        <TouchableOpacity
+                                                            onPress={() => {
+                                                                setNumberCode(item.code.replace(/ /g, ''))
+                                                                closeMobileModal()
+                                                            }}
+                                                            style={[
+                                                                {
+                                                                    marginTop: 15,
+                                                                    borderWidth: 1,
+                                                                    borderColor: '#cccccc',
+                                                                    outlineStyle: 'none',
+                                                                    padding: 10,
+                                                                    borderRadius: 5,
+                                                                },
+                                                                mobileItemHovered[index] && {
+                                                                    backgroundColor: '#67E9DA',
+                                                                    borderColor: '#67E9DA',
+                                                                },
+                                                            ]}
+                                                        >
+                                                            <Text>{item.code} {item.name}</Text>
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                )
+                                            }
+
+                                            else if (item.name.toLowerCase().includes(searchNumber.toLowerCase())) {
+                                                return (
+                                                    <View
+                                                        onMouseEnter={() => setMobileItemHovered({ [index]: true })}
+                                                        onMouseLeave={() => setMobileItemHovered({ [index]: false })}
+                                                    >
+                                                        <TouchableOpacity
+                                                            onPress={() => {
+                                                                setNumberCode(item.code.replace(/ /g, ''))
+                                                                closeMobileModal()
+                                                            }}
+                                                            style={[
+                                                                {
+                                                                    marginTop: 15,
+                                                                    borderWidth: 1,
+                                                                    borderColor: '#cccccc',
+                                                                    outlineStyle: 'none',
+                                                                    padding: 10,
+                                                                    borderRadius: 5,
+                                                                },
+                                                                mobileItemHovered[index] && {
+                                                                    backgroundColor: '#67E9DA',
+                                                                    borderColor: '#67E9DA',
+                                                                },
+                                                            ]}
+                                                        >
+                                                            <Text>{item.code} {item.name}</Text>
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                )
+                                            }
+
+                                        }} />
+                                </ScrollView>
+                            </View>
+                        </TouchableWithoutFeedback>
+                    </View>
+                </TouchableWithoutFeedback>
+            </Modal>
+
+            <Modal
+                animationType="fade"
+                visible={deleteAlertVisible}
+                transparent={true}>
+                <View style={styles.centeredView}>
+                    <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+                    <View style={styles.modalView}>
+                        <View>
+                            <Text style={{ fontSize: 17, fontWeight: '400' }}>Are you sure you want to Delete ?</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', width: 250, justifyContent: 'space-between', marginTop: 20 }}>
+                            <View
+                                onMouseEnter={() => setDeleteOptionHover({ [0]: true })}
+                                onMouseLeave={() => setDeleteOptionHover({ [0]: false })}>
+                                <TouchableOpacity
+                                    onPress={async () => {
+                                        setDeleteAlertVisible(false)
+                                        setloading(true)
+                                        await deleteDoc(doc(db, `${dbReference}/users`, deleteUser));
+                                        await deleteDoc(doc(db, `AllowedUsers`, deleteUser));
+                                        console.log('deleted')
+                                        setAlertStatus('successful')
+                                        setAlertIsVisible(true)
+                                        fetchData()
+                                    }}
+
+                                    style={[{ width: 100, height: 40, backgroundColor: '#FFFFFF', borderRadius: 5, alignItems: 'center', justifyContent: 'center', shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.9, shadowRadius: 5, elevation: 0, shadowColor: '#575757', marginHorizontal: 10 }, deleteOptionHover[0] && { backgroundColor: '#67E9DA', borderColor: '#67E9DA' }]}>
+                                    <Text style={[{ fontSize: 16 }, deleteOptionHover[0] && { color: '#FFFFFF' }]}>Yes</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <View
+                                onMouseEnter={() => setDeleteOptionHover({ [1]: true })}
+                                onMouseLeave={() => setDeleteOptionHover({ [1]: false })}>
+                                <TouchableOpacity
+                                    onPress={() => setDeleteAlertVisible(false)}
+                                    style={[{ width: 100, height: 40, backgroundColor: '#FFFFFF', borderRadius: 5, alignItems: 'center', justifyContent: 'center', shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.9, shadowRadius: 5, elevation: 0, shadowColor: '#575757', marginHorizontal: 10 }, deleteOptionHover[1] && { backgroundColor: '#67E9DA', borderColor: '#67E9DA' }]}>
+                                    <Text style={[{ fontSize: 16 }, deleteOptionHover[1] && { color: '#FFFFFF' }]}>No</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </View>
+
+            </Modal>
+            {loading ? CustomActivityIndicator() : null}
+
         </>
 
     );
@@ -795,6 +1084,20 @@ const styles = StyleSheet.create({
         elevation: 5,
         maxHeight: '98%',
         maxWidth: '95%'
+    },
+    activityIndicatorStyle: {
+        flex: 1,
+        position: 'absolute',
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        marginTop: 'auto',
+        marginBottom: 'auto',
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        backgroundColor: '#555555DD',
     },
 });
 

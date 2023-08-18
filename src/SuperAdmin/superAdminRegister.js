@@ -12,6 +12,7 @@ import { doc, getFirestore, setDoc, collection, onSnapshot, query, getCountFromS
 import app from '../config/firebase';
 import { countrycodelist } from '../../components/codelist';
 import { Calendar } from 'react-native-calendars';
+import { deleteUser, getAuth } from 'firebase/auth';
 
 
 const columns = [
@@ -231,6 +232,8 @@ const SuperAdminRegisterPage = (props) => {
 
         if (i == 0) {
             await setDoc(doc(db, "DVIR", email), {
+                FirstName: firstName,
+                LastName: lastName,
                 Name: `${firstName} ${lastName}`,
                 Email: email,
                 Company: company,
@@ -239,7 +242,15 @@ const SuperAdminRegisterPage = (props) => {
                 dob: dobDay + "-" + dobMonth + "-" + dobYear,
                 Industry: role,
                 Action: 'Button',
+                Designation: 'Owner',
                 TimeStamp: serverTimestamp()
+            });
+            await setDoc(doc(db, "AllowedUsers", email), {
+                Email: email,
+                Company: company,
+                TimeStamp: serverTimestamp(),
+                dbRef: `DVIR/${email}`,
+                Designation: 'Owner',
             });
             setCreateNewAssetModalVisible(false)
             setAlertStatus('successful')
@@ -394,7 +405,7 @@ const SuperAdminRegisterPage = (props) => {
                                                 style={[styles.input, { width: 150 }, textInputBorderColor == 'Mobile Phone' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                 placeholderTextColor="#868383DC"
                                                 value={number}
-                                                onChangeText={(val) => { setNumber(val) }}
+                                                onChangeText={(val) => { setNumber(val.replace(/[^0-9]/g, '')) }}
                                                 onFocus={() => { setTextInputBorderColor('Mobile Phone') }}
                                                 onBlur={() => { setTextInputBorderColor('') }}
                                             />
@@ -402,8 +413,6 @@ const SuperAdminRegisterPage = (props) => {
                                         <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
                                             <Text style={{ fontSize: 16, fontWeight: '500' }}>Email</Text>
                                             <View>
-
-
                                                 <TextInput
                                                     style={[styles.input, textInputBorderColor == 'Email' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                     placeholderTextColor="#868383DC"
@@ -486,7 +495,7 @@ const SuperAdminRegisterPage = (props) => {
                                                 placeholderTextColor="#868383DC"
                                                 value={dobDay}
                                                 placeholder='DD'
-                                                onChangeText={setDobDay}
+                                                onChangeText={(val) => setDobDay(val.replace(/[^0-9]/g, ''))}
                                                 onFocus={() => { setTextInputBorderColor('day') }}
                                                 onBlur={() => { setTextInputBorderColor('') }}
                                             />
@@ -495,7 +504,7 @@ const SuperAdminRegisterPage = (props) => {
                                                 placeholderTextColor="#868383DC"
                                                 value={dobMonth}
                                                 placeholder='MM'
-                                                onChangeText={setDobMonth}
+                                                onChangeText={(val) => setDobMonth(val.replace(/[^0-9]/g, ''))}
                                                 onFocus={() => { setTextInputBorderColor('month') }}
                                                 onBlur={() => { setTextInputBorderColor('') }}
                                             />
@@ -504,7 +513,7 @@ const SuperAdminRegisterPage = (props) => {
                                                 placeholderTextColor="#868383DC"
                                                 value={dobYear}
                                                 placeholder='YYYYY'
-                                                onChangeText={setDobYear}
+                                                onChangeText={(val) => setDobYear(val.replace(/[^0-9]/g, ''))}
                                                 onFocus={() => { setTextInputBorderColor('year') }}
                                                 onBlur={() => { setTextInputBorderColor('') }}
                                             />
@@ -559,10 +568,14 @@ const SuperAdminRegisterPage = (props) => {
                                 }, { minWidth: 100 }]}
                                 btnTextStyle={{ fontSize: 17, fontWeight: '400', color: '#000000' }}
                                 onPress={() => {
-                                    if (isEmailValid) {
-                                        setloading(true)
-                                        handleNewRegisterCompany()
+                                    if (company == '' || number == '' || firstName == '' || lastName == '' || role == '') { }
+                                    else {
+                                        if (isEmailValid) {
+                                            setloading(true)
+                                            handleNewRegisterCompany()
+                                        }
                                     }
+
                                 }} />
                         </View>
                     </View>
@@ -819,8 +832,16 @@ const SuperAdminRegisterPage = (props) => {
                                     onPress={async () => {
                                         setDeleteAlertVisible(false)
                                         setloading(true)
+                                        await getDocs(collection(db, `DVIR/${deleteCompany}/users`))
+                                            .then((snapshot) => {
+                                                snapshot.forEach(async (docs) => {
+                                                    await deleteDoc(doc(db, `DVIR/${deleteCompany}/users`, docs.data().Email))
+                                                    await deleteDoc(doc(db, `AllowedUsers`, docs.data().Email))
+                                                })
+                                            })
+                                        // await deleteDoc(doc(db, `DVIR/${deleteCompany}/`, 'users'));
+                                        await deleteDoc(doc(db, "AllowedUsers", deleteCompany));
                                         await deleteDoc(doc(db, "DVIR", deleteCompany));
-                                        console.log('deleted')
                                         setAlertStatus('successful')
                                         setAlertIsVisible(true)
                                         fetchData()

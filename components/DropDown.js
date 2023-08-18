@@ -50,6 +50,7 @@ const DropDownComponent = (props) => {
     }, [showOptions]);
 
     const handleOptionSelect = (value) => {
+        // console.log(value)
         onValueChange(value);
         handleDropdownToggle();
         handleOptionHover(-1);
@@ -149,7 +150,10 @@ const DropDownComponent = (props) => {
                                                 imgSource={require('../assets/logout_icon.png')}
                                                 btnStyle={styles.btn}
                                                 btnTextStyle={styles.btnText}
-                                                onPress={()=>handleLogout()}
+                                                onPress={()=>{
+                                                // console.log('logout')    
+                                                    handleOptionSelect('Logout')
+                                                }}
                                             />
                                         </View>
                                     </View>

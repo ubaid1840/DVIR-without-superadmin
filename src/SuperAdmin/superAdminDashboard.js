@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet,ScrollView, Image, FlatList, Animated, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, FlatList, Animated, Platform } from 'react-native';
 import { useFonts } from 'expo-font';
 import CircularProgressBar from '../../components/CircleProgress'
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,12 +9,18 @@ import NameAvatar from '../../components/NameAvatar';
 import Header from '../../components/Header';
 import DropDownComponent from '../../components/DropDown';
 import { Dimensions } from 'react-native';
+import { collection, getCountFromServer, getDocs, getFirestore } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import app from '../config/firebase';
+import NumberProgressBar from '../../components/NumberProgress';
 
 const driverOptionList = ['Inspection'];
 const assetOptionList = ['Inspection', 'Defects'];
 
 const SuperAdminDashboardPage = (props) => {
-  
+
+  const auth = getAuth()
+  const db = getFirestore(app)
 
   const [selectedPage, setSelectedPage] = useState('Inspection');
   const [dashboardHovered, setDashboardHovered] = useState(false)
@@ -27,49 +33,47 @@ const SuperAdminDashboardPage = (props) => {
   const [assetSelectedOption, setAssetSelectedOption] = useState('Inspection');
   const [dashboardCalendarSelect, setDashboardCalendarSelect] = useState('Today')
   const { height, width } = Dimensions.get('window');
+  const [totalCompanies, setTotalCompanies] = useState(0)
+  const [totalUsers, setTotalUsers] = useState(0)
+  const animatedTotalUsers = new Animated.Value(0)
+
+  const fetchData = async () => {
+    const coll = collection(db, 'DVIR');
+    const snapshot = await getCountFromServer(coll);
+    setTotalCompanies(snapshot.data().count)
+
+
+
+    const coll1 = collection(db, 'AllowedUsers');
+    const snapshot1 = await getCountFromServer(coll1);
+    setTotalUsers(snapshot1.data().count)
+  }
 
   useEffect(() => {
 
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 1000,
-      useNativeDriver: false
+    fetchData()
+    // Animated.timing(fadeAnim, {
+    //   toValue: 1,
+    //   duration: 1000,
+    //   useNativeDriver: false
+    // }).start();
+
+    // return () => {
+    //   fadeAnim.setValue(0);
+    // }
+
+  }, [])
+
+  useEffect(() => {
+    Animated.timing(animatedTotalUsers, {
+      toValue: totalUsers,
+      duration: 3000,
+      useNativeDriver: false,
     }).start();
+  }, [totalUsers])
 
-    return () => {
-      fadeAnim.setValue(0);
-    }
+  
 
-  }, [selectedPage])
-
-  const handleDriverValueChange = (value) => {
-    setDriverSelectedOption(value);
-  };
-
-  const handleAssetValueChange = (value) => {
-    setAssetSelectedOption(value);
-  };
-
-
-  const sortDriver = () => {
-    // Sort the data based on age in ascending order
-    const sortedData = driver.slice().sort((a, b) => a.inspection - b.inspection);
-
-    return (
-      <Text style={{ fontSize: 25, color: 'grey' }}>{sortedData[0].name[0]}</Text>
-
-    );
-  };
-
-  const sortAsset = () => {
-    // Sort the data based on age in ascending order
-    const sortedData = asset.slice().sort((a, b) => b.defects - a.defects);
-
-    return (
-      <Text style={{ fontSize: 25, color: 'grey' }}>{sortedData[0].name[0]}</Text>
-
-    );
-  };
 
   const handleDownloadReportBtn = () => {
 
@@ -84,48 +88,19 @@ const SuperAdminDashboardPage = (props) => {
     return null;
   }
 
-  let driver = [{
-    name: "Ubaid",
-    company: "DVIR",
-    inspection: 5
-  },
-  {
-    name: "John",
-    company: "DVIR",
-    inspection: 2
-  },
-  {
-    name: "Doe",
-    company: "DVIR",
-    inspection: 0
-  }]
-
-  const asset = [{
-    name: "Truck1",
-    company: "DVIR",
-    inspection: 4,
-    defects: 1
-  },
-  {
-    name: "Truck2",
-    company: "DVIR",
-    inspection: 2,
-    defects: 3
-  }]
-
 
   return (
-    <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
+    <View style={[styles.contentContainer, { opacity: fadeAnim }]}>
       {/* <ScrollView style={{height:100}}> */}
-        <View style={{position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, overflow: 'hidden', height:height}}>
-          <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
-          <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
-          <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
-          <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
-        </View>
-        <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
+      <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, overflow: 'hidden', height: height }}>
+        <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
+        <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
+        <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
+        <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
+      </View>
+      <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
 
-        <ScrollView style={{height:100}}>
+      <ScrollView style={{ height: 100 }}>
         <View style={{ flexDirection: 'row', marginLeft: 40, marginTop: 40, alignItems: 'center' }}>
           <View style={{ backgroundColor: '#67E9DA', borderRadius: 15, }}>
             <Image style={{ width: 30, height: 30, margin: 10 }}
@@ -177,23 +152,25 @@ const SuperAdminDashboardPage = (props) => {
             Record
           </Text>
           <View style={{ flexDirection: 'row', justifyContent: 'space-evenly' }}>
-            <View style={{ marginLeft: 10, marginRight: 10 }}>
-              <CircularProgressBar percentage='60' />
+            <View style={{ marginLeft: 10, marginRight: 10, alignItems: 'center' }}>
+              <NumberProgressBar percentage={totalCompanies}/>
+              {/* <Text style={{ fontSize: 50, fontWeight: '500' }}>{totalCompanies}</Text> */}
               <Text style={styles.subHeadingText}>
                 Total Companies
               </Text>
             </View>
-            <View style={{ marginLeft: 10, marginRight: 10 }}>
-              <CircularProgressBar percentage='43' />
+            <View style={{ marginLeft: 10, marginRight: 10, alignItems: 'center' }}>
+              {/* <Animated.Text style={{ fontSize: 50, fontWeight: '500' }}>{animatedTotalUsers}</Animated.Text> */}
+              <NumberProgressBar percentage={totalUsers}/>
               <Text style={styles.subHeadingText}>
                 Total Users
               </Text>
             </View>
-           
+
           </View>
         </View>
-        </ScrollView>
-    </Animated.View>
+      </ScrollView>
+    </View>
 
   );
 }
@@ -258,8 +235,8 @@ const styles = StyleSheet.create({
   },
 
   contentContainer: {
-    flex:1,
-    overflow:'hidden'
+    flex: 1,
+    overflow: 'hidden'
   },
   screenTitle: {
     fontSize: 24,

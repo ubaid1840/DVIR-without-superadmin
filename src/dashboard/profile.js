@@ -13,13 +13,16 @@ import * as DocumentPicker from 'expo-document-picker';
 import { collection, getDocs, getFirestore } from 'firebase/firestore';
 import app from '../config/firebase';
 import { getAuth } from 'firebase/auth';
+import { getDownloadURL, getStorage, ref, uploadBytes, uploadBytesResumable } from "firebase/storage";
 
 const driverOptionList = ['Inspection'];
 const assetOptionList = ['Inspection', 'Defects'];
 
 const ProfilePage = (props) => {
 
-  db = getFirestore(app)
+  const db = getFirestore(app)
+  const auth = getAuth()
+  const storage = getStorage(app);
 
   const [selectedPage, setSelectedPage] = useState('Inspection');
   const [dashboardHovered, setDashboardHovered] = useState(false)
@@ -41,13 +44,18 @@ const ProfilePage = (props) => {
   const [number, setNumber] = useState('')
   const [workPhone, setWorkPhone] = useState('')
   const [dob, setDob] = useState('')
+  const [role, setRole] = useState('')
+  const [fileuploading, setFileuploading] = useState(0)
+  const [uploadingStatus, setUploadingStatus] = useState(false)
+
+
 
   const fetchData = async () => {
     const querySnapshot = await getDocs(collection(db, 'DVIR'));
     const dbData = []
     let i = 0
-    querySnapshot.forEach((doc) => {
-      if (getAuth().currentUser.email == doc.data().Email) {
+    querySnapshot.forEach(async (doc) => {
+      if (auth.currentUser.email == doc.data().Email) {
         setFirstName(doc.data().FirstName)
         setLastName(doc.data().LastName)
         setEmail(doc.data().Email)
@@ -55,7 +63,23 @@ const ProfilePage = (props) => {
         setNumber(doc.data().Number)
         setWorkPhone(doc.data().WorkPhone)
         setDob(doc.data().dob)
+        setRole(doc.data().Role)
       }
+      await getDocs(collection(db, `DVIR/${doc.data().Email}/users`))
+        .then((newQuery) => {
+          newQuery.forEach((docs) => {
+            if (getAuth().currentUser.email == docs.data().Email) {
+              setFirstName(docs.data().FirstName)
+              setLastName(docs.data().LastName)
+              setEmail(docs.data().Email)
+              setCompany(docs.data().Company)
+              setNumber(docs.data().Number)
+              setWorkPhone(docs.data().WorkPhone)
+              setDob(docs.data().dob)
+              setRole(docs.data().Role)
+            }
+          })
+        })
     });
   }
 
@@ -78,14 +102,86 @@ const ProfilePage = (props) => {
       const result = await DocumentPicker.getDocumentAsync({
         type: 'image/*', // Change the MIME type to specify the type of files you want to allow
       });
-      console.log(result)
       if (result.assets[0].uri) {
-        setFileUri(result.assets[0].uri);
+        uploadImage(result.assets[0].uri)
       }
     } catch (error) {
       console.log('Error picking document:', error);
     }
+    setUploadingStatus(false)
   };
+
+  const uploadImage = async (resultimage) => {
+    // convert image to blob image
+    const blobImage = await new Promise((resole, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.onload = function () {
+        resole(xhr.response);
+      };
+      xhr.onerror = function () {
+        reject(new TypeError("Network request failed"));
+      };
+      xhr.responseType = "blob";
+      xhr.open("GET", resultimage, true);
+      xhr.send(null);
+    });
+
+    // Create the file metadata
+    /** @type {any} */
+    const metadata = {
+      contentType: 'image/jpeg'
+    };
+
+    //upload image to firestore
+    // Upload file and metadata to the object 'images/mountains.jpg'
+    const storageRef = ref(storage, 'ProfileImages/' + getAuth().currentUser.email + '.dp');
+    const uploadTask = uploadBytesResumable(storageRef, blobImage, metadata);
+
+    uploadTask.on('state_changed',
+      (snapshot) => {
+
+        // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        setFileuploading(Math.round(progress))
+
+
+        switch (snapshot.state) {
+          case 'paused':
+            console.log('Upload is paused');
+            break;
+          case 'running':
+            console.log('Upload is running');
+            break;
+        }
+      },
+      (error) => {
+        // A full list of error codes is available at
+        // https://firebase.google.com/docs/storage/web/handle-errors
+        switch (error.code) {
+          case 'storage/unauthorized':
+            // User doesn't have permission to access the object
+            break;
+          case 'storage/canceled':
+            // User canceled the upload
+            break;
+
+          // ...
+
+          case 'storage/unknown':
+            // Unknown error occurred, inspect error.serverResponse
+            break;
+        }
+      },
+      () => {
+        // Upload completed successfully, now we can get the download URL
+        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+          // console.log('File available at', downloadURL)
+          
+          setFileUri(downloadURL)
+        });
+      }
+    );
+  }
 
 
   const [fontsLoaded] = useFonts({
@@ -121,7 +217,7 @@ const ProfilePage = (props) => {
         </View>
 
         <View style={styles.contentCardStyle}>
-          <ScrollView horizontal >
+          <ScrollView horizontal style={{ paddingBottom: 10 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
 
               <View style={{ flexDirection: 'column', }}>
@@ -172,6 +268,19 @@ const ProfilePage = (props) => {
                     onBlur={() => { setTextInputBorderColor('') }}
                   />
                 </View>
+
+                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 16, fontWeight: '500' }}>Role</Text>
+                  <TextInput
+                    style={[styles.input, textInputBorderColor == 'Role' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                    placeholderTextColor="#868383DC"
+                    value={role}
+                    // onChangeText={{}}
+                    onFocus={() => { setTextInputBorderColor('Role') }}
+                    onBlur={() => { setTextInputBorderColor('') }}
+                  />
+                </View>
+
                 <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
                   <Text style={{ fontSize: 16, fontWeight: '500' }}>Mobile Phone*</Text>
                   <TextInput
@@ -191,7 +300,9 @@ const ProfilePage = (props) => {
                   <View style={{ flexDirection: 'column', marginLeft: 100, }}>
                     {fileUri
                       ?
-                      <TouchableOpacity onPress={pickDocument}>
+                      <TouchableOpacity onPress={()=>{
+                        setUploadingStatus(true)
+                        pickDocument()}}>
                         <Image style={{ height: 200, width: 200, borderRadius: 5 }} source={{ uri: fileUri }} />
                       </TouchableOpacity>
                       :
@@ -204,6 +315,10 @@ const ProfilePage = (props) => {
 
                       </TouchableOpacity>
                     }
+                    {uploadingStatus == true 
+                    ?<Text style={{ marginTop: 10, alignSelf: 'center' }}>Uploading: {fileuploading}%</Text> 
+                    : null}
+                   
                   </View>
                 </View>
 
