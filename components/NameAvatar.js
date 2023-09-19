@@ -14,9 +14,9 @@ const NameAvatar = (props) => {
 
 const styles = StyleSheet.create({
     driverAndAssetAvatar: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         backgroundColor: '#F0F0F0',
         justifyContent: 'center',
         alignItems: 'center'

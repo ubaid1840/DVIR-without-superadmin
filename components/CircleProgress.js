@@ -12,19 +12,20 @@ const sunsetVibesGradient = ['#FFD54F', '#FF6D00'];
 const roseGoldGradient = ['#EAB0D5', '#F7C1BB'];
 const tropicalParadiseGradient = ['#56CCF2', '#2F80ED'];
 const pastelDelightGradient = ['#FFD26F', '#3670FF'];
+const whiparoundColor = ['#23d3d3', '#23d3d3'];
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle)
 
 export default function CircularProgressBar({
     percentage = 75,
-    radius = 80,
-    strokeWidth = 13,
+    radius = 60,
+    strokeWidth = 8,
     duration = 1000,
-    color = 'tomato',
-    colors = berryBurstGradient,
+    color = '#335a75',
+    colors = whiparoundColor,
     gradientAngle = 90,
     delay = 0,
-    textColor = '#D93A86',
+    textColor = '#A8A8A8',
     max = 100
 
 }) {
@@ -107,7 +108,7 @@ export default function CircularProgressBar({
             >
             </TextInput> */}
             <View style={{ flexDirection: 'row', position: 'absolute', }}>
-                <Text style={[StyleSheet.absoluteFillObject, { fontSize: radius / 2, color: textColor ?? color }, { fontWeight: 'bold' }]}>
+                <Text style={[StyleSheet.absoluteFillObject, { fontSize: radius / 1.5, color: textColor ?? color }, { fontWeight: 'bold' }]}>
                     {`${Math.round(inputProgress)}`}
                 </Text>
                 <Text style={[StyleSheet.absoluteFillObject, { color: textColor ?? color }, { fontWeight: 'bold', fontSize: radius / 4 }]}>%</Text>

@@ -1,17 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, Modal, TouchableWithoutFeedback, ScrollView, FlatList, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useContext } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, Modal, TouchableWithoutFeedback, ScrollView, FlatList, ActivityIndicator, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useFonts } from 'expo-font';
 import AppBtn from '../../components/Button';
 import { Link, useRouter } from 'expo-router';
 import app from '../../src/config/firebase'
-import { getAuth, createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth'
+import { getAuth, createUserWithEmailAndPassword, updateProfile, sendEmailVerification, onAuthStateChanged } from 'firebase/auth'
 import AlertModal from '../../components/AlertModal';
 import { countrycodelist } from '../../components/codelist';
-import { collection, getDocs, getFirestore, orderBy, query } from 'firebase/firestore';
+import { collection, getDocs, getFirestore, orderBy, query, where } from 'firebase/firestore';
+import { AuthContext } from '../store/context/AuthContext';
 
 const SignupPage = (props) => {
+
+    const db = getFirestore(app)
+    const auth = getAuth()
+
     const [email, setEmail] = useState('');
     const [firstName, setFirstName] = useState('')
     const [lastName, setLastName] = useState('')
@@ -37,6 +42,8 @@ const SignupPage = (props) => {
     const [mobileModalVisible, setMobileModalVisible] = useState(false)
     const [mobileItemHovered, setMobileItemHovered] = useState({})
     const [loading, setLoading] = useState(false)
+
+    const { state: authState, setAuth } = useContext(AuthContext)
 
 
 
@@ -66,176 +73,78 @@ const SignupPage = (props) => {
         setIsPasswordValid(password.length > 7 && password.length < 19 ? true : false)
     }, [email, password])
 
-    const handleLogin = () => {
-        // TODO: Implement login logic
-        // props.navigation.navigate('Login');
-    };
+    useEffect(() => {
 
-    const handleForgetPasswod = () => {
-        // props.navigation.navigate('ForgetPassword');
-    };
+        if (!authState.value.email) {
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    if(user.emailVerified){
+                        await getDocs(query(collection(db, "AllowedUsers"), where('Email', '==', auth.currentUser.email)))
+                        .then((snapshot) => {
+                            console.log(snapshot)
+                            snapshot.forEach((doc) => {
+                                setAuth(doc.data().Number, doc.data().Name, doc.data().Designation, doc.data()['Employee Number'], doc.data().dp)
+                                // router.replace('/dashboardLogin')
+                                router.replace('/dashboardLogin')
+                            })
+                        })
+                    }
+                  
+                }
+            });
+        }
+
+    }, [])
+
     const closeAlert = () => {
         setAlertIsVisible(false)
     }
 
     const handleSignup = async () => {
 
+        let i = 0
         const db = getFirestore(app)
         const auth = getAuth(app)
 
-        // const querySnapshot = await getDocs(query(collection(db, 'DVIR'), orderBy("TimeStamp", 'desc')));
-        // const dbData = []
-        // let i = 0
-        // querySnapshot.forEach((doc) => {
-        //     if (email == doc.data().Email) {
-        //         i++
-        //     }
-        // });
-        let i = 0
-        let j = 0
-        let l = 0
-        let data = []
-        // await getDocs(collection(db, 'DVIR'))
-        //     .then((querySnapshotUsers) => {
-        //         querySnapshotUsers.forEach(async (doc) => {
-        //             data.push({ Email: doc.data().Email })
-        //             if (email == doc.data().Email) {
-        //                 j++
-        //                 await createUserWithEmailAndPassword(auth, email, password)
-        //                     .then(async (userCredential) => {
-        //                         setUser(userCredential.user)
-        //                         await sendEmailVerification(auth.currentUser)
-        //                             .then(() => {
-        //                                 l++
-        //                                 // Email verification sent!
-        //                                 // ...
-        //                                 setAlertStatus('successful')
-        //                                 setAlertIsVisible(true)
-        //                                 clearAll()
-        //                                 setLoading(false)
-        //                             });
-        //                     })
-        //                     .catch((error) => {
-        //                         const errorCode = error.code;
-        //                         setUser(error.message.replace('auth/', ""))
-        //                         setAlertStatus('failed')
-        //                         setAlertIsVisible(true)
-        //                         setLoading(false)
-
-        //                         // ..
-        //                     });
-        //             }
-
-        //             if (l == 0) {
-        //                 data.map(async (val) => {
-        //                     await getDocs(collection(db, `DVIR/${val.Email}/users`))
-        //                         .then((newQuery) => {
-        //                             newQuery.forEach(async (docx) => {
-        //                                 if (email == docx.data().Email) {
-        //                                     console.log('email found')
-        //                                     j++
-        //                                     await createUserWithEmailAndPassword(auth, email, password)
-        //                                         .then(async (userCredential) => {
-        //                                             setUser(userCredential.user)
-        //                                             await sendEmailVerification(auth.currentUser)
-        //                                                 .then(() => {
-        //                                                     // Email verification sent!
-        //                                                     // ...
-        //                                                     setAlertStatus('successful')
-        //                                                     setAlertIsVisible(true)
-        //                                                     clearAll()
-        //                                                     setLoading(false)
-        //                                                 });
-        //                                         })
-        //                                         .catch((error) => {
-        //                                             const errorCode = error.code;
-        //                                             setUser(error.message.replace('auth/', ""))
-        //                                             setAlertStatus('failed')
-        //                                             setAlertIsVisible(true)
-        //                                             setLoading(false)
-
-        //                                             // ..
-        //                                         });
-        //                                 }
-        //                             })
-        //                         })
-
-        //                 })
-        //             }
-        //             // if (email == doc.data().Email) {
-        //             //     i++
-        //             // }
-        //         });
-        //     })
-
-        //     if(j == 0){
-        //         setAlertStatus('Not Allowed')
-        //         setAlertIsVisible(true)
-        //         setLoading(false)
-        //     }
-
-
-        // return j
-        // await getDocs(collection(db, 'AllowedUsers'))
-        //     .then((querySnapshotUsers) => {
-        //         querySnapshotUsers.forEach(async (doc) => {
-        //             // console.log(doc.id)
-        //             if (doc.id == email) {
-        //                 l++
-        //                 await createUserWithEmailAndPassword(auth, email, password)
-        //                     .then(async (userCredential) => {
-        //                         setUser(userCredential.user)
-        //                         await sendEmailVerification(auth.currentUser)
-        //                             .then(() => {
-        //                                 // Email verification sent!
-        //                                 // ...
-        //                                 setAlertStatus('successful')
-        //                                 setAlertIsVisible(true)
-        //                                 clearAll()
-        //                                 setLoading(false)
-        //                             });
-        //                     })
-        //                     .catch((error) => {
-        //                         const errorCode = error.code;
-        //                         setUser(error.message.replace('auth/', ""))
-        //                         setAlertStatus('failed')
-        //                         setAlertIsVisible(true)
-        //                         setLoading(false)
-
-        //                         // ..
-        //                     });
-        //             }
-        //         })
-        //     })
-
-        //     if (l == 0)
-        //     {
-        //         setAlertStatus('Not Allowed')
-        //         setAlertIsVisible(true)
-        //         setLoading(false)  
-        //     }
-        await createUserWithEmailAndPassword(auth, email, password)
-            .then(async (userCredential) => {
-                setUser(userCredential.user)
-                await sendEmailVerification(auth.currentUser)
-                    .then(() => {
-                        // Email verification sent!
-                        // ...
-                        setAlertStatus('successful')
-                        setAlertIsVisible(true)
-                        clearAll()
-                        setLoading(false)
-                    });
+        await getDocs(collection(db, 'AllowedUsers'))
+            .then((snapshot) => {
+                snapshot.forEach((doc) => {
+                    if (doc.data().Email == email) {
+                        i++
+                    }
+                })
             })
-            .catch((error) => {
-                const errorCode = error.code;
-                setUser(error.message.replace('auth/', ""))
-                setAlertStatus('failed')
-                setAlertIsVisible(true)
-                setLoading(false)
 
-                // ..
-            });
+        if (i == 0) {
+            setAlertStatus('Not Allowed')
+            setAlertIsVisible(true)
+            setLoading(false)
+        }
+        else {
+            await createUserWithEmailAndPassword(auth, email, password)
+                .then(async (userCredential) => {
+                    setUser(userCredential.user)
+                    await sendEmailVerification(auth.currentUser)
+                        .then(() => {
+                            // Email verification sent!
+                            // ...
+                            setAlertStatus('successful')
+                            setAlertIsVisible(true)
+                            clearAll()
+                            setLoading(false)
+                        });
+                })
+                .catch((error) => {
+                    const errorCode = error.code;
+                    setUser(error.message.replace('auth/', ""))
+                    setAlertStatus('failed')
+                    setAlertIsVisible(true)
+                    setLoading(false)
+
+                    // ..
+                });
+        }
+
     };
 
     const [fontsLoaded] = useFonts({
@@ -260,7 +169,7 @@ const SignupPage = (props) => {
     const CustomActivityIndicator = () => {
         return (
             <View style={styles.activityIndicatorStyle}>
-                <ActivityIndicator color="#FFA600" size="large" />
+                <ActivityIndicator color="#23d3d3" size="large" />
             </View>
         );
     };
@@ -268,7 +177,80 @@ const SignupPage = (props) => {
 
     return (
         <>
-            <View style={[styles.container]}>
+
+
+            <ScrollView style={{}}
+                contentContainerStyle={{ alignItems: 'center', justifyContent: 'center', flex: 1, width: '100%' }}>
+                <View style={{ flexDirection: 'row', width: '100%', height: '100%', margin: 10 }}>
+                <View style={{ flex: 1, backgroundColor: '#eaedf5' }}>
+                    </View>
+                    <View style={{ flex: 1, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Image style={{ height: 55, width: 55 }} source={require('../../assets/applogo.png')}></Image>
+                            <Text style={{ fontFamily: 'inter-extrablack', fontSize: 40, color: '#000000', marginLeft: 10 }}>D V I R</Text>
+                        </View>
+                        <Text style={{ fontFamily: 'inter-bold', fontSize: 22, marginVertical: 30, color: 'grey' }}>Sign up to your DVIR account</Text>
+                        <TextInput
+                            style={[styles.input, emailTextInputBorderColor && styles.withBorderInputContainer]}
+                            placeholder="Email"
+                            placeholderTextColor="#868383DC"
+                            value={email}
+                            onChangeText={setEmail}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            onFocus={() => { setEmailTextInputBorderColor(true) }}
+                            onBlur={() => { setEmailTextInputBorderColor(false) }}
+                        />
+                        <View style={{ width: 350, marginBottom: 10 }}>
+                            {!isEmailValid ? <Text style={{ color: 'red', paddingLeft: 5, fontSize: 10, alignSelf: 'flex-start' }}>Enter Valid Email</Text> : null}
+                        </View>
+                        <TextInput
+                            style={[styles.input, passwordTextInputBorderColor && styles.withBorderInputContainer]}
+                            placeholder="Password"
+                            placeholderTextColor="#868383DC"
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry
+                            onFocus={() => { setPasswordTextInputBorderColor(true) }}
+                            onBlur={() => { setPasswordTextInputBorderColor(false) }}
+                        />
+                        <View style={{ width: 350, marginBottom: 10 }}>
+                            {!isPasswordValid ? <Text style={{ color: 'red', paddingTop: 5, paddingLeft: 5, fontSize: 10, alignSelf: 'flex-start' }}>Password length should have 6 to 18 characters</Text> : null}
+                        </View>
+                        <View style={{ width: 350 }}>
+                            <AppBtn
+                                title="SIGN UP"
+                                btnStyle={styles.btn}
+                                btnTextStyle={styles.btnText}
+                                onPress={() => {
+                                    if (isEmailValid == true && isPasswordValid == true) {
+                                        setLoading(true)
+                                        handleSignup()
+                                    }
+                                }}
+                            >
+                            </AppBtn>
+                        </View>
+
+
+                        <View style={styles.signupContainer}>
+                            <Text style={{ fontFamily: 'inter-regular', fontSize: 13, color: 'grey' }}>Already have an account? </Text>
+                            <View
+                                onMouseEnter={() => setLoginHovered(true)}
+                                onMouseLeave={() => setLoginHovered(false)}>
+                                <TouchableOpacity
+                                    onPress={() => router.replace('/')}
+                                >
+                                    <Text style={[styles.signupText, loginHovered && styles.signupTextHover]}
+                                        activeOpacity={0.7}>Log in</Text></TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+
+                </View>
+            </ScrollView>
+
+            {/* <View style={[styles.container]}>
                 <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
                 <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
                 <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
@@ -276,30 +258,6 @@ const SignupPage = (props) => {
                 <BlurView intensity={90} tint="light" style={StyleSheet.absoluteFill} />
                 <BlurView intensity={100} style={styles.content}>
                     <Text style={styles.title}>D V I R</Text>
-                    {/* <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <View style={[styles.inputContainer, { width: '45%' }]}>
-                            <TextInput
-                                style={[styles.input, firstNameTextInputBorderColor && styles.withBorderInputContainer]}
-                                placeholder="First Name"
-                                placeholderTextColor="#868383DC"
-                                value={firstName}
-                                onChangeText={setFirstName}
-                                onFocus={() => { setFirstNameTextInputBorderColor(true) }}
-                                onBlur={() => { setFirstNameTextInputBorderColor(false) }}
-                            />
-                        </View>
-                        <View style={[styles.inputContainer, { width: '45%' }]}>
-                            <TextInput
-                                style={[styles.input, lastNameTextInputBorderColor && styles.withBorderInputContainer]}
-                                placeholder="Last Name"
-                                placeholderTextColor="#868383DC"
-                                value={lastName}
-                                onChangeText={setLastName}
-                                onFocus={() => { setLastNameTextInputBorderColor(true) }}
-                                onBlur={() => { setLastNameTextInputBorderColor(false) }}
-                            />
-                        </View>
-                    </View> */}
                     <View style={styles.inputContainer}>
                         <TextInput
                             style={[styles.input, emailTextInputBorderColor && styles.withBorderInputContainer]}
@@ -361,7 +319,7 @@ const SignupPage = (props) => {
                     </View>
 
                 </BlurView>
-            </View>
+            </View> */}
             {alertStatus == 'successful'
                 ?
                 <AlertModal
@@ -559,26 +517,22 @@ const styles = StyleSheet.create({
     inputContainer: {
         width: '100%',
         marginTop: 10,
+
     },
     input: {
-        width: '100%',
-        height: 50,
+        width: 350,
+        height: 60,
         backgroundColor: '#fff',
-        borderRadius: 10,
-        paddingHorizontal: 10,
+        paddingHorizontal: 20,
         borderWidth: 1,
         borderColor: '#cccccc',
-        outlineStyle: 'none'
+        outlineStyle: 'none',
+        marginBottom: 10
     },
     withBorderInputContainer: {
-        borderColor: '#558BC1',
-        shadowColor: '#558BC1',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 1,
-        shadowRadius: 10,
-        elevation: 0,
+        borderColor: '#008dff',
     },
-    signupButton: {
+    loginButton: {
         width: '100%',
         height: 50,
         backgroundColor: '#336699',
@@ -587,8 +541,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginTop: 10,
     },
-    signupButtonHover: {
-        backgroundColor: '#558BC1',
+    loginButtonHover: {
+        backgroundColor: '#001E3D',
     },
     buttonText: {
         color: '#fff',
@@ -600,35 +554,31 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-end',
     },
     forgetPasswordText: {
-        color: '#333',
+        color: '#008dff',
         fontSize: 14,
-        fontWeight: 'bold',
+        fontFamily: 'inter-regular',
     },
     forgetPasswordTextHover: {
-        color: '#558BC1',
-        fontSize: 14,
-        fontWeight: 'bold',
+        color: '#000000',
         textDecorationLine: 'underline',
     },
     signupContainer: {
         marginTop: 10,
         flexDirection: 'row',
     },
-    loginText: {
-        color: '#333',
+    signupText: {
+        color: '#008dff',
         fontSize: 14,
-        fontWeight: 'bold'
+        fontFamily: 'inter-regular',
     },
-    loginTextHover: {
-        color: '#558BC1',
-        fontSize: 14,
-        fontWeight: 'bold',
-        textDecorationLine: 'underline'
+    signupTextHover: {
+        color: '#000000',
+        textDecorationLine: 'underline',
     },
     btn: {
         width: '100%',
-        height: 50,
-        backgroundColor: '#336699',
+        height: 60,
+        backgroundColor: '#0078ff',
         borderRadius: 5,
         alignItems: 'center',
         justifyContent: 'center',
@@ -640,6 +590,20 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         marginLeft: 10,
         marginRight: 10
+    },
+    activityIndicatorStyle: {
+        flex: 1,
+        position: 'absolute',
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        marginTop: 'auto',
+        marginBottom: 'auto',
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        backgroundColor: '#788C9A95'
     },
     centeredView: {
         flex: 1,
@@ -655,20 +619,6 @@ const styles = StyleSheet.create({
         elevation: 5,
         maxHeight: '98%',
         maxWidth: '95%'
-    },
-    activityIndicatorStyle: {
-        flex: 1,
-        position: 'absolute',
-        marginLeft: 'auto',
-        marginRight: 'auto',
-        marginTop: 'auto',
-        marginBottom: 'auto',
-        left: 0,
-        right: 0,
-        top: 0,
-        bottom: 0,
-        justifyContent: 'center',
-        backgroundColor: '#555555DD'
     },
 });
 

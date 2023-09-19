@@ -1,29 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated, Dimensions, ImageBackground, Modal, ActivityIndicator } from 'react-native';
 import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import AppBtn from '../../components/Button';
 import Form from '../../components/Form';
 import { CSVLink } from 'react-csv';
+import { DataContext } from '../store/context/DataContext';
+import { useContext } from 'react';
+import moment from 'moment'
+import { collection, deleteDoc, doc, getDocs, getFirestore, query, where } from 'firebase/firestore';
+import app from '../config/firebase';
+import AlertModal from '../../components/AlertModal';
 
 
 
 const columns = [
-    'Status',
-    'Inspection ID',
-    'Date Inspected',
-    'Date Received',
-    'Asset Name',
-    'Asset VIN',
-    'Asset License Plate',
-    'Asset Type',
-    'Asset Make',
-    'Asset Model',
-    'Driver Name',
-    'Driver User',
-    'Employee Number',
-    'Defects Count'
+    'formStatus',
+    'id',
+    'TimeStamp',
+    'assetName',
+    'driverName',
+    'Company name',
+    'Form name',
 ];
 
 const entriesData = [
@@ -282,7 +281,10 @@ const entriesData = [
     },
 ];
 
-const GeneralInspectionPage = () => {
+const GeneralInspectionPage = (props) => {
+
+    const windowHeight = Dimensions.get('window').height;
+    const db = getFirestore(app)
 
     const [selectedPage, setSelectedPage] = useState('Dashboard');
     const [dashboardHovered, setDashboardHovered] = useState(false)
@@ -292,10 +294,153 @@ const GeneralInspectionPage = () => {
     const [assetsHovered, setAssetsHovered] = useState(false)
     const [usersHovered, setUsersHovered] = useState(false)
     const [inspectionCalendarSelect, setInspectionCalendarSelect] = useState('All')
-    const [totalInspections, setTotalInspections] = useState(19)
-    const [totalDefects, setTotalDefects] = useState(7)
+    const [totalInspections, setTotalInspections] = useState(0)
+    const [totalDefects, setTotalDefects] = useState(0)
     const { width, height } = Dimensions.get('window')
 
+    const { state: dataState, setData } = useContext(DataContext)
+
+    const [myData, setMyData] = useState(dataState.value.data ? dataState.value.data : [])
+    const [downloadHeader, setDownloadHeader] = useState([])
+    const [downloadData, setDownloadData] = useState([])
+    const [formValue, setFormValue] = useState(props.form)
+    const [driverPicture, setDriverPicture] = useState(null)
+    const [groups, setGroups] = useState([])
+    const [deleteModal, setDeleteModal] = useState(false)
+    const [deleteOptionHover, setDeleteOptionHover] = useState({})
+    const [loading, setLoading] = useState(false)
+    const [alertIsVisible, setAlertIsVisible] = useState(false)
+    const [alertStatus, setAlertStatus] = useState('')
+
+    const fetchData = async () => {
+
+        let list = []
+        await getDocs(collection(db, 'Forms'))
+            .then((snapshot) => {
+                snapshot.forEach((doc) => {
+                    list.push(doc.data())
+                })
+            })
+        setData(list)
+        setLoading(false)
+    }
+
+    useEffect(() => {
+        if (dataState.value.data.length != 0) {
+            const def = dataState.value.data.filter(item => item.formStatus === 'Failed');
+            setTotalInspections(dataState.value.data.length)
+            setTotalDefects(def.length)
+        }
+        // console.log(formValue.length)
+
+    }, [loading])
+
+    useEffect(() => {
+
+        if (inspectionCalendarSelect == 'All') {
+            if (dataState.value.data.length != 0) {
+
+                const propertyNamesArray = Object.keys(dataState.value.data[0]);
+
+                const propertiesToRemove = ["form", "signature", 'location'];
+
+                const filteredData = propertyNamesArray.filter(propertyName => !propertiesToRemove.includes(propertyName));
+                //   const finalArray = filteredPropertyNamesArray.filter(propertyName => propertyName !== 'location');
+
+                setDownloadHeader(filteredData);
+
+                const newData = dataState.value.data.map(({ form, location, signature, ...rest }) => rest);
+
+                //   console.log(newData)
+
+                const newData1 = newData.map(({ TimeStamp: { seconds, ...rest }, ...obj }) => ({ ...obj, TimeStamp: ((new Date(seconds * 1000)).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }) + " " + (new Date(seconds * 1000)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })).toString() }));
+
+                //   const newData = data.map(({ age: { current, ...rest }, ...obj }) => ({ ...obj, age: current }));
+
+                // const finalData = newData1.map(({ duration, ...rest }) => ({ ...rest, duration: (moment.duration(duration).minutes() + ':' + moment.duration(duration).seconds() + " minutes").toString }));
+
+
+                const finalData = newData1.map(obj => ({
+                    ...obj,
+                    duration: moment.duration(obj.duration).minutes() + ':' + moment.duration(obj.duration).seconds() + " minutes",
+                }));
+
+                setDownloadData(finalData)
+            }
+        }
+
+        else if (inspectionCalendarSelect == 'Failed') {
+
+            if (dataState.value.data.length != 0) {
+
+                const workingData = dataState.value.data.filter(item => item.formStatus === 'Failed');
+
+                const propertyNamesArray = Object.keys(workingData[0]);
+
+                const propertiesToRemove = ["form", "signature", 'location'];
+
+                const filteredData = propertyNamesArray.filter(propertyName => !propertiesToRemove.includes(propertyName));
+                //   const finalArray = filteredPropertyNamesArray.filter(propertyName => propertyName !== 'location');
+
+                setDownloadHeader(filteredData);
+
+                const newData = workingData.map(({ form, location, signature, ...rest }) => rest);
+
+                //   console.log(newData)
+
+                const newData1 = newData.map(({ TimeStamp: { seconds, ...rest }, ...obj }) => ({ ...obj, TimeStamp: ((new Date(seconds * 1000)).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }) + " " + (new Date(seconds * 1000)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })).toString() }));
+
+                //   const newData = data.map(({ age: { current, ...rest }, ...obj }) => ({ ...obj, age: current }));
+
+                // const finalData = newData1.map(({ duration, ...rest }) => ({ ...rest, duration: (moment.duration(duration).minutes() + ':' + moment.duration(duration).seconds() + " minutes").toString }));
+
+
+                const finalData = newData1.map(obj => ({
+                    ...obj,
+                    duration: moment.duration(obj.duration).minutes() + ':' + moment.duration(obj.duration).seconds() + " minutes",
+                }));
+
+                setDownloadData(finalData)
+            }
+        }
+
+        else if (inspectionCalendarSelect == 'Pass') {
+
+            if (dataState.value.data.length != 0) {
+
+                const workingData = dataState.value.data.filter(item => item.formStatus === 'Passed');
+
+                const propertyNamesArray = Object.keys(workingData[0]);
+
+                const propertiesToRemove = ["form", "signature", 'location'];
+
+                const filteredData = propertyNamesArray.filter(propertyName => !propertiesToRemove.includes(propertyName));
+                //   const finalArray = filteredPropertyNamesArray.filter(propertyName => propertyName !== 'location');
+
+                setDownloadHeader(filteredData);
+
+                const newData = workingData.map(({ form, location, signature, ...rest }) => rest);
+
+                //   console.log(newData)
+
+                const newData1 = newData.map(({ TimeStamp: { seconds, ...rest }, ...obj }) => ({ ...obj, TimeStamp: ((new Date(seconds * 1000)).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }) + " " + (new Date(seconds * 1000)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })).toString() }));
+
+                //   const newData = data.map(({ age: { current, ...rest }, ...obj }) => ({ ...obj, age: current }));
+
+                // const finalData = newData1.map(({ duration, ...rest }) => ({ ...rest, duration: (moment.duration(duration).minutes() + ':' + moment.duration(duration).seconds() + " minutes").toString }));
+
+
+                const finalData = newData1.map(obj => ({
+                    ...obj,
+                    duration: moment.duration(obj.duration).minutes() + ':' + moment.duration(obj.duration).seconds() + " minutes",
+                }));
+
+                setDownloadData(finalData)
+            }
+        }
+
+
+    }, [inspectionCalendarSelect, loading])
 
     useEffect(() => {
 
@@ -310,82 +455,87 @@ const GeneralInspectionPage = () => {
         }
     }, [selectedPage])
 
+    useEffect(() => {
+        const groupData = (data) => {
+            const groups = [];
+            let currentGroup = [];
+            let groupValue; // Store the group value outside the object array
+
+            for (const item of data) {
+                if (
+                    currentGroup.length >= 5 ||
+                    !currentGroup.length ||
+                    currentGroup[0].type !== item.type
+                ) {
+                    if (currentGroup.length) {
+                        // Determine the group value based on the presence of 'Fail' values
+                        groupValue = currentGroup.some(obj => obj.value === 'Fail') ? 'Fail' : 'Pass';
+
+                        // Add the group value to the first object in the group
+                        currentGroup[0].groupValue = groupValue;
+
+                        groups.push([...currentGroup]);
+                    }
+                    currentGroup = [item];
+                } else {
+                    currentGroup.push(item);
+                }
+            }
+
+            if (currentGroup.length) {
+                // Determine the group value for the last group
+                groupValue = currentGroup.some(obj => obj.value === 'Fail') ? 'Fail' : 'Pass';
+
+                // Add the group value to the first object in the last group
+                currentGroup[0].groupValue = groupValue;
+
+                groups.push([...currentGroup]);
+            }
+
+            return groups;
+        };
+
+        // Group the data
+        if (formValue.length != 0) {
+            const groupedData = groupData(formValue.form);
+            // console.log(groupedData)
+            setGroups(groupedData)
+        }
+
+
+    }, [formValue])
+
 
     const handleDownloadReportBtn = () => {
 
+    }
 
+
+    const handleFormValue = async (value) => {
+
+        props.onDashboardValue(value)
 
     }
 
-    const [fontsLoaded] = useFonts({
-        'futura-extra-black': require('../../assets/fonts/Futura-Extra-Black-font.ttf'),
-    });
 
-    if (!fontsLoaded) {
-        return null;
-    }
 
-    let driver = [{
-        name: "Ubaid",
-        company: "DVIR",
-        inspection: 5
-    },
-    {
-        name: "John",
-        company: "DVIR",
-        inspection: 2
-    },
-    {
-        name: "Doe",
-        company: "DVIR",
-        inspection: 0
-    }]
-
-    const asset = [{
-        name: "Truck1",
-        company: "DVIR",
-        inspection: 4,
-        defects: 1
-    },
-    {
-        name: "Truck2",
-        company: "DVIR",
-        inspection: 2,
-        defects: 3
-    }]
-
-    const handleFormValue = (value) => {
-        console.log(value)
+    const closeAlert = () => {
+        setAlertIsVisible(false)
     }
 
     return (
 
-        <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
-
-            <View style={{
-                position: 'absolute',
-                top: 0,
-                bottom: 0,
-                left: 0,
-                right: 0,
-                overflow: 'hidden',
-                height: height
-            }}>
-                <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
-                <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
-                <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
-                <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
-            </View>
-            <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
+        <Animated.View style={{ flex: 1, backgroundColor: '#f6f8f9' }}>
             <ScrollView style={{ height: 100 }}>
+
                 <View style={{ flexDirection: 'row', marginLeft: 40, marginTop: 40, marginRight: 40, justifyContent: 'space-between' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <View style={{ backgroundColor: '#67E9DA', borderRadius: 15, }}>
-                            <Image style={{ width: 30, height: 30, margin: 10 }}
+                        <View style={{ backgroundColor: '#23d3d3', borderRadius: 15, }}>
+                            <Image style={{ width: 30, height: 30, margin: 7 }}
                                 tintColor='#FFFFFF'
                                 source={require('../../assets/inspection_icon.png')}></Image>
                         </View>
-                        <Text style={{ fontSize: 40, color: '#1E3D5C', fontWeight: '900', marginLeft: 10 }}>
+                        <Text style={{ fontSize: 30, color: '#335a75', fontFamily: 'inter-extrablack', marginLeft: 10 }}>
                             Inspection
                         </Text>
                     </View>
@@ -416,7 +566,7 @@ const GeneralInspectionPage = () => {
                         </TouchableOpacity>
                     </View>
                     <View >
-                        <CSVLink style={{ textDecorationLine: 'none'}} data={entriesData} headers={columns} filename={"general_inspection_report.csv"}>
+                        <CSVLink style={{ textDecorationLine: 'none' }} data={downloadData} headers={downloadHeader} filename={"general_inspection_report.csv"}>
                             <AppBtn
                                 title="Download Report"
                                 btnStyle={styles.btn}
@@ -425,20 +575,152 @@ const GeneralInspectionPage = () => {
                         </CSVLink>
                     </View>
                 </View>
-                <View style={styles.contentCardStyle}>
-                    <Form
-                        columns={columns}
-                        entriesData={entriesData}
-                        titleForm="General Inspection"
-                        onValueChange={handleFormValue}
-                        row={styles.formRowStyle}
-                        cell={styles.formCellStyle}
-                        entryText={styles.formEntryTextStyle}
-                        columnHeaderRow={styles.formColumnHeaderRowStyle}
-                        columnHeaderCell={styles.formColumnHeaderCellStyle}
-                        columnHeaderText={styles.formColumnHeaderTextStyle} />
-                </View>
+                {
+                    dataState.value.data
+                        ?
+                        inspectionCalendarSelect == 'All'
+                            ?
+                            <View style={styles.contentCardStyle}>
+                                {dataState.value.data.length != 0
+                                    ?
+                                    <Form
+                                        columns={columns}
+                                        entriesData={dataState.value.data}
+                                        titleForm="General Inspection"
+                                        onValueChange={handleFormValue}
+                                        row={styles.formRowStyle}
+                                        cell={styles.formCellStyle}
+                                        entryText={styles.formEntryTextStyle}
+                                        columnHeaderRow={styles.formColumnHeaderRowStyle}
+                                        columnHeaderCell={styles.formColumnHeaderCellStyle}
+                                        columnHeaderText={styles.formColumnHeaderTextStyle} />
+                                    :
+                                    null
+                                }
+
+                            </View>
+                            :
+                            inspectionCalendarSelect == 'Failed'
+                                ?
+                                <View style={styles.contentCardStyle}>
+                                    <Form
+                                        columns={columns}
+                                        entriesData={dataState.value.data.filter(item => item.formStatus === 'Failed')}
+                                        titleForm="General Inspection"
+                                        onValueChange={handleFormValue}
+                                        row={styles.formRowStyle}
+                                        cell={styles.formCellStyle}
+                                        entryText={styles.formEntryTextStyle}
+                                        columnHeaderRow={styles.formColumnHeaderRowStyle}
+                                        columnHeaderCell={styles.formColumnHeaderCellStyle}
+                                        columnHeaderText={styles.formColumnHeaderTextStyle} />
+                                </View>
+                                :
+                                inspectionCalendarSelect == 'Pass'
+                                    ?
+                                    <View style={styles.contentCardStyle}>
+                                        <Form
+                                            columns={columns}
+                                            entriesData={dataState.value.data.filter(item => item.formStatus === 'Passed')}
+                                            titleForm="General Inspection"
+                                            onValueChange={handleFormValue}
+                                            row={styles.formRowStyle}
+                                            cell={styles.formCellStyle}
+                                            entryText={styles.formEntryTextStyle}
+                                            columnHeaderRow={styles.formColumnHeaderRowStyle}
+                                            columnHeaderCell={styles.formColumnHeaderCellStyle}
+                                            columnHeaderText={styles.formColumnHeaderTextStyle} />
+                                    </View>
+                                    :
+                                    null
+
+                        :
+                        null}
+
+
             </ScrollView>
+
+            <Modal
+                animationType="fade"
+                visible={deleteModal}
+                transparent={true}>
+                <View style={styles.centeredView}>
+                    <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+                    <View style={styles.modalView}>
+                        <View>
+                            <Text style={{ fontSize: 17, fontWeight: '400' }}>Are you sure you want to Delete ?</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', width: 250, justifyContent: 'space-between', marginTop: 20 }}>
+                            <View
+                                onMouseEnter={() => setDeleteOptionHover({ [0]: true })}
+                                onMouseLeave={() => setDeleteOptionHover({ [0]: false })}>
+                                <TouchableOpacity
+                                    onPress={async () => {
+                                        setDeleteModal(false)
+                                        setLoading(true)
+                                        // console.log(formValue.id)
+                                        await deleteDoc(doc(db, "Forms", formValue.id.toString()));
+                                        console.log('deleted')
+                                        setFormValue([])
+                                        setAlertStatus('successful')
+                                        setAlertIsVisible(true)
+                                        fetchData()
+                                    }}
+
+                                    style={[{ width: 100, height: 40, backgroundColor: '#FFFFFF', borderRadius: 5, alignItems: 'center', justifyContent: 'center', shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.9, shadowRadius: 5, elevation: 0, shadowColor: '#575757', marginHorizontal: 10 }, deleteOptionHover[0] && { backgroundColor: '#67E9DA', borderColor: '#67E9DA' }]}>
+                                    <Text style={[{ fontSize: 16 }, deleteOptionHover[0] && { color: '#FFFFFF' }]}>Yes</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <View
+                                onMouseEnter={() => setDeleteOptionHover({ [1]: true })}
+                                onMouseLeave={() => setDeleteOptionHover({ [1]: false })}>
+                                <TouchableOpacity
+                                    onPress={() => setDeleteModal(false)}
+                                    style={[{ width: 100, height: 40, backgroundColor: '#FFFFFF', borderRadius: 5, alignItems: 'center', justifyContent: 'center', shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.9, shadowRadius: 5, elevation: 0, shadowColor: '#575757', marginHorizontal: 10 }, deleteOptionHover[1] && { backgroundColor: '#67E9DA', borderColor: '#67E9DA' }]}>
+                                    <Text style={[{ fontSize: 16 }, deleteOptionHover[1] && { color: '#FFFFFF' }]}>No</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </View>
+
+            </Modal>
+
+            {alertStatus == 'successful'
+                ?
+
+                <AlertModal
+                    centeredViewStyle={styles.centeredView}
+                    modalViewStyle={styles.modalView}
+                    isVisible={alertIsVisible}
+                    onClose={closeAlert}
+                    img={require('../../assets/successful_icon.png')}
+                    txt='Successful'
+                    txtStyle={{ fontWeight: '500', fontSize: 20, marginLeft: 10 }}
+                    tintColor='green'>
+
+                </AlertModal>
+                :
+                alertStatus == 'failed'
+                    ?
+                    <AlertModal
+                        centeredViewStyle={styles.centeredView}
+                        modalViewStyle={styles.modalView}
+                        isVisible={alertIsVisible}
+                        onClose={closeAlert}
+                        img={require('../../assets/failed_icon.png')}
+                        txt='Failed'
+                        txtStyle={{ fontFamily: 'futura', fontSize: 20, marginLeft: 10 }}
+                        tintColor='red'>
+                    </AlertModal>
+                    : null
+            }
+
+            {loading ?
+                <View style={styles.activityIndicatorStyle}>
+                    <ActivityIndicator color="#23d3d3" size="large" />
+                </View>
+                : null}
         </Animated.View>
 
     );
@@ -449,6 +731,20 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
     },
+    activityIndicatorStyle: {
+        flex: 1,
+        position: 'absolute',
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        marginTop: 'auto',
+        marginBottom: 'auto',
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        backgroundColor: '#555555DD',
+    },
     title: {
         fontSize: 48,
         fontWeight: 'bold',
@@ -456,6 +752,21 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontFamily: 'futura-extra-black',
         alignSelf: 'center'
+    },
+    centeredView: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        // backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalView: {
+        backgroundColor: 'white',
+        borderRadius: 8,
+        padding: 20,
+        alignItems: 'center',
+        elevation: 5,
+        maxHeight: '98%',
+        maxWidth: '95%'
     },
     leftSide: {
         width: 270,
@@ -562,9 +873,9 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     calenderSortText: {
-        fontSize: 17,
-        fontWeight: '400',
-        color: '#5B5B5B',
+        fontSize: 14,
+        fontFamily: 'inter-semibold',
+        color: '#A8A8A8',
     },
     calenderSortSelectedText: {
         color: '#000000',
@@ -582,14 +893,17 @@ const styles = StyleSheet.create({
     contentCardStyle: {
         backgroundColor: '#FFFFFF',
         padding: 30,
-        borderRadius: 20,
+        borderRadius: 5,
         shadowColor: '#000000',
         shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.25,
+        shadowOpacity: 0.15,
         shadowRadius: 10,
         elevation: 5,
         margin: 40,
-        flex: 1
+        // flex:1,
+        width: 'auto',
+        height: 800,
+        // overflow: 'scroll'
     },
     btn: {
         width: '100%',
@@ -618,21 +932,26 @@ const styles = StyleSheet.create({
         shadowOpacity: 1,
         shadowRadius: 4,
         elevation: 0,
-        borderRadius: 20,
-        marginLeft: 5,
-        marginRight: 5
+        // borderRadius: 20,
+        // marginLeft: 5,
+        // marginRight: 5,
+        width: 'auto',
+        justifyContent: 'space-between'
     },
     formCellStyle: {
-        flex: 1,
         justifyContent: 'center',
-        alignItems: 'center',
-        height: 40
+        flex: 1,
+        minHeight: 50,
+        maxWidth:150
+
+        // paddingLeft: 20
     },
     formEntryTextStyle: {
-        fontWeight: 'normal',
-        paddingHorizontal: 30,
+        fontFamily: 'inter-regular',
+        paddingHorizontal: 20,
         paddingVertical: 5,
-        fontSize: 12
+        fontSize: 13,
+        color: '#000000'
     },
 
     formColumnHeaderRowStyle: {
@@ -641,20 +960,37 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#ccc',
         paddingVertical: 10,
-        alignItems: 'center',
+        width: 'auto',
+        justifyContent: 'space-between',
+        // alignItems: 'center',
     },
     formColumnHeaderCellStyle: {
+        // width: 160,
+        // paddingLeft:20
         flex: 1,
+        maxWidth:150
 
     },
     formColumnHeaderTextStyle: {
-        fontWeight: 'bold',
+        fontFamily: 'inter-bold',
         marginBottom: 5,
-        textAlign: 'center',
+        // textAlign: 'center',
         paddingHorizontal: 20,
         color: '#5A5A5A',
-        fontSize: 14
+        fontSize: 13
     },
+    selectedFormPropertyStyle: {
+        fontFamily: 'inter-regular',
+        fontSize: 15,
+        width: 150,
+        height: 25
+    },
+    selectedFormKeyStyle: {
+        fontFamily: 'inter-semibold',
+        fontSize: 15,
+        // width: 150,
+        height: 25
+    }
 });
 
 export default GeneralInspectionPage

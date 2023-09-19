@@ -250,7 +250,7 @@ const MechanicPage = () => {
     const CustomActivityIndicator = () => {
         return (
             <View style={styles.activityIndicatorStyle}>
-                <ActivityIndicator color="#FFA600" size="large" />
+                <ActivityIndicator color="#23d3d3" size="large" />
             </View>
         );
     };

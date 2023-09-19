@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated, Platform, TextInput, Dimensions } from 'react-native';
+import React, { useState, useEffect, useContext } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated, Platform, TextInput, Dimensions, Modal, ActivityIndicator } from 'react-native';
 import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -8,78 +8,36 @@ import Form from '../../components/Form';
 import DropDownComponent from '../../components/DropDown';
 import AlertModal from '../../components/AlertModal';
 import * as DocumentPicker from 'expo-document-picker';
+import { collection, deleteDoc, doc, getDocs, getFirestore, orderBy, query, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import app from '../config/firebase';
+import { TouchableWithoutFeedback } from 'react-native-gesture-handler';
+import { DataContext } from '../store/context/DataContext';
+import { DefectContext } from '../store/context/DefectContext';
+import { WOContext } from '../store/context/WOContext'
+import { AssetContext } from '../store/context/AssetContext';
 
 const columns = [
-    'Name',
-    'Forms',
-    'Team Name',
-    'Last Ins.',
-    'License Plate',
-    'Action'
-
+    'Asset Name',
+    'Plate Number',
+    'Engine Type',
+    'ADA',
+    'Asset Type',
+    'Action',
 ];
 
-const entriesData = [
-    {
-        'Name': 'Truck 1',
-        'Forms': 1,
-        'Team Name': 'Octa Soft',
-        'Last Ins.': '14-01-2017',
-        'License Plate': 'ABC-123',
-        'Action': 'Button',
-        'Hover': '#558BC1'
-    },
-    // Add more entries
-    {
-        'Name': 'Truck 2',
-        'Forms': 1,
-        'Team Name': 'Octa Soft',
-        'Last Ins.': '22-10-2022',
-        'License Plate': 'LEV-875',
-        'Action': 'Button'
-    },
-    {
-        'Name': 'Truck 3',
-        'Forms': 1,
-        'Team Name': 'Octa Soft',
-        'Last Ins.': '15-04-2023',
-        'License Plate': 'AA-567',
-        'Action': 'Button'
-    },
-    // Add more entries
-    {
-        'Name': 'Truck 4',
-        'Forms': 1,
-        'Team Name': 'Octa Soft',
-        'Last Ins.': '1-5-2021',
-        'License Plate': 'ZRYU-9458',
-        'Action': 'Button'
-    },
-    // Add more entries
-    {
-        'Name': 'Truck 5',
-        'Forms': 1,
-        'Team Name': 'Octa Soft',
-        'Last Ins.': '14-07-2022',
-        'License Plate': 'LKG-7654',
-        'Action': 'Button'
-    },
-];
 
 
 const AssetsPage = (props) => {
 
+    const auth = getAuth()
+    const db = getFirestore(app)
+
     const [selectedPage, setSelectedPage] = useState('Dashboard');
-    const [dashboardHovered, setDashboardHovered] = useState(false)
-    const [inspectiondHovered, setInspectionHovered] = useState(false)
-    const [maintenanceHovered, setMaintenanceHovered] = useState(false)
     const [fadeAnim] = useState(new Animated.Value(0));
-    const [assetsHovered, setAssetsHovered] = useState(false)
-    const [usersHovered, setUsersHovered] = useState(false)
-    const [inspectionCalendarSelect, setInspectionCalendarSelect] = useState('All')
-    const [totalAssets, setTotalAssets] = useState(19)
+    const [totalAssets, setTotalAssets] = useState(0)
     const [totalAssetsInspected, setTotalAssetsInspected] = useState(2)
-    const [assetsWithDefects, setAssetsWithDefects] = useState(1)
+    const [assetsWithDefects, setAssetsWithDefects] = useState(0)
     const [search, setSearch] = useState('')
     const [searchTextInputBorderColor, setSearchTextInputBorderColor] = useState(false)
     const [searchAssetSelectedOption, setSearchAssetSelectedOption] = useState("Select")
@@ -87,20 +45,95 @@ const AssetsPage = (props) => {
     const [createNewAssetModalVisible, setCreateNewAssetModalVisible] = useState(false);
     const [alertIsVisible, setAlertIsVisible] = useState(false)
     const [alertStatus, setAlertStatus] = useState('')
-
+    const [deleteAlertVisible, setDeleteAlertVisible] = useState(false)
+    const [deleteOptionHover, setDeleteOptionHover] = useState({})
     const { width, height } = Dimensions.get('window')
     const [fileUri, setFileUri] = useState(null);
     const [textInputBorderColor, setTextInputBorderColor] = useState('')
+    const [dbReference, setDbReference] = useState('')
+    const [assetNumber, setAssetNumber] = useState(0)
+    const [entriesData, setEntriesData] = useState([])
+    const [plateNumber, setPlateNumber] = useState('')
+    const [make, setMake] = useState('')
+    const [year, setYear] = useState('')
+    const [model, setModel] = useState('')
+    const [color, setColor] = useState('')
+    const [notes, setNotes] = useState('')
+    const [company, setCompany] = useState('')
+    const [mileage, setMileage] = useState('')
+    const [assetType, setAssetType] = useState('Select')
+    const [ADA, setADA] = useState('Select')
+    const [airBrakes, setAirBrakes] = useState('Select')
+    const [engineType, setEngineType] = useState('Select')
+    const [deleteAsset, setDeleteAsset] = useState(null)
+    const [loading, setloading] = useState(true)
+    const [assetName, setAssetName] = useState('')
+    const [assignDriverModalVisible, setAssignDriverModalVisible] = useState(false)
+    const [driversList, setDriversList] = useState([])
+    const [searchDriver, setSearchDriver] = useState('')
+    const [driverAssignItemHovered, setDriverAssignItemHovered] = useState({})
+    const [assetIndex, setAssetIndex] = useState(0)
+    const [openDetail, setOpenDetail] = useState(false)
+    const [options, setOptions] = useState('1')
+    const [selectedAsset, setSelectedAsset] = useState([])
+
+    const { state: dataState, setData } = useContext(DataContext)
+    const { state: defectState, setDefect } = useContext(DefectContext)
+    const { state: woState, setWO } = useContext(WOContext)
+    const {state : assetState, setAssetData} = useContext(AssetContext)
+
+
+    const fetchData = async () => {
+        let assetRef = []
+        try {
+            const querySnapshot = await getDocs(query(collection(db, "Assets"), orderBy("TimeStamp", 'desc')));
+            querySnapshot.forEach((doc) => {
+                assetRef.push(doc.data())
+                if (doc.data().DefectStatus == true) {
+                    setAssetsWithDefects((count) => count + 1)
+                }
+            });
+
+            if (assetRef.length === 0) {
+                setAssetNumber(1)
+            }
+            else {
+                setAssetNumber(assetRef[0]['Asset Number'] + 1)
+            }
+
+            const assetsWithWorkOrders = assetRef.reduce((count, asset) => {
+                const assetId = asset['Asset Number'].toString();
+                const hasWorkOrder = woState.value.data.some(order => order.assetNumber === assetId);
+                if (hasWorkOrder) {
+                    count++;
+                }
+                return count;
+            }, 0);
+
+            setAssetsWithDefects(assetsWithWorkOrders)
+
+            setTotalAssets(assetRef.length)
+
+            setEntriesData(assetRef)
+            setAssetData(assetRef)
+            setloading(false)
+            // console.log(entriesData)
+
+        } catch (e) {
+            console.log(e)
+        }
+
+    }
 
     const pickDocument = async () => {
         try {
             const result = await DocumentPicker.getDocumentAsync({
                 type: 'image/*', // Change the MIME type to specify the type of files you want to allow
             });
-          
+
             if (result.type === 'success') {
                 setFileUri(result.assets[0].uri);
-                
+
             }
         } catch (error) {
             console.log('Error picking document:', error);
@@ -117,14 +150,13 @@ const AssetsPage = (props) => {
 
     useEffect(() => {
 
-        Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: false
-        }).start();
+        console.log(openDetail)
+        console.log(createNewAssetModalVisible)
+
+        fetchData()
 
         return () => {
-            fadeAnim.setValue(0);
+
             setCreateNewAssetModalVisible(false)
         }
 
@@ -142,34 +174,7 @@ const AssetsPage = (props) => {
         return null;
     }
 
-    let driver = [{
-        name: "Ubaid",
-        company: "DVIR",
-        inspection: 5
-    },
-    {
-        name: "John",
-        company: "DVIR",
-        inspection: 2
-    },
-    {
-        name: "Doe",
-        company: "DVIR",
-        inspection: 0
-    }]
 
-    const asset = [{
-        name: "Truck1",
-        company: "DVIR",
-        inspection: 4,
-        defects: 1
-    },
-    {
-        name: "Truck2",
-        company: "DVIR",
-        inspection: 2,
-        defects: 3
-    }]
 
     const handleAssetsAppBtn = () => {
         // props.onAddAssetBtn('CreateNewAsset')
@@ -177,272 +182,428 @@ const AssetsPage = (props) => {
     }
 
     const handleFormValue = (value) => {
+
         console.log(value)
+        setSelectedAsset(value)
+        setOpenDetail(true)
+
+    }
+
+    const handleInspectionFormValue = (value) => {
+        props.onDashboardValue(value)
+    }
+
+
+    const handleDefectFormValue = (value) => {
+        props.onDashboardDefectValue(value)
+    }
+
+    const handleWOFormValue = (value) => {
+        props.onDashboardWOValue(value)
     }
 
     const handleSearchAssetValueChange = (value) => {
         setSearchAssetSelectedOption(value)
     }
 
-    const searchAssetOptionList = ["Name", "License Plate",]
+    const searchAssetOptionList = ["Select", "Name", "License Plate",]
 
+    const CustomActivityIndicator = () => {
+        return (
+            <View style={styles.activityIndicatorStyle}>
+                <ActivityIndicator color="#23d3d3" size="large" />
+            </View>
+        );
+    };
+
+    const handleUpdateAsset = async () => {
+
+    }
+
+    const handleAddNewAsset = async () => {
+
+        await setDoc(doc(db, "Assets", assetNumber.toString()), {
+            'Asset Number': assetNumber,
+            'Plate Number': plateNumber,
+            'Make': make,
+            'Year': year,
+            'Model': model,
+            'Color': color,
+            'Engine Type': engineType,
+            'ADA': ADA,
+            'Air Brakes': airBrakes,
+            'Asset Type': assetType,
+            'Mileage': mileage,
+            'Notes': notes,
+            'Assigned To': '',
+            'Company': company,
+            'Asset Name': assetName,
+            'Action': 'Button',
+            'lastInspection' : serverTimestamp(),
+            'DefectStatus': false,
+            TimeStamp: serverTimestamp(),
+        });
+
+
+        setCreateNewAssetModalVisible(false)
+        setAlertStatus('successful')
+        setAlertIsVisible(true)
+        fetchData()
+        clearAll()
+        setloading(false)
+    }
+
+    const clearAll = () => {
+        setPlateNumber('')
+        setMake('')
+        setYear('')
+        setModel('')
+        setColor('')
+        setEngineType('Select')
+        setADA('Select')
+        setAirBrakes('Select')
+        setAssetType('Select')
+        setMileage('')
+        setNotes('')
+    }
+    const closeAlert = () => {
+        setAlertIsVisible(false)
+    }
+
+    const closeAssignDriverModal = () => {
+        setAssignDriverModalVisible(false)
+    }
+
+    const handleDriverAssign = async (name, email) => {
+
+        const ref = doc(db, "Assets", assetIndex.toString());
+
+        // Set the "capital" field of the city 'DC'
+        await updateDoc(ref, {
+            "Assigned To": name,
+            "Assigned To Email": email
+        });
+
+        setAlertStatus('successful')
+        setAlertIsVisible(true)
+        fetchData()
+
+    }
     return (
         <>
-            {createNewAssetModalVisible ?
-                <Animated.View style={[styles.contentContainer, { opacity: fadeAnim, }]}>
 
-                    <View style={{
-                        position: 'absolute',
-                        top: 0,
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        overflow: 'hidden',
-                        height: height
-                    }}>
-                        <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
-                        <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
-                        <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
-                        <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
-                    </View>
-                    <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
+            {openDetail ?
+
+                <View style={{ flex: 1, backgroundColor: '#f6f8f9' }}>
                     <ScrollView style={{ height: 100 }}>
-                        <View style={{ flexDirection: 'row', marginHorizontal: 40, marginTop: 40, alignItems: 'center', justifyContent: 'space-between' }}>
-                            <Text style={{ fontSize: 30, color: '#1E3D5C', fontWeight: '900', marginLeft: 10, borderBottomColor: '#67E9DA', paddingBottom: 5, borderBottomWidth: 5 }}>
-                                Create New Asset
-                            </Text>
-                        </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 40, marginTop: 20 }}>
-                            <View style={{ flexDirection: 'column' }}>
-                                <TouchableOpacity style={{ width: 100, height: 100, borderRadius: 50, borderColor: '#cccccc',backgroundColor:'#FFFFFF', borderWidth: 1, justifyContent: 'center', alignItems: 'center' }} onPress={pickDocument}>
-                                    <Image style={{ height: 20, width: 20 }}
-                                        source={require('../../assets/add_photo_icon.png')}
-                                        tintColor='#67E9DA'></Image>
-                                    <Text style={{ color: '#30E0CB' }}>Add Photo</Text>
-
-                                </TouchableOpacity>
-                                {fileUri && (
-                                    <Text style={{ fontWeight: '600', marginTop: 10 }}>Image Selected</Text>
-                                )}
-
+                        {/* <TouchableOpacity onPress={() => {
+                            setOpenDetail(false)
+                        }}>
+                            <Image style={{ width: 25, height: 25, margin:20, transform: [{ rotate: '180deg' }] }} source={require('../../assets/arrow_right_icon.png')}></Image>
+                        </TouchableOpacity> */}
+                        <View style={{ flexDirection: 'row', marginHorizontal: 40, marginVertical: 40, justifyContent: 'space-between', alignItems: 'center' }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <View style={{ backgroundColor: '#23d3d3', borderRadius: 15, }}>
+                                    <Image style={{ width: 30, height: 30, margin: 7 }}
+                                        tintColor='#FFFFFF'
+                                        source={require('../../assets/vehicle_icon.png')}></Image>
+                                </View>
+                                <Text style={{ fontSize: 30, color: '#335a75', fontFamily: 'inter-extrablack', marginLeft: 10 }}>
+                                    Assets
+                                </Text>
                             </View>
 
-                            <TextInput
-                                style={[styles.input, { maxWidth: 200, marginBottom: 0, marginLeft: 20 }, textInputBorderColor == 'Enter Asset Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                placeholder="Enter Asset Name"
-                                placeholderTextColor="#868383DC"
-                                // value={""}
-                                // onChangeText={(val) => { console.log(val) }}
-                                onFocus={() => { setTextInputBorderColor('Enter Asset Name') }}
-                                onBlur={() => { setTextInputBorderColor('') }}
-                            />
+                        </View>
+                        <View style={{ flexDirection: 'row', margin: 10 }}>
+                            <TouchableOpacity style={{ flexDirection: 'row', marginHorizontal: 15, height: 40, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }} onPress={() => setOptions('1')}>
+                                <Text style={{ color: options == '1' ? '#335a75' : 'grey', fontFamily: 'inter-bold', fontSize: options == '1' ? 16 : 14 }}>Details</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={{ flexDirection: 'row', marginHorizontal: 15, height: 40, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }} onPress={() => setOptions('2')}>
+                                <Text style={{ color: options == '2' ? '#335a75' : 'grey', fontFamily: 'inter-bold', fontSize: options == '2' ? 16 : 14 }}>Inspections</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={{ flexDirection: 'row', marginHorizontal: 15, height: 40, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }} onPress={() => setOptions('3')}>
+                                <Text style={{ color: options == '3' ? '#335a75' : 'grey', fontFamily: 'inter-bold', fontSize: options == '3' ? 16 : 14 }}>Defects</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={{ flexDirection: 'row', marginHorizontal: 15, height: 40, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }} onPress={() => setOptions('4')}>
+                                <Text style={{ color: options == '4' ? '#335a75' : 'grey', fontFamily: 'inter-bold', fontSize: options == '4' ? 16 : 14 }}>Work Orders</Text>
+                            </TouchableOpacity>
                         </View>
 
 
+                        {openDetail
+                            ?
+                            options == '1'
+                                ?
+                                <>
+                                    <View style={[styles.contentCardStyle]}>
 
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                            <View style={styles.contentCardStyle}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <View style={{ height: 10, width: 10, borderRadius: 5, backgroundColor: '#67E9DA' }}></View>
-                                    <Text style={{ color: '#1E3D5C', fontSize: 20, fontWeight: 'bold', marginLeft: 10 }}>
-                                        Manufacturer details
-                                    </Text>
-                                </View>
-                                <View style={{ flexDirection: 'row', marginTop: 30 }}>
-                                    <View style={{ flexDirection: 'column' }}>
-                                        <TextInput
-                                            style={[styles.input, textInputBorderColor == 'VIN' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                            placeholder="VIN"
-                                            placeholderTextColor="#868383DC"
-                                            value={""}
-                                            onChangeText={(val) => { console.log(val) }}
-                                            onFocus={() => { setTextInputBorderColor('VIN') }}
-                                            onBlur={() => { setTextInputBorderColor('') }}
-                                        />
-                                        <TextInput
-                                            style={[styles.input, textInputBorderColor == 'Make' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                            placeholder="Make"
-                                            placeholderTextColor="#868383DC"
-                                            value={""}
-                                            onChangeText={(val) => { console.log(val) }}
-                                            onFocus={() => { setTextInputBorderColor('Make') }}
-                                            onBlur={() => { setTextInputBorderColor('') }}
-                                        />
-                                        <TextInput
-                                            style={[styles.input, textInputBorderColor == 'Model' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                            placeholder="Model"
-                                            placeholderTextColor="#868383DC"
-                                            value={""}
-                                            onChangeText={(val) => { console.log(val) }}
-                                            onFocus={() => { setTextInputBorderColor('Model') }}
-                                            onBlur={() => { setTextInputBorderColor('') }}
-                                        />
-                                        <TextInput
-                                            style={[styles.input, textInputBorderColor == 'Year' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                            placeholder="Year"
-                                            placeholderTextColor="#868383DC"
-                                            value={""}
-                                            onChangeText={(val) => { console.log(val) }}
-                                            onFocus={() => { setTextInputBorderColor('Year') }}
-                                            onBlur={() => { setTextInputBorderColor('') }}
-                                        />
+                                        <ScrollView horizontal style={{ paddingBottom: 10, }} >
+                                            <View style={{ flexDirection: 'row', }}>
+                                                <View style={{ flexDirection: 'column' }}>
+                                                    <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                        <Text style={{ fontSize: 16, fontWeight: '500' }}>Asset Number*</Text>
+                                                        <TextInput
+                                                            style={[styles.input, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                            placeholderTextColor="#868383DC"
+                                                            value={selectedAsset['Asset Number']}
+                                                            // onChangeText={(val)=>setEmployeeNumber(val)}
+                                                            onFocus={() => { setTextInputBorderColor('Asset Number') }}
+                                                            onBlur={() => { setTextInputBorderColor('') }}
+                                                        />
+                                                    </View>
+                                                    <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                        <Text style={{ fontSize: 16, fontWeight: '500' }}>Plate Number</Text>
+                                                        <TextInput
+                                                            style={[styles.input, textInputBorderColor == 'Plate Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                            placeholderTextColor="#868383DC"
+                                                            value={selectedAsset['Plate Number']}
+                                                            // onChangeText={(val) => { setPlateNumber(val) }}
+                                                            onFocus={() => { setTextInputBorderColor('Plate Number') }}
+                                                            onBlur={() => { setTextInputBorderColor('') }}
+                                                        />
+                                                    </View>
+
+                                                    <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                        <Text style={{ fontSize: 16, fontWeight: '500' }}>Make</Text>
+                                                        <TextInput
+                                                            style={[styles.input, textInputBorderColor == 'Make' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                            placeholderTextColor="#868383DC"
+                                                            value={selectedAsset.Make}
+                                                            // onChangeText={(val) => { setMake(val) }}
+                                                            onFocus={() => { setTextInputBorderColor('Make') }}
+                                                            onBlur={() => { setTextInputBorderColor('') }}
+                                                        />
+                                                    </View>
+
+                                                    <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                        <Text style={{ fontSize: 16, fontWeight: '500' }}>Year</Text>
+                                                        <View>
+                                                            <TextInput
+                                                                style={[styles.input, textInputBorderColor == 'Year' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                placeholderTextColor="#868383DC"
+                                                                value={selectedAsset.Year}
+                                                                // onChangeText={(val) => { setYear(val) }}
+                                                                onFocus={() => { setTextInputBorderColor('Year') }}
+                                                                onBlur={() => { setTextInputBorderColor('') }}
+                                                            />
+                                                        </View>
+                                                    </View>
+
+                                                    <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                        <Text style={{ fontSize: 16, fontWeight: '500' }}>Model</Text>
+                                                        <View>
+                                                            <TextInput
+                                                                style={[styles.input, textInputBorderColor == 'Model' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                placeholderTextColor="#868383DC"
+                                                                value={selectedAsset.Model}
+                                                                // onChangeText={(val) => { setModel(val) }}
+                                                                onFocus={() => { setTextInputBorderColor('Model') }}
+                                                                onBlur={() => { setTextInputBorderColor('') }}
+                                                            />
+                                                        </View>
+                                                    </View>
+
+                                                    <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                        <Text style={{ fontSize: 16, fontWeight: '500' }}>Color</Text>
+                                                        <View>
+                                                            <TextInput
+                                                                style={[styles.input, textInputBorderColor == 'Color' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                placeholderTextColor="#868383DC"
+                                                                value={selectedAsset.Color}
+                                                                // onChangeText={(val) => { setColor(val) }}
+                                                                onFocus={() => { setTextInputBorderColor('Color') }}
+                                                                onBlur={() => { setTextInputBorderColor('') }}
+                                                            />
+                                                        </View>
+                                                    </View>
+
+                                                </View>
+                                                <View style={{ flexDirection: 'column', marginLeft: 80 }}>
+
+                                                    <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 4 }}>
+                                                        <Text style={{ fontSize: 16, fontWeight: '500' }}>Engine Type</Text>
+                                                        <View>
+                                                            <TextInput
+                                                                style={[styles.input, textInputBorderColor == 'Color' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                placeholderTextColor="#868383DC"
+                                                                value={selectedAsset['Engine Type']}
+                                                                // onChangeText={(val) => { setColor(val) }}
+                                                                onFocus={() => { setTextInputBorderColor('Color') }}
+                                                                onBlur={() => { setTextInputBorderColor('') }}
+                                                            />
+                                                        </View>
+                                                    </View>
+
+                                                    <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 3 }}>
+                                                        <Text style={{ fontSize: 16, fontWeight: '500' }}>ADA Wheelchair</Text>
+                                                        <View>
+                                                            <TextInput
+                                                                style={[styles.input, textInputBorderColor == 'Color' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                placeholderTextColor="#868383DC"
+                                                                value={selectedAsset.ADA}
+                                                                // onChangeText={(val) => { setColor(val) }}
+                                                                onFocus={() => { setTextInputBorderColor('Color') }}
+                                                                onBlur={() => { setTextInputBorderColor('') }}
+                                                            />
+                                                        </View>
+                                                    </View>
+
+                                                    <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 2 }}>
+                                                        <Text style={{ fontSize: 16, fontWeight: '500' }}>Air Brakes</Text>
+                                                        <View>
+                                                            <TextInput
+                                                                style={[styles.input, textInputBorderColor == 'Color' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                placeholderTextColor="#868383DC"
+                                                                value={selectedAsset['Air Brakes']}
+                                                                // onChangeText={(val) => { setColor(val) }}
+                                                                onFocus={() => { setTextInputBorderColor('Color') }}
+                                                                onBlur={() => { setTextInputBorderColor('') }}
+                                                            />
+                                                        </View>
+                                                    </View>
+
+                                                    <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
+                                                        <Text style={{ fontSize: 16, fontWeight: '500' }}>Asset Type</Text>
+                                                        <View>
+                                                            <TextInput
+                                                                style={[styles.input, textInputBorderColor == 'Color' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                placeholderTextColor="#868383DC"
+                                                                value={selectedAsset['Asset Type']}
+                                                                // onChangeText={(val) => { setColor(val) }}
+                                                                onFocus={() => { setTextInputBorderColor('Color') }}
+                                                                onBlur={() => { setTextInputBorderColor('') }}
+                                                            />
+                                                        </View>
+                                                    </View>
+
+                                                    <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                        <Text style={{ fontSize: 16, fontWeight: '500' }}>Mileage</Text>
+                                                        <TextInput
+                                                            style={[styles.input, textInputBorderColor == 'Mileage' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                            placeholderTextColor="#868383DC"
+                                                            value={selectedAsset.Mileage}
+                                                            // onChangeText={(val) => { setMileage(val) }}
+                                                            onFocus={() => { setTextInputBorderColor('Mileage') }}
+                                                            onBlur={() => { setTextInputBorderColor('') }}
+                                                        />
+                                                    </View>
+
+
+                                                    <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                        <Text style={{ fontSize: 16, fontWeight: '500' }}>Notes</Text>
+                                                        <TextInput
+                                                            style={[styles.input, textInputBorderColor == 'Notes' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                            placeholderTextColor="#868383DC"
+                                                            value={selectedAsset.Notes}
+                                                            multiline={true}
+                                                            // onChangeText={(val) => { setNotes(val) }}
+                                                            onFocus={() => { setTextInputBorderColor('Notes') }}
+                                                            onBlur={() => { setTextInputBorderColor('') }}
+                                                        />
+                                                    </View>
+                                                </View>
+                                            </View>
+                                        </ScrollView>
+
                                     </View>
 
 
-                                    <View style={{ flexDirection: 'column', marginLeft: 30 }}>
-                                        <TextInput
-                                            style={[styles.input, textInputBorderColor == 'License' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                            placeholder="License"
-                                            placeholderTextColor="#868383DC"
-                                            value={""}
-                                            onChangeText={(val) => { console.log(val) }}
-                                            onFocus={() => { setTextInputBorderColor('License') }}
-                                            onBlur={() => { setTextInputBorderColor('') }}
-                                        />
-                                        <TextInput
-                                            style={[styles.input, textInputBorderColor == 'Tire size' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                            placeholder="Tire size"
-                                            placeholderTextColor="#868383DC"
-                                            value={""}
-                                            onChangeText={(val) => { console.log(val) }}
-                                            onFocus={() => { setTextInputBorderColor('Tire size') }}
-                                            onBlur={() => { setTextInputBorderColor('') }}
-                                        />
-                                        <TextInput
-                                            style={[styles.input, textInputBorderColor == 'Color' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                            placeholder="Color"
-                                            placeholderTextColor="#868383DC"
-                                            value={""}
-                                            onChangeText={(val) => { console.log(val) }}
-                                            onFocus={() => { setTextInputBorderColor('Color') }}
-                                            onBlur={() => { setTextInputBorderColor('') }}
-                                        />
-                                    </View>
-                                </View>
 
-                                <TextInput
-                                    style={[{paddingTop:10},styles.input, textInputBorderColor == 'Notes' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                    placeholder="Notes"
-                                    multiline
-                                    placeholderTextColor="#868383DC"
-                                    value={""}
-                                    onChangeText={(val) => { console.log(val) }}
-                                    onFocus={() => { setTextInputBorderColor('Notes') }}
-                                    onBlur={() => { setTextInputBorderColor('') }}
-                                />
-                            </View>
+                                </>
+                                :
+                                options == '2'
+                                    ?
+                                    <>
+                                        <View style={styles.optioncontentCardStyle}>
+                                            <Form
+                                                columns={[
+                                                    'formStatus',
+                                                    'id',
+                                                    'TimeStamp',
+                                                    'assetName',
+                                                    'driverName',
+                                                    'Company name',
+                                                    'Form name',
+                                                ]}
+                                                entriesData={dataState.value.data.filter((item) => item.assetNumber == selectedAsset['Asset Number'])}
+                                                titleForm="General Inspection"
+                                                onValueChange={handleInspectionFormValue}
+                                                row={styles.formRowStyle}
+                                                cell={styles.formCellStyle}
+                                                entryText={styles.formEntryTextStyle}
+                                                columnHeaderRow={styles.formColumnHeaderRowStyle}
+                                                columnHeaderCell={styles.formColumnHeaderCellStyle}
+                                                columnHeaderText={styles.formColumnHeaderTextStyle} />
+                                        </View>
+                                    </>
+                                    :
+                                    options == '3'
+                                        ?
+                                        <>
+                                            <View style={styles.optioncontentCardStyle}>
+                                                <Form
+                                                    columns={[
+                                                        'id',
+                                                        'assetName',
+                                                        'dateCreated',
+                                                        'priority',
+                                                        'severity',
+                                                        'title',
+                                                        'driverName',
+                                                        'Work Order',
+                                                        'Action'
+                                                    ]}
+                                                    entriesData={defectState.value.defect.filter((item) => item.assetNumber == selectedAsset['Asset Number'])}
+                                                    titleForm="Defects"
+                                                    onValueChange={handleDefectFormValue}
+                                                    row={styles.formRowStyle}
+                                                    cell={styles.formCellStyle}
+                                                    entryText={styles.formEntryTextStyle}
+                                                    columnHeaderRow={styles.formColumnHeaderRowStyle}
+                                                    columnHeaderCell={styles.formColumnHeaderCellStyle}
+                                                    columnHeaderText={styles.formColumnHeaderTextStyle} />
+                                            </View>
+                                        </>
+                                        :
+                                        <>
+                                            <View style={styles.optioncontentCardStyle}>
+                                                <Form
+                                                    columns={[
+                                                        'id',
+                                                        'assetName',
+                                                        'defectedItems',
+                                                        'dueDate',
+                                                        'assignedMechanic',
+                                                        'Action',
+                                                    ]}
+                                                    entriesData={woState.value.data.filter((item) => item.assetNumber == selectedAsset['Asset Number'])}
+                                                    titleForm="Work Order"
+                                                    onValueChange={handleWOFormValue}
+                                                    row={styles.formRowStyle}
+                                                    cell={styles.formCellStyle}
+                                                    entryText={styles.formEntryTextStyle}
+                                                    columnHeaderRow={styles.formColumnHeaderRowStyle}
+                                                    columnHeaderCell={styles.formColumnHeaderCellStyle}
+                                                    columnHeaderText={styles.formColumnHeaderTextStyle} />
+                                            </View>
+                                        </>
 
-                            <View style={styles.contentCardStyle}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <View style={{ height: 10, width: 10, borderRadius: 5, backgroundColor: '#67E9DA' }}></View>
-                                    <Text style={{ color: '#1E3D5C', fontSize: 20, fontWeight: 'bold', marginLeft: 10 }}>
-                                        Other details
-                                    </Text>
-                                </View>
-                                <View style={{ flexDirection: 'row', marginTop: 30 }}>
-                                    <View style={{ flexDirection: 'column', }}>
-                                        <TextInput
-                                            style={[styles.input, {}]}
-                                            placeholder="Company"
-                                            placeholderTextColor="#868383DC"
-                                            value={"Octa Soft"}
-                                            onChangeText={(val) => { console.log(val) }}
-                                            onFocus={() => { setTextInputBorderColor('Company') }}
-                                            onBlur={() => { setTextInputBorderColor('') }}
-                                            editable={false}
-                                        />
-                                        <TextInput
-                                            style={[styles.input, textInputBorderColor == 'Estimated Cost' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                            placeholder="Estimated Cost"
-                                            placeholderTextColor="#868383DC"
-                                            value={""}
-                                            onChangeText={(val) => { console.log(val) }}
-                                            onFocus={() => { setTextInputBorderColor('Estimated Cost') }}
-                                            onBlur={() => { setTextInputBorderColor('') }}
-                                        />
-                                        <TextInput
-                                            style={[styles.input, textInputBorderColor == 'Asset Type' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                            placeholder="Asset Type"
-                                            placeholderTextColor="#868383DC"
-                                            value={""}
-                                            onChangeText={(val) => { console.log(val) }}
-                                            onFocus={() => { setTextInputBorderColor('Asset Type') }}
-                                            onBlur={() => { setTextInputBorderColor('') }}
+                            :
+                            <>
 
-                                        />
-                                        <TextInput
-                                            style={[styles.input, textInputBorderColor == 'Asset Subtype' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                            placeholder="Asset Subtype"
-                                            placeholderTextColor="#868383DC"
-                                            value={""}
-                                            onChangeText={(val) => { console.log(val) }}
-                                            onFocus={() => { setTextInputBorderColor('Asset Subtype') }}
-                                            onBlur={() => { setTextInputBorderColor('') }}
+                            </>
+                        }
 
-                                        />
-                                    </View>
 
-                                    <View style={{ flexDirection: 'column', marginLeft: 30 }}>
-                                        <TextInput
-                                            style={[styles.input, textInputBorderColor == 'Mileage' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                            placeholder="Mileage"
-                                            placeholderTextColor="#868383DC"
-                                            value={""}
-                                            onChangeText={(val) => { console.log(val) }}
-                                            onFocus={() => { setTextInputBorderColor('Mileage') }}
-                                            onBlur={() => { setTextInputBorderColor('') }}
-
-                                        />
-                                        <TextInput
-                                            style={[styles.input, textInputBorderColor == 'Engine Hours' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                            placeholder="Engine Hours"
-                                            placeholderTextColor="#868383DC"
-                                            value={""}
-                                            onChangeText={(val) => { console.log(val) }}
-                                            onFocus={() => { setTextInputBorderColor('Engine Hours') }}
-                                            onBlur={() => { setTextInputBorderColor('') }}
-
-                                        />
-                                        <TextInput
-                                            style={[styles.input, textInputBorderColor == 'Last service date' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                            placeholder="Last service date"
-                                            placeholderTextColor="#868383DC"
-                                            value={""}
-                                            onChangeText={(val) => { console.log(val) }}
-                                            onFocus={() => { setTextInputBorderColor('Last service date') }}
-                                            onBlur={() => { setTextInputBorderColor('') }}
-
-                                        /><TextInput
-                                            style={[styles.input, textInputBorderColor == 'Last service mileage' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                            placeholder="Last service mileage"
-                                            placeholderTextColor="#868383DC"
-                                            value={""}
-                                            onChangeText={(val) => { console.log(val) }}
-                                            onFocus={() => { setTextInputBorderColor('Last service mileage') }}
-                                            onBlur={() => { setTextInputBorderColor('') }}
-
-                                        />
-                                        <TextInput
-                                            style={[styles.input, textInputBorderColor == 'Last service engine hours' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                            placeholder="Last service engine hours"
-                                            placeholderTextColor="#868383DC"
-                                            value={""}
-                                            onChangeText={(val) => { console.log(val) }}
-                                            onFocus={() => { setTextInputBorderColor('Last service engine hours') }}
-                                            onBlur={() => { setTextInputBorderColor('') }}
-                                        />
-                                    </View>
-                                </View>
-                            </View>
-                        </View>
                     </ScrollView>
+
                     <View style={{ flexDirection: 'row', width: '100%', backgroundColor: '#67E9DA', paddingVertical: 20, justifyContent: 'flex-end', paddingRight: 80 }}>
                         <View>
                             <AppBtn
                                 title="Close"
                                 btnStyle={[{
                                     width: '100%',
-                                    height: 40,
+                                    height: 30,
                                     backgroundColor: '#FFFFFF',
                                     borderRadius: 5,
                                     alignItems: 'center',
@@ -453,19 +614,20 @@ const AssetsPage = (props) => {
                                     elevation: 0,
                                     shadowColor: '#575757',
                                     marginHorizontal: 10
-                                }, { minWidth: 100 }]}
-                                btnTextStyle={{ fontSize: 17, fontWeight: '400', color: '#000000' }}
+                                }, { minWidth: 70 }]}
+                                btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
                                 onPress={() => {
-                                    setCreateNewAssetModalVisible(false)
-                                    
+                                    setOpenDetail(false)
+                                    setOptions('1')
+                                    // clearAll()
                                 }} />
                         </View>
-                        <View style={{ marginLeft: 20 }}>
+                        {/* <View style={{ marginLeft: 20 }}>
                             <AppBtn
                                 title="Save"
                                 btnStyle={[{
                                     width: '100%',
-                                    height: 40,
+                                    height: 30,
                                     backgroundColor: '#FFFFFF',
                                     borderRadius: 5,
                                     alignItems: 'center',
@@ -476,124 +638,422 @@ const AssetsPage = (props) => {
                                     elevation: 0,
                                     shadowColor: '#575757',
                                     marginHorizontal: 10
-                                }, { minWidth: 100 }]}
-                                btnTextStyle={{ fontSize: 17, fontWeight: '400', color: '#000000' }}
-                               onPress={()=>setCreateNewAssetModalVisible(false)} />
-                        </View>
+                                }, { minWidth: 70 }]}
+                                btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                                onPress={() => {
+                                    if (plateNumber == '' || make == '' || year == '' || model == '' || color == 'Select' || engineType == 'Select' || ADA == 'Select' || airBrakes == 'Select' || assetType == 'Select' || mileage == '') { }
+                                    else {
+                                        setloading(true)
+                                        handleAddNewAsset()
+                                    }
+
+                                }} />
+                        </View> */}
                     </View>
-                </Animated.View>
+
+                </View>
                 :
-                <Animated.View style={[styles.contentContainer, { opacity: fadeAnim, }]}>
-
-                    <View style={{
-                        position: 'absolute',
-                        top: 0,
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        overflow: 'hidden',
-                        height: height
-                    }}>
-                        <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
-                        <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
-                        <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
-                        <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
-                    </View>
-                    <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
-                    <ScrollView style={{ height: 100 }}>
-                        <View style={{ flexDirection: 'row', marginLeft: 40, marginTop: 40, marginRight: 40, justifyContent: 'space-between' }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <View style={{ backgroundColor: '#67E9DA', borderRadius: 15, }}>
-                                    <Image style={{ width: 30, height: 30, margin: 10 }}
-                                        tintColor='#FFFFFF'
-                                        source={require('../../assets/vehicle_icon.png')}></Image>
-                                </View>
-                                <Text style={{ fontSize: 40, color: '#1E3D5C', fontWeight: '900', marginLeft: 10 }}>
-                                    Assets
+                createNewAssetModalVisible ?
+                    <View style={{ flex: 1, backgroundColor: '#f6f8f9' }}>
+                        <ScrollView style={{ height: 100 }}>
+                            <View style={{ flexDirection: 'row', marginHorizontal: 40, marginTop: 40, alignItems: 'center', }}>
+                                <Text style={{ fontSize: 30, color: '#1E3D5C', fontWeight: '900', marginLeft: 10, borderBottomColor: '#67E9DA', paddingBottom: 5, borderBottomWidth: 5 }}>
+                                    Create New Asset
                                 </Text>
+                                <View>
+
+                                </View>
                             </View>
-                            <View style={{ flexDirection: 'row' }}>
-                                <Text style={{ fontSize: 45, color: '#1E3D5C' }}>{totalAssets}</Text>
-                                <Text style={{ fontSize: 15, color: '#5B5B5B', marginHorizontal: 10, marginTop: 10, fontWeight: '700' }}>Total assets</Text>
-                                <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 20, opacity: 0.5 }}></View>
-                                <Text style={{ fontSize: 45, color: '#1E3D5C' }}>{totalAssetsInspected}</Text>
-                                <Text style={{ fontSize: 15, color: '#5B5B5B', marginHorizontal: 10, marginTop: 10, fontWeight: '700' }}>Assets inspected </Text>
-                                <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 20, opacity: 0.5 }}></View>
-                                <Text style={{ fontSize: 45, color: '#D60000' }}>{assetsWithDefects}</Text>
-                                <Text style={{ fontSize: 15, color: '#5B5B5B', marginHorizontal: 10, marginTop: 10, fontWeight: '700' }}>Assets with active defects</Text>
-                            </View>
-                        </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop:40, paddingRight:40, zIndex: 1,}}>
-                            <View style={{ marginRight: 10 }}>
+                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center' }}>
+
+                                <View style={{ flexDirection: 'column', marginLeft: 40 }}>
+                                    {fileUri
+                                        ?
+                                        <TouchableOpacity onPress={pickDocument}>
+                                            <Image style={{ height: 100, width: 100, borderRadius: 50 }} source={{ uri: fileUri }} />
+                                        </TouchableOpacity>
+                                        :
+                                        <TouchableOpacity style={{ width: 100, height: 100, borderRadius: 50, borderColor: '#cccccc', borderWidth: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }} onPress={pickDocument}>
+
+                                            <Image style={{ height: 20, width: 20 }}
+                                                source={require('../../assets/add_photo_icon.png')}
+                                                tintColor='#67E9DA'></Image>
+                                            <Text style={{ color: '#30E0CB' }}>Add Photo</Text>
+
+                                        </TouchableOpacity>
+                                    }
+                                </View>
                                 <TextInput
-                                    style={[styles.input,{marginTop:0}, searchTextInputBorderColor && styles.withBorderInputContainer]}
-                                    placeholder="Type to search"
+                                    style={[styles.input, textInputBorderColor == 'Asset Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                     placeholderTextColor="#868383DC"
-                                    value={search}
-                                    onChangeText={(val) => { setSearch(val) }}
-                                    onFocus={() => { setSearchTextInputBorderColor(true) }}
-                                    onBlur={() => { setSearchTextInputBorderColor(false) }}
+                                    value={assetName}
+                                    placeholder='Asset Name'
+                                    onChangeText={(val) => setAssetName(val)}
+                                    onFocus={() => { setTextInputBorderColor('Asset Name') }}
+                                    onBlur={() => { setTextInputBorderColor('') }}
                                 />
-                            </View>
-                            <View style={{ marginRight: 10 }}>
-                                <DropDownComponent
-                                    options={searchAssetOptionList}
-                                    onValueChange={handleSearchAssetValueChange}
-                                    // title="Ubaid Arshad"
-                                    selectedValue={searchAssetSelectedOption}
-                                    imageSource={require('../../assets/up_arrow_icon.png')}
-                                    container={styles.dropdownContainer}
-                                    dropdownButton={styles.dropdownButton}
-                                    selectedValueStyle={styles.dropdownSelectedValueStyle}
-                                    optionsContainer={styles.dropdownOptionsContainer}
-                                    option={styles.dropdownOption}
-                                    hoveredOption={styles.dropdownHoveredOption}
-                                    optionText={styles.dropdownOptionText}
-                                    hoveredOptionText={styles.dropdownHoveredOptionText}
-                                    dropdownButtonSelect={styles.dropdownButtonSelect}
-                                    dropdownStyle={styles.dropdown}
-                                />
-                            </View>
-                            <View style={{ marginRight: 10 }}>
-                                <TouchableOpacity
-                                    onMouseEnter={() => setSearchBtnHover(true)}
-                                    onMouseLeave={() => setSearchBtnHover(false)}
-                                    onPress={() => {
-                                        setSearchAssetSelectedOption('Select')
-                                        setSearch('')
-                                    }}
-                                >
-                                    <Image style={[{ width: 40, height: 40 }]}
-                                        tintColor={searchBtnHover ? '#67E9DA' : '#336699'}
-                                        source={require('../../assets/search_icon.png')}></Image>
-                                </TouchableOpacity>
                             </View>
 
-                            <View >
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                <View style={styles.contentCardStyle}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <View style={{ height: 10, width: 10, borderRadius: 5, backgroundColor: '#67E9DA' }}></View>
+                                        <Text style={{ color: '#1E3D5C', fontSize: 20, fontWeight: 'bold', marginLeft: 10 }}>
+                                            Asset details
+                                        </Text>
+                                    </View>
+                                    <ScrollView horizontal style={{ paddingBottom: 10 }} >
+                                        <View style={{ flexDirection: 'row', }}>
+                                            <View style={{ flexDirection: 'column' }}>
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Asset Number*</Text>
+                                                    <TextInput
+                                                        style={[styles.input, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                        placeholderTextColor="#868383DC"
+                                                        value={assetNumber}
+                                                        // onChangeText={(val)=>setEmployeeNumber(val)}
+                                                        onFocus={() => { setTextInputBorderColor('Asset Number') }}
+                                                        onBlur={() => { setTextInputBorderColor('') }}
+                                                    />
+                                                </View>
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Plate Number*</Text>
+                                                    <TextInput
+                                                        style={[styles.input, textInputBorderColor == 'Plate Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                        placeholderTextColor="#868383DC"
+                                                        value={plateNumber}
+                                                        onChangeText={(val) => { setPlateNumber(val) }}
+                                                        onFocus={() => { setTextInputBorderColor('Plate Number') }}
+                                                        onBlur={() => { setTextInputBorderColor('') }}
+                                                    />
+                                                </View>
+
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Make*</Text>
+                                                    <TextInput
+                                                        style={[styles.input, textInputBorderColor == 'Make' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                        placeholderTextColor="#868383DC"
+                                                        value={make}
+                                                        onChangeText={(val) => { setMake(val) }}
+                                                        onFocus={() => { setTextInputBorderColor('Make') }}
+                                                        onBlur={() => { setTextInputBorderColor('') }}
+                                                    />
+                                                </View>
+
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Year*</Text>
+                                                    <View>
+                                                        <TextInput
+                                                            style={[styles.input, textInputBorderColor == 'Year' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                            placeholderTextColor="#868383DC"
+                                                            value={year}
+                                                            onChangeText={(val) => { setYear(val) }}
+                                                            onFocus={() => { setTextInputBorderColor('Year') }}
+                                                            onBlur={() => { setTextInputBorderColor('') }}
+                                                        />
+                                                    </View>
+                                                </View>
+
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Model*</Text>
+                                                    <View>
+                                                        <TextInput
+                                                            style={[styles.input, textInputBorderColor == 'Model' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                            placeholderTextColor="#868383DC"
+                                                            value={model}
+                                                            onChangeText={(val) => { setModel(val) }}
+                                                            onFocus={() => { setTextInputBorderColor('Model') }}
+                                                            onBlur={() => { setTextInputBorderColor('') }}
+                                                        />
+                                                    </View>
+                                                </View>
+
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Color</Text>
+                                                    <View>
+                                                        <TextInput
+                                                            style={[styles.input, textInputBorderColor == 'Color' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                            placeholderTextColor="#868383DC"
+                                                            value={color}
+                                                            onChangeText={(val) => { setColor(val) }}
+                                                            onFocus={() => { setTextInputBorderColor('Color') }}
+                                                            onBlur={() => { setTextInputBorderColor('') }}
+                                                        />
+                                                    </View>
+                                                </View>
+
+                                            </View>
+                                            <View style={{ flexDirection: 'column', marginLeft: 80 }}>
+
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 4 }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Engine Type*</Text>
+                                                    <DropDownComponent
+                                                        options={['Gas', 'Diesel']}
+                                                        onValueChange={(val) => setEngineType(val)}
+                                                        // title="Ubaid Arshad"
+                                                        selectedValue={engineType}
+                                                        imageSource={require('../../assets/up_arrow_icon.png')}
+                                                        container={styles.dropdownContainer}
+                                                        dropdownButton={styles.dropdownButton}
+                                                        selectedValueStyle={styles.dropdownSelectedValueStyle}
+                                                        optionsContainer={styles.dropdownOptionsContainer}
+                                                        option={styles.dropdownOption}
+                                                        hoveredOption={styles.dropdownHoveredOption}
+                                                        optionText={styles.dropdownOptionText}
+                                                        hoveredOptionText={styles.dropdownHoveredOptionText}
+                                                        dropdownButtonSelect={styles.dropdownButtonSelect}
+                                                        dropdownStyle={styles.dropdown}
+                                                    />
+                                                </View>
+
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 3 }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>ADA Wheelchair*</Text>
+                                                    <DropDownComponent
+                                                        options={['Yes', 'No']}
+                                                        onValueChange={(val) => setADA(val)}
+                                                        // title="Ubaid Arshad"
+                                                        selectedValue={ADA}
+                                                        imageSource={require('../../assets/up_arrow_icon.png')}
+                                                        container={styles.dropdownContainer}
+                                                        dropdownButton={styles.dropdownButton}
+                                                        selectedValueStyle={styles.dropdownSelectedValueStyle}
+                                                        optionsContainer={styles.dropdownOptionsContainer}
+                                                        option={styles.dropdownOption}
+                                                        hoveredOption={styles.dropdownHoveredOption}
+                                                        optionText={styles.dropdownOptionText}
+                                                        hoveredOptionText={styles.dropdownHoveredOptionText}
+                                                        dropdownButtonSelect={styles.dropdownButtonSelect}
+                                                        dropdownStyle={styles.dropdown}
+                                                    />
+                                                </View>
+
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 2 }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Air Brakes*</Text>
+                                                    <DropDownComponent
+                                                        options={['Yes', 'No']}
+                                                        onValueChange={(val) => setAirBrakes(val)}
+                                                        // title="Ubaid Arshad"
+                                                        selectedValue={airBrakes}
+                                                        imageSource={require('../../assets/up_arrow_icon.png')}
+                                                        container={styles.dropdownContainer}
+                                                        dropdownButton={styles.dropdownButton}
+                                                        selectedValueStyle={styles.dropdownSelectedValueStyle}
+                                                        optionsContainer={styles.dropdownOptionsContainer}
+                                                        option={styles.dropdownOption}
+                                                        hoveredOption={styles.dropdownHoveredOption}
+                                                        optionText={styles.dropdownOptionText}
+                                                        hoveredOptionText={styles.dropdownHoveredOptionText}
+                                                        dropdownButtonSelect={styles.dropdownButtonSelect}
+                                                        dropdownStyle={styles.dropdown}
+                                                    />
+                                                </View>
+
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Asset Type*</Text>
+                                                    <DropDownComponent
+                                                        options={['Car', 'Bus', 'Van', 'Truck']}
+                                                        onValueChange={(val) => setAssetType(val)}
+                                                        // title="Ubaid Arshad"
+                                                        selectedValue={assetType}
+                                                        imageSource={require('../../assets/up_arrow_icon.png')}
+                                                        container={styles.dropdownContainer}
+                                                        dropdownButton={styles.dropdownButton}
+                                                        selectedValueStyle={styles.dropdownSelectedValueStyle}
+                                                        optionsContainer={styles.dropdownOptionsContainer}
+                                                        option={styles.dropdownOption}
+                                                        hoveredOption={styles.dropdownHoveredOption}
+                                                        optionText={styles.dropdownOptionText}
+                                                        hoveredOptionText={styles.dropdownHoveredOptionText}
+                                                        dropdownButtonSelect={styles.dropdownButtonSelect}
+                                                        dropdownStyle={styles.dropdown}
+                                                    />
+                                                </View>
+
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Mileage*</Text>
+                                                    <TextInput
+                                                        style={[styles.input, textInputBorderColor == 'Mileage' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                        placeholderTextColor="#868383DC"
+                                                        value={mileage}
+                                                        onChangeText={(val) => { setMileage(val) }}
+                                                        onFocus={() => { setTextInputBorderColor('Mileage') }}
+                                                        onBlur={() => { setTextInputBorderColor('') }}
+                                                    />
+                                                </View>
+
+
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Notes</Text>
+                                                    <TextInput
+                                                        style={[styles.input, textInputBorderColor == 'Notes' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                        placeholderTextColor="#868383DC"
+                                                        value={notes}
+                                                        multiline={true}
+                                                        onChangeText={(val) => { setNotes(val) }}
+                                                        onFocus={() => { setTextInputBorderColor('Notes') }}
+                                                        onBlur={() => { setTextInputBorderColor('') }}
+                                                    />
+                                                </View>
+                                            </View>
+                                        </View>
+                                    </ScrollView>
+                                </View>
+                            </View>
+                        </ScrollView>
+
+                        <View style={{ flexDirection: 'row', width: '100%', backgroundColor: '#67E9DA', paddingVertical: 20, justifyContent: 'flex-end', paddingRight: 80 }}>
+                            <View>
                                 <AppBtn
-                                    title="Asset"
-                                    imgSource={require('../../assets/add_plus_btn_icon.png')}
-                                    btnStyle={styles.btn}
-                                    btnTextStyle={styles.btnText}
-                                    onPress={() => { handleAssetsAppBtn() }} />
+                                    title="Close"
+                                    btnStyle={[{
+                                        width: '100%',
+                                        height: 30,
+                                        backgroundColor: '#FFFFFF',
+                                        borderRadius: 5,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        shadowOffset: { width: 2, height: 2 },
+                                        shadowOpacity: 0.9,
+                                        shadowRadius: 5,
+                                        elevation: 0,
+                                        shadowColor: '#575757',
+                                        marginHorizontal: 10
+                                    }, { minWidth: 70 }]}
+                                    btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                                    onPress={() => {
+                                        setCreateNewAssetModalVisible(false)
+                                        // clearAll()
+                                    }} />
+                            </View>
+                            <View style={{ marginLeft: 20 }}>
+                                <AppBtn
+                                    title="Save"
+                                    btnStyle={[{
+                                        width: '100%',
+                                        height: 30,
+                                        backgroundColor: '#FFFFFF',
+                                        borderRadius: 5,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        shadowOffset: { width: 2, height: 2 },
+                                        shadowOpacity: 0.9,
+                                        shadowRadius: 5,
+                                        elevation: 0,
+                                        shadowColor: '#575757',
+                                        marginHorizontal: 10
+                                    }, { minWidth: 70 }]}
+                                    btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                                    onPress={() => {
+                                        if (plateNumber == '' || make == '' || year == '' || model == '' || engineType == 'Select' || ADA == 'Select' || airBrakes == 'Select' || assetType == 'Select' || mileage == '' || assetName == '') { }
+                                        else {
+                                            setloading(true)
+                                            handleAddNewAsset()
+                                        }
+
+                                    }} />
                             </View>
                         </View>
-                        <View style={styles.contentCardStyle}>
-                            <Form
-                                columns={columns}
-                                entriesData={entriesData}
-                                titleForm="Assets"
-                                onValueChange={handleFormValue}
-                                row={styles.formRowStyle}
-                                cell={styles.formCellStyle}
-                                entryText={styles.formEntryTextStyle}
-                                columnHeaderRow={styles.formColumnHeaderRowStyle}
-                                columnHeaderCell={styles.formColumnHeaderCellStyle}
-                                columnHeaderText={styles.formColumnHeaderTextStyle}
-                            />
-                        </View>
-                    </ScrollView>
-                </Animated.View>
+
+                    </View>
+                    :
+                    <View style={{ flex: 1, backgroundColor: '#f6f8f9' }}>
+                        <ScrollView style={{ height: 100 }}>
+                            <View style={{ flexDirection: 'row', margin: 40, justifyContent: 'space-between', alignItems: 'center' }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <View style={{ backgroundColor: '#23d3d3', borderRadius: 15, }}>
+                                        <Image style={{ width: 30, height: 30, margin: 7 }}
+                                            tintColor='#FFFFFF'
+                                            source={require('../../assets/vehicle_icon.png')}></Image>
+                                    </View>
+                                    <Text style={{ fontSize: 30, color: '#335a75', fontFamily: 'inter-extrablack', marginLeft: 10 }}>
+                                        Assets
+                                    </Text>
+                                </View>
+                                <View style={{ flexDirection: 'row' }}>
+                                    <Text style={{ fontSize: 45, color: '#1E3D5C' }}>{totalAssets}</Text>
+                                    <Text style={{ fontSize: 15, color: '#5B5B5B', marginHorizontal: 10, marginTop: 10, fontWeight: '700' }}>Total assets</Text>
+                                    <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 20, opacity: 0.5 }}></View>
+
+                                    <Text style={{ fontSize: 45, color: '#D60000' }}>{assetsWithDefects}</Text>
+                                    <Text style={{ fontSize: 15, color: '#5B5B5B', marginHorizontal: 10, marginTop: 10, fontWeight: '700' }}>Assets with active defects</Text>
+                                </View>
+                            </View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 40, paddingRight: 40, zIndex: 1, }}>
+                                <View style={{ flexDirection: 'row' }}>
+                                    <View style={{ marginRight: 10 }}>
+                                        <TextInput
+                                            style={[styles.input, { marginTop: 0 }, searchTextInputBorderColor && styles.withBorderInputContainer]}
+                                            placeholder="Type to search"
+                                            placeholderTextColor="#868383DC"
+                                            value={search}
+                                            onChangeText={(val) => { setSearch(val) }}
+                                            onFocus={() => { setSearchTextInputBorderColor(true) }}
+                                            onBlur={() => { setSearchTextInputBorderColor(false) }}
+                                        />
+                                    </View>
+                                    <View style={{ marginRight: 10 }}>
+                                        <DropDownComponent
+                                            options={searchAssetOptionList}
+                                            onValueChange={handleSearchAssetValueChange}
+                                            // title="Ubaid Arshad"
+                                            selectedValue={searchAssetSelectedOption}
+                                            imageSource={require('../../assets/up_arrow_icon.png')}
+                                            container={styles.dropdownContainer}
+                                            dropdownButton={styles.dropdownButton}
+                                            selectedValueStyle={styles.dropdownSelectedValueStyle}
+                                            optionsContainer={styles.dropdownOptionsContainer}
+                                            option={styles.dropdownOption}
+                                            hoveredOption={styles.dropdownHoveredOption}
+                                            optionText={styles.dropdownOptionText}
+                                            hoveredOptionText={styles.dropdownHoveredOptionText}
+                                            dropdownButtonSelect={styles.dropdownButtonSelect}
+                                            dropdownStyle={styles.dropdown}
+                                        />
+                                    </View>
+                                    {/* <View style={{ marginRight: 10 }}>
+                                            <TouchableOpacity
+                                                onMouseEnter={() => setSearchBtnHover(true)}
+                                                onMouseLeave={() => setSearchBtnHover(false)}
+                                                onPress={() => {
+                                                    setSearchAssetSelectedOption('Select')
+                                                    setSearch('')
+                                                }}
+                                            >
+                                                <Image style={[{ width: 40, height: 40 }]}
+                                                    tintColor={searchBtnHover ? '#67E9DA' : '#336699'}
+                                                    source={require('../../assets/search_icon.png')}></Image>
+                                            </TouchableOpacity>
+                                        </View> */}
+                                    <View >
+                                        <AppBtn
+                                            title="Asset"
+                                            imgSource={require('../../assets/add_plus_btn_icon.png')}
+                                            btnStyle={styles.btn}
+                                            btnTextStyle={styles.btnText}
+                                            onPress={() => { handleAssetsAppBtn() }} />
+                                    </View>
+                                </View>
+
+                            </View>
+                            <View style={styles.contentCardStyle}>
+                               { entriesData.length!=0
+                                ?
+                                <Form
+                                    columns={columns}
+                                    entriesData={searchAssetSelectedOption == 'Name' ? entriesData.filter((item) => item['Asset Name'].toLowerCase().includes(search.toLowerCase())) : searchAssetSelectedOption == 'License Plate' ? entriesData.filter((item) => item['Plate Number'].toLowerCase().includes(search.toLowerCase())) : entriesData}
+                                    titleForm="Assets"
+                                    onValueChange={handleFormValue}
+                                    row={styles.formRowStyle}
+                                    cell={styles.formCellStyle}
+                                    entryText={styles.formEntryTextStyle}
+                                    columnHeaderRow={styles.formColumnHeaderRowStyle}
+                                    columnHeaderCell={styles.formColumnHeaderCellStyle}
+                                    columnHeaderText={styles.formColumnHeaderTextStyle}
+                                />
+                                : null}
+                            </View>
+                        </ScrollView>
+                    </View>
             }
             {alertStatus == 'successful'
                 ?
@@ -623,7 +1083,123 @@ const AssetsPage = (props) => {
                     </AlertModal>
                     : null
             }
+            <Modal
+                animationType="fade"
+                visible={deleteAlertVisible}
+                transparent={true}>
+                <View style={styles.centeredView}>
+                    <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+                    <View style={styles.modalView}>
+                        <View>
+                            <Text style={{ fontSize: 17, fontWeight: '400' }}>Are you sure you want to Delete ?</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', width: 250, justifyContent: 'space-between', marginTop: 20 }}>
+                            <View
+                                onMouseEnter={() => setDeleteOptionHover({ [0]: true })}
+                                onMouseLeave={() => setDeleteOptionHover({ [0]: false })}>
+                                <TouchableOpacity
+                                    onPress={async () => {
+                                        setDeleteAlertVisible(false)
+                                        setloading(true)
+                                        await deleteDoc(doc(db, "Assets", deleteAsset.toString()));
+                                        // await deleteDoc(doc(db, `AllowedUsers`, deleteUser));
+                                        console.log('deleted')
+                                        setAlertStatus('successful')
+                                        setAlertIsVisible(true)
+                                        fetchData()
+                                    }}
 
+                                    style={[{ width: 100, height: 40, backgroundColor: '#FFFFFF', borderRadius: 5, alignItems: 'center', justifyContent: 'center', shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.9, shadowRadius: 5, elevation: 0, shadowColor: '#575757', marginHorizontal: 10 }, deleteOptionHover[0] && { backgroundColor: '#67E9DA', borderColor: '#67E9DA' }]}>
+                                    <Text style={[{ fontSize: 16 }, deleteOptionHover[0] && { color: '#FFFFFF' }]}>Yes</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <View
+                                onMouseEnter={() => setDeleteOptionHover({ [1]: true })}
+                                onMouseLeave={() => setDeleteOptionHover({ [1]: false })}>
+                                <TouchableOpacity
+                                    onPress={() => setDeleteAlertVisible(false)}
+                                    style={[{ width: 100, height: 40, backgroundColor: '#FFFFFF', borderRadius: 5, alignItems: 'center', justifyContent: 'center', shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.9, shadowRadius: 5, elevation: 0, shadowColor: '#575757', marginHorizontal: 10 }, deleteOptionHover[1] && { backgroundColor: '#67E9DA', borderColor: '#67E9DA' }]}>
+                                    <Text style={[{ fontSize: 16 }, deleteOptionHover[1] && { color: '#FFFFFF' }]}>No</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </View>
+
+            </Modal>
+
+            <Modal
+                animationType="fade"
+                visible={assignDriverModalVisible}
+                transparent={true}>
+                <TouchableWithoutFeedback
+                    style={{ height: height, width: width }}
+                    onPress={() => closeAssignDriverModal()}>
+                    <View style={styles.centeredView}>
+                        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+                        <TouchableWithoutFeedback>
+                            <View style={styles.modalView}>
+                                <View style={{ backgroundColor: 'white', borderRadius: 8, padding: 20, elevation: 5, maxHeight: '98%', width: 300 }}>
+                                    <TextInput
+                                        style={[styles.input, { height: 50, marginVertical: 20 }]}
+                                        placeholder='Search'
+                                        value={searchDriver}
+                                        onChangeText={(val) => {
+                                            setSearchDriver(val.toLowerCase())
+                                        }}
+                                    />
+                                    <View style={{ height: 250 }}>
+                                        <FlatList
+                                            data={driversList}
+
+                                            renderItem={({ item, index }) => {
+
+                                                // const formattedSearchNumber = searchNumber.replace(/ /g, '');
+                                                if (searchDriver === "" || item.employeeName.toLowerCase().includes(searchDriver)) {
+                                                    return (
+                                                        <View
+                                                            onMouseEnter={() => setDriverAssignItemHovered({ [index]: true })}
+                                                            onMouseLeave={() => setDriverAssignItemHovered({ [index]: false })}
+                                                        >
+                                                            <TouchableOpacity
+                                                                onPress={() => {
+                                                                    setloading(true)
+                                                                    handleDriverAssign(item.employeeName, item.employeeEmail)
+                                                                    closeAssignDriverModal()
+                                                                    // setAssignedDriver(item)
+                                                                    // closeAssignDriverModal()
+                                                                }}
+                                                                style={[
+                                                                    {
+                                                                        marginTop: 15,
+                                                                        borderWidth: 1,
+                                                                        borderColor: '#cccccc',
+                                                                        outlineStyle: 'none',
+                                                                        padding: 10,
+                                                                        borderRadius: 5,
+                                                                    },
+                                                                    driverAssignItemHovered[index] && {
+                                                                        backgroundColor: '#67E9DA',
+                                                                        borderColor: '#67E9DA',
+                                                                    },
+                                                                ]}
+                                                            >
+                                                                <Text>{item.employeeNumber} {item.employeeName}</Text>
+                                                            </TouchableOpacity>
+                                                        </View>
+                                                    )
+                                                }
+                                            }} />
+
+                                    </View>
+                                </View>
+                            </View>
+                        </TouchableWithoutFeedback>
+                    </View>
+                </TouchableWithoutFeedback>
+            </Modal>
+
+            {loading ? CustomActivityIndicator() : null}
         </>
     );
 }
@@ -634,15 +1210,15 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
     },
     input: {
-        width: '100%',
-        height: 50,
+        width: 250,
+        height: 40,
+        marginLeft: 10,
         backgroundColor: '#fff',
         borderRadius: 10,
         paddingHorizontal: 10,
         borderWidth: 1,
         borderColor: '#cccccc',
-        outlineStyle: 'none',
-        marginTop:20
+        outlineStyle: 'none'
     },
     withBorderInputContainer: {
         borderColor: '#558BC1',
@@ -772,14 +1348,17 @@ const styles = StyleSheet.create({
     contentCardStyle: {
         backgroundColor: '#FFFFFF',
         padding: 30,
-        borderRadius: 20,
+        borderRadius: 5,
         shadowColor: '#000000',
         shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.25,
+        shadowOpacity: 0.15,
         shadowRadius: 10,
         elevation: 5,
         margin: 40,
-        flex: 1
+        // flex:1,
+        width: 'auto',
+        height: 800,
+        // overflow: 'scroll'
     },
     btn: {
         width: '100%',
@@ -789,39 +1368,48 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         shadowOffset: { width: 2, height: 2 },
-        shadowOpacity: 0.9,
-        shadowRadius: 5,
+        shadowOpacity: 0.6,
+        shadowRadius: 3,
         elevation: 0,
         shadowColor: '#575757',
         marginHorizontal: 10
     },
     btnText: {
         color: '#fff',
-        fontSize: 20,
-        fontWeight: 'bold',
+        fontSize: 14,
+        fontFamily: 'inter-bold'
     },
     formRowStyle: {
         flexDirection: 'row',
         alignItems: 'center',
-        //  borderBottomColor: '#ccc',
-        marginBottom: 4,
+        // borderBottomColor: '#ccc',
+
+        marginTop: 8,
         shadowColor: '#BADBFB',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.8,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 1,
         shadowRadius: 4,
-        marginLeft: 5,
-        marginRight: 5,
-        borderBottomWidth: 1,
-        borderBottomColor: '#BADBFB',
+        elevation: 0,
+        // borderRadius: 20,
+        // marginLeft: 5,
+        // marginRight: 5,
+        width: 'auto',
+        justifyContent: 'space-between'
     },
     formCellStyle: {
-        flex: 1,
         justifyContent: 'center',
-        paddingLeft: 20
+        flex: 1,
+        minHeight: 50,
+        maxWidth:150
+
+        // paddingLeft: 20
     },
     formEntryTextStyle: {
-        fontWeight: 'normal',
+        fontFamily: 'inter-regular',
+        paddingHorizontal: 20,
+        paddingVertical: 5,
         fontSize: 13,
+        color: '#000000'
     },
 
     formColumnHeaderRowStyle: {
@@ -829,24 +1417,30 @@ const styles = StyleSheet.create({
         backgroundColor: '#f2f2f2',
         borderBottomWidth: 1,
         borderBottomColor: '#ccc',
-        // paddingVertical: 15,
-        alignItems: 'center',
-
+        paddingVertical: 10,
+        width: 'auto',
+        justifyContent: 'space-between',
+        // alignItems: 'center',
     },
     formColumnHeaderCellStyle: {
+        // width: 160,
+        // paddingLeft:20
         flex: 1,
+        maxWidth:150
 
     },
     formColumnHeaderTextStyle: {
-        fontWeight: 'bold',
+        fontFamily: 'inter-bold',
         marginBottom: 5,
+        // textAlign: 'center',
         paddingHorizontal: 20,
         color: '#5A5A5A',
-        fontSize: 14
+        fontSize: 13
     },
     dropdownContainer: {
         position: 'relative',
-        zIndex: 1,
+
+
     },
     dropdownButton: {
         padding: 12,
@@ -854,17 +1448,22 @@ const styles = StyleSheet.create({
         borderColor: '#ccc',
         borderRadius: 8,
         minWidth: 150,
-
     },
     dropdown: {
         // Custom styles for the dropdown container
         // For example:
-        padding: 12,
+        // padding: 12,
         borderWidth: 1,
         borderColor: '#ccc',
         borderRadius: 8,
         minWidth: 150,
         backgroundColor: '#FFFFFF',
+        height: 40,
+        paddingLeft: 12,
+        paddingRight: 12,
+        alignItems: 'center',
+
+
     },
     dropdownSelectedValueStyle: {
         fontSize: 16,
@@ -915,7 +1514,153 @@ const styles = StyleSheet.create({
         elevation: 0,
 
         backgroundColor: '#FFFFFF'
-    }
+    },
+    activityIndicatorStyle: {
+        flex: 1,
+        position: 'absolute',
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        marginTop: 'auto',
+        marginBottom: 'auto',
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        backgroundColor: '#555555DD',
+    },
+    centeredView: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        // backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalView: {
+        backgroundColor: 'white',
+        borderRadius: 8,
+        padding: 20,
+        alignItems: 'center',
+        elevation: 5,
+        maxHeight: '98%',
+        maxWidth: '95%'
+    },
+    inspectionformRowStyle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        // borderBottomColor: '#ccc',
+
+        marginTop: 8,
+        shadowColor: '#BADBFB',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 1,
+        shadowRadius: 4,
+        elevation: 0,
+        // borderRadius: 20,
+        // marginLeft: 5,
+        // marginRight: 5
+    },
+    inspectionformCellStyle: {
+        justifyContent: 'center',
+        width: 160,
+        height: 50,
+
+        // paddingLeft: 20
+    },
+    inspectionformEntryTextStyle: {
+        fontFamily: 'inter-regular',
+        paddingHorizontal: 20,
+        paddingVertical: 5,
+        fontSize: 13,
+        color: '#000000'
+    },
+
+    inspectionformColumnHeaderRowStyle: {
+        flexDirection: 'row',
+        backgroundColor: '#f2f2f2',
+        borderBottomWidth: 1,
+        borderBottomColor: '#ccc',
+        paddingVertical: 10,
+        // alignItems: 'center',
+    },
+    inspectionformColumnHeaderCellStyle: {
+        width: 160,
+        // paddingLeft:20
+
+    },
+    inspectionformColumnHeaderTextStyle: {
+        fontFamily: 'inter-bold',
+        marginBottom: 5,
+        // textAlign: 'center',
+        paddingHorizontal: 20,
+        color: '#5A5A5A',
+        fontSize: 13
+    },
+
+    defectformRowStyle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        // borderBottomColor: '#ccc',
+
+        marginTop: 8,
+        shadowColor: '#BADBFB',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 1,
+        shadowRadius: 4,
+        elevation: 0,
+        // borderRadius: 20,
+        // marginLeft: 5,
+        // marginRight: 5
+    },
+    defectformCellStyle: {
+        justifyContent: 'center',
+        width: 140,
+
+
+        // paddingLeft: 20
+    },
+    defectformEntryTextStyle: {
+        fontFamily: 'inter-regular',
+        paddingHorizontal: 20,
+        paddingVertical: 5,
+        fontSize: 13,
+        color: '#000000'
+    },
+
+    defectformColumnHeaderRowStyle: {
+        flexDirection: 'row',
+        backgroundColor: '#f2f2f2',
+        borderBottomWidth: 1,
+        borderBottomColor: '#ccc',
+        paddingVertical: 10,
+        // alignItems: 'center',
+    },
+    defectformColumnHeaderCellStyle: {
+        width: 140,
+        // paddingLeft:20
+
+    },
+    defectformColumnHeaderTextStyle: {
+        fontFamily: 'inter-bold',
+        marginBottom: 5,
+        // textAlign: 'center',
+        paddingHorizontal: 20,
+        color: '#5A5A5A',
+        fontSize: 13
+    },
+    optioncontentCardStyle: {
+        backgroundColor: '#FFFFFF',
+        padding: 30,
+        borderRadius: 5,
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.15,
+        shadowRadius: 10,
+        elevation: 5,
+        margin: 40,
+        // flex:1,
+        width: 'auto',
+        height: 800
+    },
 });
 
 export default AssetsPage

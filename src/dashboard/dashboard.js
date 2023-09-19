@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated, Pressable, TouchableWithoutFeedback, Modal, TextInput } from 'react-native';
+import React, { useState, useEffect, useRef, useContext } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated, Pressable, TouchableWithoutFeedback, Modal, TextInput, Dimensions } from 'react-native';
 import { useFonts } from 'expo-font';
 import Header from '../../components/Header';
 import MainDashboard from './mainDashboard';
@@ -19,13 +19,18 @@ import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 import { router } from 'expo-router';
 import { collection, getDoc, getDocs, getFirestore } from 'firebase/firestore';
 import app from '../config/firebase';
+import { DataContext } from '../store/context/DataContext';
+import FormDetail from './formDetail';
+import DefectDetail from './defectDetail';
+import { DefectContext } from '../store/context/DefectContext';
+import { PeopleContext } from '../store/context/PeopleContext';
+import MaintenancePage from './maintenance';
+import WorkOrderDetail from './workOrderDetail';
+import { WOContext } from '../store/context/WOContext';
+import InHouseWorkOrderDetail from './inHouseWorkOrderDetail';
 
 
 const DashboardPage = (props) => {
-
-  console.log(props.role)
-
-  // console.log(props.loginDesignation)
 
   const db = getFirestore(app)
 
@@ -73,7 +78,15 @@ const DashboardPage = (props) => {
   const [alertStatus, setAlertStatus] = useState('')
 
   const [profileSelected, setProfileSelected] = useState(false)
+  const [inspectionFormValue, setInspectionFormValue] = useState([])
+  const [driverPicture, setDriverPicture] = useState(null)
+  const [groups, setGroups] = useState([])
+  const [otherSelection, setOtherSelection] = useState('nill')
+  const [defectFormValue, setDefectFormValue] = useState([])
+  const [workOrderFormValue, setWorkOrderFormValue] = useState([])
+  const [inHouseInspectionFormValue, setInHouseInspectionFormValue] = useState([])
 
+  const { state: woState, setWO } = useContext(WOContext)
 
 
   const backgroundColor = colorAnimation.interpolate({
@@ -81,7 +94,9 @@ const DashboardPage = (props) => {
     outputRange: ['#1E3D5C', '#1E3D5C'], // Replace these with your desired colors
   });
 
+
   useEffect(() => {
+
     Animated.loop(
       Animated.sequence([
         Animated.timing(colorAnimation, {
@@ -106,53 +121,31 @@ const DashboardPage = (props) => {
     }).start()
   }
 
-  const fetchWelcome = async () => {
-    const auth = getAuth()
-    if (auth.currentUser == undefined || auth.currentUser == null) { }
-    else {
-      const querySnapshot = await getDocs(collection(db, 'DVIR'))
-      querySnapshot.forEach(async (doc) => {
-        if (auth.currentUser.email == doc.data().Email) {
-          setWelcome(doc.data().Name)
-          // setLoginDesignation(doc.data().Designation)
-        }
-        await getDocs(collection(db, `DVIR/${doc.data().Email}/users`))
-          .then((newQuery) => {
-            newQuery.forEach((docs)=>{
-              if(getAuth().currentUser.email == docs.data().Email) {
-                setWelcome(docs.data().Name)
-                // setLoginDesignation(doc.data().Designation)
-              }
-            })
-          })
-      })
+  useEffect(() => {
+    // console.log(defectState.value.defect)
+  }, [])
 
-      // await getDocs(collection(db, `DVIR/${getAuth().currentUser.email}/users`))
-    }
-  }
 
   useEffect(() => {
 
-    const auth = getAuth()
-    console.log(auth)
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        // User is signed in, see docs for a list of available properties
-        // https://firebase.google.com/docs/reference/js/auth.user
-        const uid = user.uid;
-        // console.log(user)
-        // ...
-      } else {
-        // User is signed out
-        // ...
-        // console.log('user signed out')
-        router.replace('/')
-      }
-
-      fetchWelcome()
+    // const auth = getAuth()
+    // console.log(auth)
+    // onAuthStateChanged(auth, (user) => {
+    //   if (user) {
+    //     // User is signed in, see docs for a list of available properties
+    //     // https://firebase.google.com/docs/reference/js/auth.user
+    //     const uid = user.uid;
+    //     // console.log(user)
+    //     // ...
+    //   } else {
+    //     // User is signed out
+    //     // ...
+    //     // console.log('user signed out')
+    //     router.replace('/')
+    //   }
 
 
-    });
+    // });
 
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -227,16 +220,6 @@ const DashboardPage = (props) => {
   }
 
 
-  const [fontsLoaded] = useFonts({
-    'futura-extra-black': require('../../assets/fonts/Futura-Extra-Black-font.ttf'),
-    'futura-book': require('../../assets/fonts/futura/Futura-Book-font.ttf'),
-    'futura-heavy-font': require('../../assets/fonts/futura/Futura-Heavy-font.ttf')
-  });
-
-  if (!fontsLoaded) {
-    return null;
-  }
-
   let driver = [{
     name: "Ubaid",
     company: "DVIR",
@@ -266,22 +249,7 @@ const DashboardPage = (props) => {
     defects: 3
   }]
 
-  const assetReport = [{
-    Status: "Pass",
-    InspectionID: "123",
-    DateInspected: "17-05-2021",
-    DateReceived: "17-05-2021",
-    AssetName: "Truck1",
-    AssetVIN: "qwe123",
-    AssetLicensePlate: "LE-14-1234",
-    AssetType: "Truck",
-    AssetMake: "2015",
-    AssetModel: "Colorado",
-    DriverName: "UB",
-    DriverUser: "123456789",
-    EmployeeNumber: "22",
-    DefectsCount: "1",
-  }]
+
 
   const closeAllExpands = (value) => {
     if (value == 'Dashboard') {
@@ -291,7 +259,8 @@ const DashboardPage = (props) => {
       setMaintenanceSelectedPage("")
       setInspectionSelectedPage("")
       setUsersSelectedPage("")
-      setProfileSelected(false)
+      // setProfileSelected(false)
+      setOtherSelection('nill')
     }
     else if (value == 'Inspection') {
       setMaintenanceOptionExpand(false)
@@ -312,7 +281,8 @@ const DashboardPage = (props) => {
       setMaintenanceSelectedPage("")
       setInspectionSelectedPage("")
       setUsersSelectedPage("")
-      setProfileSelected(false)
+      // setProfileSelected(false)
+      setOtherSelection('nill')
     }
     else if (value == 'Users') {
       setInspectionOptionExpand(false)
@@ -321,12 +291,82 @@ const DashboardPage = (props) => {
       // setInspectionSelectedPage("")
     }
   }
+
+  const handleFormValue = async (value) => {
+
+    setInspectionFormValue(value)
+    setOtherSelection('form')
+
+  }
+
+  const handleDefectValue = (value) => {
+    setDefectFormValue(value)
+    // console.log(value)
+    setOtherSelection('defect')
+  }
+
+  const handleWOValue = (value) => {
+    const temp = woState.value.data.filter((item) => item.id == value.workOrder)
+    // console.log(temp[0])
+    // console.log(value)
+    if (temp.length != 0) {
+      setWorkOrderFormValue(temp[0])
+      setOtherSelection('workorder')
+    }
+
+  }
+
+  const handleWorkOrderValue = (value) => {
+    // console.log(value)
+    setWorkOrderFormValue(value)
+    setOtherSelection('workorder')
+    //start work from here
+  }
+
+
+
+  const handleInHouseInspectionValue = (value) => {
+    setInHouseInspectionFormValue(value)
+    setOtherSelection('inhouseinspection')
+  }
+
+  const handleReturnFormDetail = (value) => {
+    setOtherSelection('nill')
+  }
+
+  const handleReturnWorkOrderDetail = () => {
+    setOtherSelection('nill')
+  }
+
+  const handleInspectionFromDashboard = () => {
+    setInspectionOptionExpand(!inspectionOptionExpand)
+    // setMaintenanceOptionExpand(false)
+    setInspectionSelectedPage('General Inspection')
+    setSelectedPage("Inspection")
+    // setProfileSelected(false)
+    setOtherSelection('nill')
+  }
+
+  const handleDefecsFromDashboard = () => {
+    setMaintenanceOptionExpand(!maintenanceOptionExpand)
+    // setMaintenanceOptionExpand(false)
+    setMaintenanceSelectedPage('Defects')
+    setSelectedPage("Maintenance")
+    // setProfileSelected(false)
+    setOtherSelection('nill')
+  }
+
+
+
+
   const renderPage = () => {
 
 
     if (selectedPage == 'Dashboard') {
       return (
-        <MainDashboard />
+        <MainDashboard
+          openInspection={handleInspectionFromDashboard}
+          openDefects={handleDefecsFromDashboard} />
       )
     }
     // else if (selectedPage == 'Maintenance') {
@@ -339,39 +379,52 @@ const DashboardPage = (props) => {
     // }
     else if (selectedPage == 'Assets') {
       return (
-        <AssetsPage onAddAssetBtn={handleAddAssetBtn} />
+        <AssetsPage
+          onAddAssetBtn={handleAddAssetBtn}
+          onDashboardValue={handleFormValue}
+          onDashboardDefectValue={handleDefectValue}
+          onDashboardWOValue={handleWorkOrderValue} />
       );
     }
     else if (selectedPage == "Inspection") {
       if (inspectionSelectedPage == 'General Inspection') {
+        const temp = []
         return (
-          <GeneralInspectionPage />
+          <GeneralInspectionPage
+            form={temp}
+            onDashboardValue={handleFormValue} />
         )
       }
       else if (inspectionSelectedPage == '45 days Inspection') {
         return (
-          <DueDaysInspectionPage />
+          <DueDaysInspectionPage
+          onDashboardInHouseValueChange={handleInHouseInspectionValue} />
         )
       }
     }
     else if (selectedPage == "Maintenance") {
       if (maintenanceSelectedPage == 'Defects') {
         return (
-          <DefectsPage />
+          <DefectsPage
+            onDashboardValueChange={handleDefectValue}
+            onDashboardWOValue={handleWOValue} />
         )
       }
       else if (maintenanceSelectedPage == 'Work Order') {
         return (
-          <View style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}>
-            <Text>Work Order</Text>
-          </View>
+          <MaintenancePage
+            onDashboardValueChange={handleWorkOrderValue}
+            onDashboardInHouseValueChange={handleInHouseInspectionValue} />
         )
       }
     }
     else if (selectedPage == "Users") {
       if (usersSelectedPage == 'Driver') {
         return (
-          <DriverPage />
+          <DriverPage
+            onDashboardValue={handleFormValue}
+            onDashboardDefectValue={handleDefectValue}
+            onDashboardWOValue={handleWorkOrderValue} />
 
         )
       }
@@ -393,7 +446,7 @@ const DashboardPage = (props) => {
       const result = await DocumentPicker.getDocumentAsync({
         type: 'image/*', // Change the MIME type to specify the type of files you want to allow
       });
-      console.log(result)
+      // console.log(result)
       if (result.assets[0].uri) {
         setFileUri(result.assets[0].uri);
       }
@@ -408,21 +461,22 @@ const DashboardPage = (props) => {
 
 
   const handleHeaderValue = (value) => {
-    
+
     if (value == 'Profile') {
       // setProfileIsVisible(true)
-      setProfileSelected(true)
-      setSelectedPage('')
+      setOtherSelection('profile')
+      // setProfileSelected(true)
+      // setSelectedPage('')
     }
 
     if (value == 'Logout') {
       const auth = getAuth()
-        signOut(auth).then(() => {
-            // Sign-out successful.
-            router.replace('/')
-          }).catch((error) => {
-            // An error happened.
-          });
+      signOut(auth).then(() => {
+        // Sign-out successful.
+        router.replace('/')
+      }).catch((error) => {
+        // An error happened.
+      });
     }
   }
 
@@ -434,14 +488,18 @@ const DashboardPage = (props) => {
     // props.navigation.navigate('CreateNewAsset')
   }
 
+  const handleProfileDashboard = () => {
+    setOtherSelection('nill')
+  }
+
   return (
     <>
       <Head>
         <title>Dashboard</title>
         <meta name="description" content="Driver vehicle inspection report application dashboard" />
       </Head>
-      <View style={styles.container}>
-        <Animated.View style={[styles.leftSide, { width: animateLeftSide }, { backgroundColor }]}
+      <View style={[styles.container]}>
+        <Animated.View style={[styles.leftSide, { width: animateLeftSide },]}
           onMouseEnter={() => {
             if (collapseBtnClick == true) {
               setOpenLeftSide(true)
@@ -527,10 +585,11 @@ const DashboardPage = (props) => {
                       // fadeAnim.setValue(0);
                       setInspectionSelectedPage('General Inspection')
                       setSelectedPage("Inspection")
-                      setProfileSelected(false)
+                      // setProfileSelected(false)
+                      setOtherSelection('nill')
                     }}
                   >
-                    <Text style={inspectionSelectedPage == 'General Inspection' ? [styles.navText, { color: '#FFFFFF', opacity: 1, }] : [styles.navText, generalInspectionHovered && { color: '#FFFFFF', opacity: 1 }]}>General Inspection</Text>
+                    <Text style={inspectionSelectedPage == 'General Inspection' ? [styles.navTextSub, { color: '#FFFFFF', opacity: 1, }] : [styles.navTextSub, generalInspectionHovered && { color: '#FFFFFF', opacity: 1 }]}>General Inspection</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -543,10 +602,11 @@ const DashboardPage = (props) => {
                       // fadeAnim.setValue(0);
                       setInspectionSelectedPage('45 days Inspection')
                       setSelectedPage("Inspection")
-                      setProfileSelected(false)
+                      // setProfileSelected(false)
+                      setOtherSelection('nill')
                     }}
                   >
-                    <Text style={inspectionSelectedPage == '45 days Inspection' ? [styles.navText, { color: '#FFFFFF', opacity: 1 }] : [styles.navText, daysInspectionhovered && { color: '#FFFFFF', opacity: 1 }]}>45 days Inspection</Text>
+                    <Text style={inspectionSelectedPage == '45 days Inspection' ? [styles.navTextSub, { color: '#FFFFFF', opacity: 1 }] : [styles.navTextSub, daysInspectionhovered && { color: '#FFFFFF', opacity: 1 }]}>In house Inspection</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -583,10 +643,11 @@ const DashboardPage = (props) => {
                       // fadeAnim.setValue(0);
                       setMaintenanceSelectedPage('Defects')
                       setSelectedPage("Maintenance")
-                      setProfileSelected(false)
+                      // setProfileSelected(false)
+                      setOtherSelection('nill')
                     }}
                   >
-                    <Text style={maintenanceSelectedPage == 'Defects' ? [styles.navText, { color: '#FFFFFF', opacity: 1, }] : [styles.navText, defectsHovered && { color: '#FFFFFF', opacity: 1 }]}>Defects</Text>
+                    <Text style={maintenanceSelectedPage == 'Defects' ? [styles.navTextSub, { color: '#FFFFFF', opacity: 1, }] : [styles.navTextSub, defectsHovered && { color: '#FFFFFF', opacity: 1 }]}>Defects</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -599,10 +660,11 @@ const DashboardPage = (props) => {
                       // fadeAnim.setValue(0);
                       setMaintenanceSelectedPage('Work Order')
                       setSelectedPage("Maintenance")
-                      setProfileSelected(false)
+                      // setProfileSelected(false)
+                      setOtherSelection('nill')
                     }}
                   >
-                    <Text style={maintenanceSelectedPage == 'Work Order' ? [styles.navText, { color: '#FFFFFF', opacity: 1 }] : [styles.navText, workOrderHovered && { color: '#FFFFFF', opacity: 1 }]}>Work Order</Text>
+                    <Text style={maintenanceSelectedPage == 'Work Order' ? [styles.navTextSub, { color: '#FFFFFF', opacity: 1 }] : [styles.navTextSub, workOrderHovered && { color: '#FFFFFF', opacity: 1 }]}>Work Order</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -657,14 +719,15 @@ const DashboardPage = (props) => {
                       // fadeAnim.setValue(0);
                       setUsersSelectedPage('Driver')
                       setSelectedPage("Users")
-                      setProfileSelected(false)
+                      // setProfileSelected(false)
+                      setOtherSelection('nill')
                     }}
                   >
-                    <Text style={usersSelectedPage == 'Driver' ? [styles.navText, { color: '#FFFFFF', opacity: 1, }] : [styles.navText, driverHovered && { color: '#FFFFFF', opacity: 1 }]}>Driver</Text>
+                    <Text style={usersSelectedPage == 'Driver' ? [styles.navTextSub, { color: '#FFFFFF', opacity: 1, }] : [styles.navTextSub, driverHovered && { color: '#FFFFFF', opacity: 1 }]}>Driver</Text>
                   </TouchableOpacity>
                 </View>
 
-                <View style={usersSelectedPage == 'Mechanic' ? [styles.navItem, { height: 30 }] : [styles.navItem, { height: 30 }]}
+                {/* <View style={usersSelectedPage == 'Mechanic' ? [styles.navItem, { height: 30 }] : [styles.navItem, { height: 30 }]}
                   onMouseEnter={() => { setMechanicHovered(true) }}
                   onMouseLeave={() => { setMechanicHovered(false) }}>
                   <TouchableOpacity
@@ -673,12 +736,13 @@ const DashboardPage = (props) => {
                       // fadeAnim.setValue(0);
                       setUsersSelectedPage('Mechanic')
                       setSelectedPage("Users")
-                      setProfileSelected(false)
+                      // setProfileSelected(false)
+                      setOtherSelection('nill')
                     }}
                   >
-                    <Text style={usersSelectedPage == 'Mechanic' ? [styles.navText, { color: '#FFFFFF', opacity: 1 }] : [styles.navText, mechanicHovered && { color: '#FFFFFF', opacity: 1 }]}>Mechanic</Text>
+                    <Text style={usersSelectedPage == 'Mechanic' ? [styles.navTextSub, { color: '#FFFFFF', opacity: 1 }] : [styles.navTextSub, mechanicHovered && { color: '#FFFFFF', opacity: 1 }]}>Mechanic</Text>
                   </TouchableOpacity>
-                </View>
+                </View> */}
 
                 <View style={usersSelectedPage == 'Manager' ? [styles.navItem, { height: 30 }] : [styles.navItem, { height: 30 }]}
                   onMouseEnter={() => { setManagerHovered(true) }}
@@ -689,10 +753,11 @@ const DashboardPage = (props) => {
                       // fadeAnim.setValue(0);
                       setUsersSelectedPage('Manager')
                       setSelectedPage("Users")
-                      setProfileSelected(false)
+                      // setProfileSelected(false)
+                      setOtherSelection('nill')
                     }}
                   >
-                    <Text style={usersSelectedPage == 'Manager' ? [styles.navText, { color: '#FFFFFF', opacity: 1 }] : [styles.navText, managerHovered && { color: '#FFFFFF', opacity: 1 }]}>Manager</Text>
+                    <Text style={usersSelectedPage == 'Manager' ? [styles.navTextSub, { color: '#FFFFFF', opacity: 1 }] : [styles.navTextSub, managerHovered && { color: '#FFFFFF', opacity: 1 }]}>People</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -737,13 +802,51 @@ const DashboardPage = (props) => {
         <View style={{ flexDirection: 'column', flex: 1, }}>
           <View style={{ zIndex: 1 }}>
             <Header
-              onValueChange={handleHeaderValue}
-              title={welcome} />
+              onValueChange={handleHeaderValue} />
           </View>
-          {profileSelected == true ?
-            <ProfilePage />
+          {otherSelection == 'profile' ?
+            <ProfilePage
+              profileHandle={handleProfileDashboard} />
             :
-            renderPage()
+            otherSelection == 'form'
+              ?
+              inspectionFormValue.length != 0
+                ?
+                <FormDetail
+                  formValue={inspectionFormValue}
+                  returnFormDetail={handleReturnFormDetail} />
+                :
+                null
+              :
+              otherSelection == 'defect'
+                ?
+                defectFormValue.length != 0
+                  ?
+                  <DefectDetail
+                    value={defectFormValue} />
+                  : null
+                :
+                otherSelection == 'workorder'
+                  ?
+                  workOrderFormValue.length != 0
+                    ?
+                    <WorkOrderDetail
+                      value={workOrderFormValue}
+                      returnWorkOrderDetail={handleReturnWorkOrderDetail} />
+                    :
+                    null
+                    :
+                    otherSelection == 'inhouseinspection'
+                      ?
+                      inHouseInspectionFormValue.length != 0
+                        ?
+                        <InHouseWorkOrderDetail
+                          value={inHouseInspectionFormValue}
+                          returnWorkOrderDetail={handleReturnWorkOrderDetail}
+                        />
+                        : null
+                      :
+                      renderPage()
           }
 
         </View>
@@ -760,7 +863,7 @@ const styles = StyleSheet.create({
 
   },
   title: {
-    fontSize: 48,
+    fontSize: 35,
     fontWeight: 'bold',
     marginBottom: 30,
     color: '#FFFFFF',
@@ -769,7 +872,7 @@ const styles = StyleSheet.create({
   },
   leftSide: {
     width: 260,
-    backgroundColor: '#1E3D5C',
+    backgroundColor: '#003152',
     paddingTop: 50,
     borderRightWidth: 1,
     borderRightColor: '#ccc',
@@ -809,16 +912,24 @@ const styles = StyleSheet.create({
 
   },
   navText: {
-    fontSize: 15,
+    fontSize: 14,
     color: '#67E9DA',
-    fontWeight: 'bold',
+    fontFamily: 'inter-semibold',
+    opacity: 1,
+    // fontFamily: 'futura-heavy-font'
+
+  },
+  navTextSub: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontFamily: 'inter-regular',
     opacity: 1,
     // fontFamily: 'futura-heavy-font'
 
   },
   navTextHover: {
     color: '#FFFFFF',
-    fontWeight: 'bold',
+    // fontWeight: 'bold',
     opacity: 1,
 
   },
@@ -832,7 +943,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   hoverNavItem: {
-    backgroundColor: '#3A71A9',
+    backgroundColor: '#004b91',
 
   },
   iconStyle: {
@@ -861,6 +972,7 @@ const styles = StyleSheet.create({
     // Custom styles for the text inside dropdown and selected value
     // For example:
     color: '#000000',
+    // fontFamily:'inter'
   },
   gradient1: {
     ...StyleSheet.absoluteFill,

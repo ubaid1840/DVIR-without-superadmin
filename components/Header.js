@@ -1,15 +1,17 @@
 import { View, Text, TouchableOpacity, StyleSheet, Platform, Image, TouchableWithoutFeedback } from "react-native"
 import NameAvatar from "./NameAvatar"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useContext } from "react"
 import DropDownComponent from "./DropDown"
 import { useFonts } from 'expo-font';
 import Notification from "./Notification";
 import { getAuth } from "firebase/auth";
+import { AuthContext } from "../src/store/context/AuthContext";
 
 const logoutList = ['Profile', 'Logout'];
 
 const Header = (props) => {
 
+    const { state: authState, setAuth } = useContext(AuthContext)
 
     const handleValueChange = (value) => {
         // console.log(value)
@@ -18,39 +20,46 @@ const Header = (props) => {
 
     const [inputValue, setInputValue] = useState('');
 
-    const [fontsLoaded] = useFonts({
-        'futura-book': require('../assets/fonts/futura/Futura-Book-font.ttf'),
-    });
+    // const [fontsLoaded] = useFonts({
+    //     'futura-book': require('../assets/fonts/futura/Futura-Book-font.ttf'),
+    // });
 
 
 
 
-    // Check if fonts are loaded and return null if not
-    if (!fontsLoaded) {
-        return null;
-    }
+    // // Check if fonts are loaded and return null if not
+    // if (!fontsLoaded) {
+    //     return null;
+    // }
 
     return (
         <TouchableWithoutFeedback onPress={() => {
-            console.log('solve auto close dropdown issue')
+            // console.log('solve auto close dropdown issue')
         }}>
-            <View style={{ flexDirection: 'row', paddingLeft: 60, paddingRight: 60, paddingTop: 10, paddingBottom: 10, alignItems: 'center', backgroundColor: '#FFFFFF', justifyContent: 'space-between', }}>
-                <View >
-                    
-                        <Text style={{ fontSize: 18, fontWeight: '600', color: '#5B5B5B', fontFamily: 'futura-book' }}>
-                            Welcome
+            <View style={{ flexDirection: 'row', paddingLeft: 60, paddingRight: 60, paddingTop: 10, paddingBottom: 10, alignItems: 'center', backgroundColor: '#FFFFFF', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#D2D2D2' }}>
+                <View style={{ flexDirection: 'row' }}>
+
+                    <Text style={{ fontSize: 15, color: '#000000', fontFamily: 'inter-regular' }}>
+                        Welcome
+                    </Text>
+                    {authState.value.designation ?
+                        <Text style={{ marginLeft: 5, fontSize: 15, color: '#000000', fontFamily: 'inter-regular' }}>
+                            {authState.value.designation}
                         </Text>
+                        : null
+                    }
+
 
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Notification />
+                    {/* <Notification /> */}
 
                     {/* <Text style={{ fontSize: 18, fontWeight: '700', color: '#5B5B5B' }}>Ubaid Arshad</Text> */}
                     <View style={{ marginHorizontal: 10, zIndex: 1 }}>
                         <DropDownComponent
                             options={logoutList}
                             onValueChange={handleValueChange}
-                            title={props.title}
+                            title={authState.value.name ? authState.value.name : ''}
                             imageSource={require('../assets/up_arrow_icon.png')}
                             container={styles.dropdownContainer}
                             dropdownButton={styles.dropdownButton}

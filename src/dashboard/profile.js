@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, FlatList, Animated, Platform, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, FlatList, Animated, Platform, TextInput, ActivityIndicator } from 'react-native';
 import { useFonts } from 'expo-font';
 import CircularProgressBar from '../../components/CircleProgress'
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,10 +10,10 @@ import Header from '../../components/Header';
 import DropDownComponent from '../../components/DropDown';
 import { Dimensions } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
-import { collection, getDocs, getFirestore } from 'firebase/firestore';
+import { collection, doc, getDocs, getFirestore, updateDoc } from 'firebase/firestore';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import app from '../config/firebase';
 import { getAuth } from 'firebase/auth';
-import { getDownloadURL, getStorage, ref, uploadBytes, uploadBytesResumable } from "firebase/storage";
 
 const driverOptionList = ['Inspection'];
 const assetOptionList = ['Inspection', 'Defects'];
@@ -22,7 +22,7 @@ const ProfilePage = (props) => {
 
   const db = getFirestore(app)
   const auth = getAuth()
-  const storage = getStorage(app);
+  const storage = getStorage(app)
 
   const [selectedPage, setSelectedPage] = useState('Inspection');
   const [dashboardHovered, setDashboardHovered] = useState(false)
@@ -37,50 +37,33 @@ const ProfilePage = (props) => {
   const { height, width } = Dimensions.get('window');
   const [textInputBorderColor, setTextInputBorderColor] = useState('')
   const [fileUri, setFileUri] = useState(null)
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [company, setCompany] = useState('')
   const [number, setNumber] = useState('')
-  const [workPhone, setWorkPhone] = useState('')
-  const [dob, setDob] = useState('')
-  const [role, setRole] = useState('')
+  const [designation, setDesignation] = useState('')
+  const [employeeNumber, setEmployeeNumber] = useState('')
   const [fileuploading, setFileuploading] = useState(0)
   const [uploadingStatus, setUploadingStatus] = useState(false)
-
-
+  const [loading, setLoading] = useState(true)
 
   const fetchData = async () => {
-    const querySnapshot = await getDocs(collection(db, 'DVIR'));
+    const querySnapshot = await getDocs(collection(db, 'AllowedUsers'));
     const dbData = []
     let i = 0
     querySnapshot.forEach(async (doc) => {
       if (auth.currentUser.email == doc.data().Email) {
-        setFirstName(doc.data().FirstName)
-        setLastName(doc.data().LastName)
+        setName(doc.data().Name)
         setEmail(doc.data().Email)
         setCompany(doc.data().Company)
         setNumber(doc.data().Number)
-        setWorkPhone(doc.data().WorkPhone)
-        setDob(doc.data().dob)
-        setRole(doc.data().Role)
+        setDesignation(doc.data().Designation)
+        setEmployeeNumber(doc.data()['Employee Number'])
+        setFileUri(doc.data().dp)
+        setLoading(false)
       }
-      await getDocs(collection(db, `DVIR/${doc.data().Email}/users`))
-        .then((newQuery) => {
-          newQuery.forEach((docs) => {
-            if (getAuth().currentUser.email == docs.data().Email) {
-              setFirstName(docs.data().FirstName)
-              setLastName(docs.data().LastName)
-              setEmail(docs.data().Email)
-              setCompany(docs.data().Company)
-              setNumber(docs.data().Number)
-              setWorkPhone(docs.data().WorkPhone)
-              setDob(docs.data().dob)
-              setRole(docs.data().Role)
-            }
-          })
-        })
     });
+    
   }
 
   useEffect(() => {
@@ -103,10 +86,12 @@ const ProfilePage = (props) => {
         type: 'image/*', // Change the MIME type to specify the type of files you want to allow
       });
       if (result.assets[0].uri) {
+        setLoading(true)
         uploadImage(result.assets[0].uri)
       }
     } catch (error) {
       console.log('Error picking document:', error);
+      setLoading(false)
     }
     setUploadingStatus(false)
   };
@@ -155,6 +140,7 @@ const ProfilePage = (props) => {
         }
       },
       (error) => {
+        setLoading(false)
         // A full list of error codes is available at
         // https://firebase.google.com/docs/storage/web/handle-errors
         switch (error.code) {
@@ -176,42 +162,42 @@ const ProfilePage = (props) => {
         // Upload completed successfully, now we can get the download URL
         getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
           // console.log('File available at', downloadURL)
+          if(downloadURL){
+            setFileUri(downloadURL)
+            updatedp(downloadURL)
+          }
           
-          setFileUri(downloadURL)
         });
       }
     );
   }
 
-
-  const [fontsLoaded] = useFonts({
-    'futura-extra-black': require('../../assets/fonts/Futura-Extra-Black-font.ttf'),
-  });
-
-  if (!fontsLoaded) {
-    return null;
+  const updatedp = async(downloadURL) => {
+    await updateDoc(doc(db, 'AllowedUsers', auth.currentUser.email), {
+      dp : downloadURL
+    })
+    setLoading(false)
   }
+
+const updateDb = async () => {
+  await updateDoc(doc(db, 'AllowedUsers', auth.currentUser.email), {
+    Name : name
+  })
+  setLoading(false)
+  props.profileHandle()
+}
 
 
   return (
-    <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
-      {/* <ScrollView style={{height:100}}> */}
-      <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, overflow: 'hidden', height: height }}>
-        <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
-        <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
-        <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
-        <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
-      </View>
-      <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
-
+    <Animated.View style={{ flex: 1, backgroundColor: '#f6f8f9'}}>
       <ScrollView style={{ height: 100 }}>
         <View style={{ flexDirection: 'row', marginLeft: 40, marginTop: 40, alignItems: 'center' }}>
-          <View style={{ backgroundColor: '#67E9DA', borderRadius: 15, }}>
-            <Image style={{ width: 30, height: 30, margin: 10 }}
+          <View style={{ backgroundColor: '#23d3d3', borderRadius: 15, }}>
+            <Image style={{width: 30, height: 30, margin: 7  }}
               tintColor='#FFFFFF'
               source={require('../../assets/dashboard_speed_icon.png')}></Image>
           </View>
-          <Text style={{ fontSize: 40, color: '#1E3D5C', fontWeight: '900', marginLeft: 10 }}>
+          <Text style={{  fontSize: 30, color: '#335a75', fontFamily: 'inter-extrablack', marginLeft: 10 }}>
             My Profile
           </Text>
         </View>
@@ -222,28 +208,17 @@ const ProfilePage = (props) => {
 
               <View style={{ flexDirection: 'column', }}>
                 <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 16, fontWeight: '500' }}>First Name*</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '500' }}>Name*</Text>
                   <TextInput
-                    style={[styles.input, textInputBorderColor == 'First Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                    style={[styles.input, textInputBorderColor == 'Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                     placeholderTextColor="#868383DC"
-                    value={firstName}
-                    // onChangeText={{}}
-                    onFocus={() => { setTextInputBorderColor('First Name') }}
+                    value={name}
+                    onChangeText={setName}
+                    onFocus={() => { setTextInputBorderColor('Name') }}
                     onBlur={() => { setTextInputBorderColor('') }}
                   />
                 </View>
 
-                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 16, fontWeight: '500' }}>Last Name*</Text>
-                  <TextInput
-                    style={[styles.input, textInputBorderColor == 'Last Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                    placeholderTextColor="#868383DC"
-                    value={lastName}
-                    // onChangeText={{}}
-                    onFocus={() => { setTextInputBorderColor('Last Name') }}
-                    onBlur={() => { setTextInputBorderColor('') }}
-                  />
-                </View>
 
                 <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
                   <Text style={{ fontSize: 16, fontWeight: '500' }}>Email</Text>
@@ -270,13 +245,13 @@ const ProfilePage = (props) => {
                 </View>
 
                 <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 16, fontWeight: '500' }}>Role</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '500' }}>Designation</Text>
                   <TextInput
-                    style={[styles.input, textInputBorderColor == 'Role' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                    style={[styles.input, textInputBorderColor == 'Designation' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                     placeholderTextColor="#868383DC"
-                    value={role}
-                    // onChangeText={{}}
-                    onFocus={() => { setTextInputBorderColor('Role') }}
+                    value={designation}
+                    // onChangeText={setDesignation}
+                    onFocus={() => { setTextInputBorderColor('Designation') }}
                     onBlur={() => { setTextInputBorderColor('') }}
                   />
                 </View>
@@ -287,7 +262,7 @@ const ProfilePage = (props) => {
                     style={[styles.input, textInputBorderColor == 'Mobile Phone' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                     placeholderTextColor="#868383DC"
                     value={number}
-                    // onChangeText={{}}
+                    // onChangeText={setNumber}
                     onFocus={() => { setTextInputBorderColor('Mobile Phone') }}
                     onBlur={() => { setTextInputBorderColor('') }}
                   />
@@ -301,12 +276,14 @@ const ProfilePage = (props) => {
                     {fileUri
                       ?
                       <TouchableOpacity onPress={()=>{
-                        setUploadingStatus(true)
+                        // setLoading(true)
                         pickDocument()}}>
                         <Image style={{ height: 200, width: 200, borderRadius: 5 }} source={{ uri: fileUri }} />
                       </TouchableOpacity>
                       :
-                      <TouchableOpacity style={{ height: 180, width: 180, borderRadius: 90, borderColor: '#cccccc', borderWidth: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }} onPress={pickDocument}>
+                      <TouchableOpacity style={{ height: 180, width: 180, borderRadius: 90, borderColor: '#cccccc', borderWidth: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }} onPress={()=>{
+                        // setLoading(true)
+                        pickDocument()}}>
 
                         <Image style={{ height: 20, width: 20 }}
                           source={require('../../assets/add_photo_icon.png')}
@@ -315,35 +292,21 @@ const ProfilePage = (props) => {
 
                       </TouchableOpacity>
                     }
-                    {uploadingStatus == true 
-                    ?<Text style={{ marginTop: 10, alignSelf: 'center' }}>Uploading: {fileuploading}%</Text> 
-                    : null}
-                   
                   </View>
                 </View>
 
 
-                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 16, fontWeight: '500' }}>Work Phone</Text>
-                  <TextInput
-                    style={[styles.input, textInputBorderColor == 'Work Phone' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                    placeholderTextColor="#868383DC"
-                    value={workPhone}
-                    // onChangeText={{}}
-                    onFocus={() => { setTextInputBorderColor('Work Phone') }}
-                    onBlur={() => { setTextInputBorderColor('') }}
-                  />
-                </View>
+
 
 
                 <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 16, fontWeight: '500' }}>Date of Birth</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '500' }}>Employee Number</Text>
                   <TextInput
-                    style={[styles.input, textInputBorderColor == 'Date of Birth' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                    style={[styles.input, textInputBorderColor == 'Employee Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                     placeholderTextColor="#868383DC"
-                    value={dob}
+                    value={employeeNumber}
                     // onChangeText={{}}
-                    onFocus={() => { setTextInputBorderColor('Date of Birth') }}
+                    onFocus={() => { setTextInputBorderColor('Employee Number') }}
                     onBlur={() => { setTextInputBorderColor('') }}
                   />
                 </View>
@@ -352,6 +315,67 @@ const ProfilePage = (props) => {
           </ScrollView>
         </View>
       </ScrollView>
+
+      <View style={{ flexDirection: 'row', width: '100%', backgroundColor: '#67E9DA', paddingVertical: 20, justifyContent: 'flex-end', paddingRight: 80 }}>
+        <View>
+          <AppBtn
+            title="Close"
+            btnStyle={[{
+              width: '100%',
+              height: 30,
+              backgroundColor: '#FFFFFF',
+              borderRadius: 5,
+              alignItems: 'center',
+              justifyContent: 'center',
+              shadowOffset: { width: 2, height: 2 },
+              shadowOpacity: 0.9,
+              shadowRadius: 5,
+              elevation: 0,
+              shadowColor: '#575757',
+              marginHorizontal: 10
+            }, { minWidth: 70 }]}
+            btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+            onPress={() => {
+              // setCreateNewAssetModalVisible(false)
+              // clearAll()
+              props.profileHandle()
+            }} />
+        </View>
+        <View style={{ marginLeft: 20 }}>
+          <AppBtn
+            title="Save"
+            btnStyle={[{
+              width: '100%',
+              height: 30,
+              backgroundColor: '#FFFFFF',
+              borderRadius: 5,
+              alignItems: 'center',
+              justifyContent: 'center',
+              shadowOffset: { width: 2, height: 2 },
+              shadowOpacity: 0.9,
+              shadowRadius: 5,
+              elevation: 0,
+              shadowColor: '#575757',
+              marginHorizontal: 10
+            }, { minWidth: 70 }]}
+            btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+            onPress={() => {
+       
+                setLoading(true)
+                // handleAddNewAsset()
+                updateDb()
+              
+
+            }} />
+        </View>
+      </View>
+
+      {loading ? 
+         <View style={styles.activityIndicatorStyle}>
+         <ActivityIndicator color="#23d3d3" size="large" />
+     </View>
+     :
+     null}
     </Animated.View>
 
   );
@@ -362,6 +386,20 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
   },
+  activityIndicatorStyle: {
+    flex: 1,
+    position: 'absolute',
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    marginTop: 'auto',
+    marginBottom: 'auto',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    backgroundColor: '#555555DD',
+},
   title: {
     fontSize: 48,
     fontWeight: 'bold',
@@ -495,7 +533,7 @@ const styles = StyleSheet.create({
   contentCardStyle: {
     backgroundColor: '#FFFFFF',
     padding: 30,
-    borderRadius: 20,
+    borderRadius: 10,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.25,

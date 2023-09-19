@@ -1,16 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useContext } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, ActivityIndicator, Image, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import AppBtn from '../../components/Button';
 import { Link, useRouter } from 'expo-router';
 import app from '../config/firebase';
-import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, sendPasswordResetEmail } from 'firebase/auth';
 import AlertModal from '../../components/AlertModal';
+import { collection, getDocs, getFirestore, query, where } from 'firebase/firestore';
+import { AuthContext } from '../store/context/AuthContext';
 
 
 
 const ForgetPasswordPage = (props) => {
+
+    const db = getFirestore(app)
+    const auth = getAuth(app)
+
     const [email, setEmail] = useState('');
     const [isEmailValid, setIsEmailValid] = useState(false)
     const [emailTextInputBorderColor, setEmailTextInputBorderColor] = useState(false)
@@ -20,16 +26,34 @@ const ForgetPasswordPage = (props) => {
     const [error, setError] = useState(null)
     const [alertStatus, setAlertStatus] = useState('')
     const [loading, setLoading] = useState(false)
+    const [signupHovered, setSignupHovered] = useState(false)
+
+    const { state: authState, setAuth } = useContext(AuthContext)
 
     const router = useRouter()
 
     useEffect(() => {
-        // Animated.timing(fadeAnim, {
-        //     toValue: 1,
-        //     duration: 1000,
-        //     useNativeDriver: false,
-        // }).start();
-    }, []);
+
+        if (!authState.value.email) {
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    if (user.emailVerified) {
+                        await getDocs(query(collection(db, "AllowedUsers"), where('Email', '==', auth.currentUser.email)))
+                            .then((snapshot) => {
+                                console.log(snapshot)
+                                snapshot.forEach((doc) => {
+                                    setAuth(doc.data().Number, doc.data().Name, doc.data().Designation, doc.data()['Employee Number'], doc.data().dp)
+                                    // router.replace('/dashboardLogin')
+                                    router.replace('/dashboardLogin')
+                                })
+                            })
+                    }
+
+                }
+            });
+        }
+
+    }, [])
 
     useEffect(() => {
 
@@ -54,7 +78,7 @@ const ForgetPasswordPage = (props) => {
                 .catch((error) => {
                     const errorCode = error.code;
                     const errorMessage = error.message;
-                    setError(errorCode.replace('auth/',""))
+                    setError(errorCode.replace('auth/', ""))
                     setAlertStatus('failed')
                     setAlertIsVisible(true)
                     setLoading(false)
@@ -70,7 +94,7 @@ const ForgetPasswordPage = (props) => {
     const CustomActivityIndicator = () => {
         return (
             <View style={styles.activityIndicatorStyle}>
-                <ActivityIndicator color="#FFA600" size="large" />
+                <ActivityIndicator color="#23d3d3" size="large" />
             </View>
         );
     };
@@ -81,7 +105,60 @@ const ForgetPasswordPage = (props) => {
 
     return (
         <>
-            <View style={[styles.container]}>
+            <ScrollView style={{}}
+                contentContainerStyle={{ alignItems: 'center', justifyContent: 'center', flex: 1, width: '100%' }}>
+                <View style={{ flexDirection: 'row', width: '100%', height: '100%', margin: 10 }}>
+                    <View style={{ flex: 1, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Image style={{ height: 55, width: 55 }} source={require('../../assets/applogo.png')}></Image>
+                            <Text style={{ fontFamily: 'inter-extrablack', fontSize: 40, color: '#000000', marginLeft: 10 }}>D V I R</Text>
+                        </View>
+                        <Text style={{ fontFamily: 'inter-bold', fontSize: 22, marginVertical: 30, color: 'grey' }}>Password reset</Text>
+                        <TextInput
+                            style={[styles.input, emailTextInputBorderColor && styles.withBorderInputContainer]}
+                            placeholder="Email"
+                            placeholderTextColor="#868383DC"
+                            value={email}
+                            onChangeText={(val) => { setEmail(val) }}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            onFocus={() => { setEmailTextInputBorderColor(true) }}
+                            onBlur={() => { setEmailTextInputBorderColor(false) }}
+                        />
+                        <View style={{ width: 350, marginBottom: 10 }}>
+                            {!isEmailValid ? <Text style={{ color: 'red', paddingLeft: 5, fontSize: 10, alignSelf: 'flex-start' }}>Enter Valid Email</Text> : null}
+                        </View>
+
+                        <View style={{ width: 350 }}>
+                            <AppBtn
+                                title="RESET"
+                                btnStyle={styles.btn}
+                                btnTextStyle={styles.btnText}
+                                onPress={() => {
+                                    setLoading(true)
+                                    handleForgetPasswod()
+                                }}
+                            />
+
+                        </View>
+
+
+                        <View style={{ marginTop: 10 }}
+                            onMouseEnter={() => setSignupHovered(true)}
+                            onMouseLeave={() => setSignupHovered(false)}>
+                            <TouchableOpacity
+                                onPress={() => router.replace('/')}
+                            >
+                                <Text style={[styles.signupText, signupHovered && styles.signupTextHover]}
+                                    activeOpacity={0.7}>Cancel</Text></TouchableOpacity>
+                        </View>
+                    </View>
+                    <View style={{ flex: 1, backgroundColor: '#eaedf5', alignItems: 'center', justifyContent: 'center' }}>
+                        <Image style={{ height: 350 }} source={require('../../assets/webapp_mockup_forgetpassword.png')} resizeMode='contain'></Image>
+                    </View>
+                </View>
+            </ScrollView>
+            {/* <View style={[styles.container]}>
                 <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
                 <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
                 <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
@@ -122,7 +199,7 @@ const ForgetPasswordPage = (props) => {
                         </View>
                     </View>
                 </BlurView>
-            </View>
+            </View> */}
             {alertStatus == 'successful'
                 ?
                 <AlertModal
@@ -148,8 +225,8 @@ const ForgetPasswordPage = (props) => {
                         txtStyle={{ fontFamily: 'futura', fontSize: 20, marginLeft: 10 }}
                         tintColor='red'>
                     </AlertModal>
-                        :
-                        null}
+                    :
+                    null}
 
             {loading ? CustomActivityIndicator() : null}
         </>
@@ -206,25 +283,25 @@ const styles = StyleSheet.create({
         color: '#1E4163',
         fontFamily: 'futura-extra-black',
     },
-    input: {
+    inputContainer: {
         width: '100%',
-        height: 50,
+        marginTop: 10,
+
+    },
+    input: {
+        width: 350,
+        height: 60,
         backgroundColor: '#fff',
-        borderRadius: 10,
-        paddingHorizontal: 10,
+        paddingHorizontal: 20,
         borderWidth: 1,
         borderColor: '#cccccc',
-        outlineStyle: 'none'
+        outlineStyle: 'none',
+        marginBottom: 10
     },
     withBorderInputContainer: {
-        borderColor: '#558BC1',
-        shadowColor: '#558BC1',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 1,
-        shadowRadius: 10,
-        elevation: 0,
+        borderColor: '#008dff',
     },
-    resetButton: {
+    loginButton: {
         width: '100%',
         height: 50,
         backgroundColor: '#336699',
@@ -233,40 +310,44 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginTop: 10,
     },
-    resetButtonHover: {
-        backgroundColor: '#558BC1',
+    loginButtonHover: {
+        backgroundColor: '#001E3D',
     },
     buttonText: {
         color: '#fff',
         fontSize: 16,
         fontWeight: 'bold',
     },
+    forgetPasswordButton: {
+        marginTop: 10,
+        alignSelf: 'flex-end',
+    },
     forgetPasswordText: {
-        color: '#333',
+        color: '#008dff',
         fontSize: 14,
-        fontWeight: 'bold',
+        fontFamily: 'inter-regular',
     },
     forgetPasswordTextHover: {
-        color: '#558BC1',
-        fontSize: 14,
-        fontWeight: 'bold',
+        color: '#000000',
         textDecorationLine: 'underline',
     },
-    loginText: {
-        color: '#333',
-        fontSize: 14,
-        fontWeight: 'bold',
+    signupContainer: {
+        marginTop: 10,
+        flexDirection: 'row',
     },
-    loginTextHover: {
-        color: '#558BC1',
+    signupText: {
+        color: '#008dff',
         fontSize: 14,
-        fontWeight: 'bold',
+        fontFamily: 'inter-regular',
+    },
+    signupTextHover: {
+        color: '#000000',
         textDecorationLine: 'underline',
     },
     btn: {
         width: '100%',
-        height: 50,
-        backgroundColor: '#336699',
+        height: 60,
+        backgroundColor: '#0078ff',
         borderRadius: 5,
         alignItems: 'center',
         justifyContent: 'center',
@@ -291,7 +372,7 @@ const styles = StyleSheet.create({
         top: 0,
         bottom: 0,
         justifyContent: 'center',
-        backgroundColor: '#555555DD'
+        backgroundColor: '#788C9A95'
     },
     centeredView: {
         flex: 1,

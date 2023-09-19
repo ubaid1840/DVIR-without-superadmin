@@ -1,5 +1,4 @@
 import { useLocalSearchParams, router } from "expo-router"
-import SuperAdminPage from "../SuperAdmin/superAdmin"
 import { getAuth, onAuthStateChanged } from "firebase/auth"
 import { useState } from "react"
 

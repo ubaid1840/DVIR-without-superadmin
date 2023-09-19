@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, Linking, ActivityIndicator } from 'react-native';
+import { useState, useEffect, useContext } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, Linking, ActivityIndicator, Image, ScrollView, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useFonts } from 'expo-font';
@@ -9,62 +9,15 @@ import { Link, router } from 'expo-router';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
 import app from '../config/firebase';
 import AlertModal from '../../components/AlertModal';
-import { collection, getDocs, getFirestore } from 'firebase/firestore';
+import { collection, getDocs, getFirestore, query, where } from 'firebase/firestore';
+import { AuthContext } from '../store/context/AuthContext';
+import Head from 'expo-router/head';
 
-const loginList = [{
-    id: '1',
-    firstName: 'John',
-    lastName: 'Doe',
-    company: 'Example Inc.',
-    email: 'john.doe@gmail.com',
-    password: 'password123',
-    designation: 'Owner',
-    Access: 'Full'
-},
-{
-    id: '2',
-    firstName: 'Jane',
-    lastName: 'Smith',
-    company: 'Sample Co.',
-    email: 'jane.smith@gmail.com',
-    password: 'myp@ssword',
-    designation: 'Manager',
-    Access: 'Full'
-},
-{
-    id: '3',
-    firstName: 'Michael',
-    lastName: 'Johnson',
-    company: 'Tech Solutions',
-    email: 'michael.johnson@gmail.com',
-    password: 'pass1234',
-    designation: 'Driver',
-    Access: 'Limited'
-},
-{
-    id: '4',
-    firstName: 'Emily',
-    lastName: 'Brown',
-    company: 'Design Studio',
-    email: 'emily.brown@gmail.com',
-    password: 'securePwd',
-    designation: 'Mechanic',
-    Access: 'Limited'
-},
-{
-    id: '5',
-    firstName: 'David',
-    lastName: 'Lee',
-    company: 'Marketing Hub',
-    email: 'david.lee@gmail.com',
-    password: 'hello123',
-    designation: 'Mechanic',
-    Access: 'Full'
-}]
 
 const LoginPage = (props) => {
 
-
+    const db = getFirestore(app)
+    const auth = getAuth(app);
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -80,6 +33,8 @@ const LoginPage = (props) => {
     const [alertStatus, setAlertStatus] = useState('')
     const [loading, setLoading] = useState(false)
 
+    const { state: authState, setAuth } = useContext(AuthContext)
+
 
 
     useEffect(() => {
@@ -87,127 +42,61 @@ const LoginPage = (props) => {
         setIsPasswordValid(password.length > 7 && password.length < 19 ? true : false)
     }, [email, password])
 
-
-    // const isFocused = useIsFocused()
-
     useEffect(() => {
 
-        const auth = getAuth()
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // User is signed in, see docs for a list of available properties
-                // https://firebase.google.com/docs/reference/js/auth.user
-                const uid = user.uid;
-                console.log('user signed in login page')
-                handleLoginAlreadySignIn({ email: user.auth.currentUser.email })
-                // ...
-            }
-        });
+        if (!authState.value.email) {
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    if (user.emailVerified) {
+                        await getDocs(query(collection(db, "AllowedUsers"), where('Email', '==', auth.currentUser.email)))
+                            .then((snapshot) => {
+                                console.log(snapshot)
+                                snapshot.forEach((doc) => {
+                                    setAuth(doc.data().Number, doc.data().Name, doc.data().Designation, doc.data()['Employee Number'], doc.data().dp)
+                                    // router.replace('/dashboardLogin')
+                                    router.replace('/dashboardLogin')
+                                })
+                            })
+                    }
 
-        setEmail("")
-        setPassword("")
-        // Animated.timing(fadeAnim, {
-        //     toValue: 1,
-        //     duration: 1000,
-        //     useNativeDriver: false
-        // }).start();
-        // return () => {
-        //     fadeAnim.setValue(0);
-        // }
+                }
+            });
+        }
+
     }, [])
 
-    const handleLoginAlreadySignIn = (props) => {
-
-        if (props.email === 'superadmin@gmail.com') {
-            router.replace({ pathname: 'superAdminDashboard', params: { id: 'superAdminLogin' } })
-        }
-        else {
-             router.replace('/dashboardLogin')
-        }
-
-    }
 
     const handleLogin = async () => {
 
-        let i = 0
-        const db = getFirestore(app)
-        const auth = getAuth(app);
-        if (email == 'superadmin@gmail.com') {
-            signInWithEmailAndPassword(auth, email, password)
-                .then((userCredential) => {
-                    const user = userCredential.user;
-                    setLoading(false)
-                    router.replace({ pathname: 'superAdminDashboard', params: { id: 'superAdminLogin' } })
-                })
-                .catch((error) => {
-                    const errorCode = error.code;
-                    const errorMessage = error.message;
-                    setError(errorCode.replace('auth/', ""))
-                    setAlertStatus('failed')
+
+        signInWithEmailAndPassword(auth, email, password)
+            .then((userCredential) => {
+                const user = userCredential.user;
+                setLoading(false)
+                if (user.emailVerified == true) {
+                    router.replace('/dashboardLogin')
+                }
+                else if (user.emailVerified == false) {
+                    setAlertStatus('not verified')
                     setAlertIsVisible(true)
                     setLoading(false)
-                });
-        }
-
-        else {
-            await getDocs(collection(db, 'AllowedUsers'))
-                .then(async (snapshot) => {
-                    snapshot.forEach(async (doc) => {
-                        if (email == doc.data().Email) {
-                            i++
-                            signInWithEmailAndPassword(auth, email, password)
-                                .then((userCredential) => {
-                                    const user = userCredential.user;
-                                    setLoading(false)
-                                    if (user.emailVerified == true) {
-                                        router.replace({ pathname: 'dashboardLogin' })
-                                    }
-                                    else if (user.emailVerified == false) {
-                                        setAlertStatus('not verified')
-                                        setAlertIsVisible(true)
-                                        setLoading(false)
-                                    }
-                                })
-                                .catch((error) => {
-                                    const errorCode = error.code;
-                                    const errorMessage = error.message;
-                                    setError(errorCode.replace('auth/', ""))
-                                    setAlertStatus('failed')
-                                    setAlertIsVisible(true)
-                                    setLoading(false)
-                                });
-                        }
-                    })
-                })
-            if (i == 0) {
-                setAlertStatus('Not Allowed')
+                }
+            })
+            .catch((error) => {
+                const errorCode = error.code;
+                const errorMessage = error.message;
+                setError(errorCode.replace('auth/', ""))
+                setAlertStatus('failed')
                 setAlertIsVisible(true)
                 setLoading(false)
-            }
-        }
+            });
 
     };
-
-    const handleForgetPasswod = () => {
-        // props.navigation.navigate('ForgetPassword');
-    };
-
-    const handleSignup = () => {
-        // props.navigation.navigate('Signup');
-    };
-
-    const [fontsLoaded] = useFonts({
-        'futura-extra-black': require('../../assets/fonts/Futura-Extra-Black-font.ttf'),
-    });
-
-    if (!fontsLoaded) {
-        return null;
-    }
 
     const CustomActivityIndicator = () => {
         return (
             <View style={styles.activityIndicatorStyle}>
-                <ActivityIndicator color="#FFA600" size="large" />
+                <ActivityIndicator color="#23d3d3" size="large" />
             </View>
         );
     };
@@ -219,7 +108,98 @@ const LoginPage = (props) => {
 
     return (
         <>
-            <View style={[styles.container]}>
+            <Head>
+                <title>DVIR</title>
+                <meta name="description" content="Driver vehicle inspection report application" />
+            </Head>
+            <ScrollView style={{}}
+                contentContainerStyle={{ alignItems: 'center', justifyContent: 'center', flex: 1, width: '100%' }}>
+                <View style={{ flexDirection: 'row', width: '100%', height: '100%', margin: 10 }}>
+                    <View style={{ flex: 1, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Image style={{ height: 55, width: 55 }} source={require('../../assets/applogo.png')}></Image>
+                            <Text style={{ fontFamily: 'inter-extrablack', fontSize: 40, color: '#000000', marginLeft: 10 }}>D V I R</Text>
+                        </View>
+                        <Text style={{ fontFamily: 'inter-bold', fontSize: 22, marginVertical: 30, color: 'grey' }}>Log in to your DVIR account</Text>
+                        <TextInput
+                            style={[styles.input, emailTextInputBorderColor && styles.withBorderInputContainer]}
+                            placeholder="Email"
+                            placeholderTextColor="#868383DC"
+                            value={email}
+                            onChangeText={(val) => { setEmail(val) }}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            onFocus={() => { setEmailTextInputBorderColor(true) }}
+                            onBlur={() => { setEmailTextInputBorderColor(false) }}
+                        />
+                        <View style={{ width: 350, marginBottom: 10 }}>
+                            {!isEmailValid ? <Text style={{ color: 'red', paddingLeft: 5, fontSize: 10, alignSelf: 'flex-start' }}>Enter Valid Email</Text> : null}
+                        </View>
+                        <TextInput
+                            style={[styles.input, passwordTextInputBorderColor && styles.withBorderInputContainer]}
+                            placeholder="Password"
+                            placeholderTextColor="#868383DC"
+                            value={password}
+                            onChangeText={(val) => { setPassword(val) }}
+                            secureTextEntry
+                            onFocus={() => { setPasswordTextInputBorderColor(true) }}
+                            onBlur={() => { setPasswordTextInputBorderColor(false) }}
+                        // onSubmitEditing={handleLogin}
+                        />
+                        <View style={{ width: 350, marginBottom: 10 }}>
+                            {!isPasswordValid ? <Text style={{ color: 'red', paddingTop: 5, paddingLeft: 5, fontSize: 10, alignSelf: 'flex-start' }}>Password length should have 6 to 18 characters</Text> : null}
+                        </View>
+                        <View style={{ width: 350 }}>
+                            <AppBtn
+                                title="LOG IN"
+                                btnStyle={styles.btn}
+                                btnTextStyle={styles.btnText}
+                                onPress={() => {
+                                    setLoading(true)
+                                    handleLogin()
+                                }}
+                            >
+                            </AppBtn>
+                        </View>
+                        <View style={{ width: 350 }}>
+                            <View style={styles.forgetPasswordButton}>
+                                <View
+                                    onMouseEnter={() => setForgetPasswordHovered(true)}
+                                    onMouseLeave={() => setForgetPasswordHovered(false)}>
+                                    <TouchableOpacity
+                                        onPress={() => router.replace('/forgetpassword')}
+                                    >
+                                        <Text
+                                            style={[styles.forgetPasswordText, forgetPasswordHovered && styles.forgetPasswordTextHover]}
+                                            activeOpacity={0.7}>Forget Password?
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+
+                        <View style={styles.signupContainer}>
+                            <Text style={{ fontFamily: 'inter-regular', fontSize: 13, color: 'grey' }}>Don't have an account? </Text>
+                            <View
+                                onMouseEnter={() => setSignupHovered(true)}
+                                onMouseLeave={() => setSignupHovered(false)}>
+                                <TouchableOpacity
+                                    onPress={() => router.replace('/signup')}
+                                >
+                                    <Text style={[styles.signupText, signupHovered && styles.signupTextHover]}
+                                        activeOpacity={0.7}>Sign Up</Text></TouchableOpacity>
+                            </View>
+
+
+                        </View>
+                    </View>
+                    <View style={{ flex: 1, backgroundColor: '#eaedf5', alignItems: 'center', justifyContent: 'center' }}>
+                        <Image style={{ height: 350 }} source={require('../../assets/webapp_mockup_login.png')} resizeMode='contain'></Image>
+                    </View>
+                </View>
+            </ScrollView>
+
+            {/* <View style={[styles.container]}>
                 <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
                 <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
                 <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
@@ -298,7 +278,7 @@ const LoginPage = (props) => {
 
                     </View>
                 </BlurView>
-            </View>
+            </View> */}
 
             {alertStatus == 'successful'
                 ?
@@ -415,22 +395,17 @@ const styles = StyleSheet.create({
 
     },
     input: {
-        width: '100%',
-        height: 50,
+        width: 350,
+        height: 60,
         backgroundColor: '#fff',
-        borderRadius: 10,
-        paddingHorizontal: 10,
+        paddingHorizontal: 20,
         borderWidth: 1,
         borderColor: '#cccccc',
-        outlineStyle: 'none'
+        outlineStyle: 'none',
+        marginBottom: 10
     },
     withBorderInputContainer: {
-        borderColor: '#558BC1',
-        shadowColor: '#558BC1',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 1,
-        shadowRadius: 10,
-        elevation: 0,
+        borderColor: '#008dff',
     },
     loginButton: {
         width: '100%',
@@ -442,7 +417,7 @@ const styles = StyleSheet.create({
         marginTop: 10,
     },
     loginButtonHover: {
-        backgroundColor: '#558BC1',
+        backgroundColor: '#001E3D',
     },
     buttonText: {
         color: '#fff',
@@ -454,14 +429,12 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-end',
     },
     forgetPasswordText: {
-        color: '#333',
+        color: '#008dff',
         fontSize: 14,
-        fontWeight: 'bold',
+        fontFamily: 'inter-regular',
     },
     forgetPasswordTextHover: {
-        color: '#558BC1',
-        fontSize: 14,
-        fontWeight: 'bold',
+        color: '#000000',
         textDecorationLine: 'underline',
     },
     signupContainer: {
@@ -469,18 +442,18 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
     },
     signupText: {
+        color: '#008dff',
         fontSize: 14,
-        fontWeight: 'bold',
-        color: '#333',
+        fontFamily: 'inter-regular',
     },
     signupTextHover: {
-        color: '#558BC1',
+        color: '#000000',
         textDecorationLine: 'underline',
     },
     btn: {
         width: '100%',
-        height: 50,
-        backgroundColor: '#336699',
+        height: 60,
+        backgroundColor: '#0078ff',
         borderRadius: 5,
         alignItems: 'center',
         justifyContent: 'center',
@@ -505,7 +478,7 @@ const styles = StyleSheet.create({
         top: 0,
         bottom: 0,
         justifyContent: 'center',
-        backgroundColor: '#555555DD'
+        backgroundColor: '#788C9A95'
     },
     centeredView: {
         flex: 1,

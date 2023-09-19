@@ -130,14 +130,14 @@ const DropDownComponent = (props) => {
                         <Text style={[selectedValueStyle]}>
                             {selectedValue}
                         </Text>
-                        <Text style={{ fontSize: 18, fontWeight: '700', color: '#5B5B5B' }}>{title}</Text>
+                        <Text style={{ fontSize: 15, fontFamily:'inter-semibold', color: '#5B5B5B' }}>{title}</Text>
                         <Animated.Image
                             style={{ marginLeft: 10, width: 20, height: 20, transform: [{ rotate: rotateInterpolation }], alignSelf: 'center' }}
                             source={imageSource}
                         ></Animated.Image>
                     </TouchableOpacity>
                     {showOptions && (
-                        <ScrollView style={[optionsContainer, { right: 20, maxHeight: 140 }]}>
+                        <ScrollView style={[optionsContainer, { right: 20, maxHeight: 150 }]}>
 
                             {options.map((item, index) => (
                                 item == 'Logout'

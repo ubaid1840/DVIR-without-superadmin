@@ -1,23 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated, Dimensions } from 'react-native';
+import React, { useState, useEffect, useContext } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated, Dimensions, ActivityIndicator, Modal } from 'react-native';
 import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import AppBtn from '../../components/Button';
 import Form from '../../components/Form';
 import { CSVLink } from 'react-csv';
+import { collection, doc, getDocs, getFirestore, orderBy, query, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import app from '../config/firebase';
+import { PeopleContext } from '../store/context/PeopleContext';
+import DropDownComponent from '../../components/DropDown';
+import DatePicker, { getFormatedDate } from 'react-native-modern-datepicker';
+import AlertModal from '../../components/AlertModal';
+import { AssetContext } from '../store/context/AssetContext';
+import { InHouseWOContext } from '../store/context/InHouseWOContext';
+import { subscribeToCollectionInHouseWorkOrder } from './inHouseWorkOrderFirebaseService';
 
 
 const columns = [
-    'Status',
+    'status',
     'Asset Name',
-    'Last Inspection',
-    'Next Inspection',
-    'Asset License Plate',
-    'Asset VIN',
+    'lastInspection',
+    'nextInspection',
+    'Plate Number',
     'Asset Type',
-    'Asset Make',
-    'Asset Model',
+    'Make',
+    'Model',
+    'Action'
 ];
 
 const entriesData = [
@@ -78,7 +87,9 @@ const entriesData = [
     },
 ];
 
-const DueDaysInspectionPage = () => {
+const DueDaysInspectionPage = (props) => {
+
+    const db = getFirestore(app)
 
     const [selectedPage, setSelectedPage] = useState('Dashboard');
     const [dashboardHovered, setDashboardHovered] = useState(false)
@@ -88,9 +99,25 @@ const DueDaysInspectionPage = () => {
     const [assetsHovered, setAssetsHovered] = useState(false)
     const [usersHovered, setUsersHovered] = useState(false)
     const [inspectionCalendarSelect, setInspectionCalendarSelect] = useState('All')
-    const [totalInspections, setTotalInspections] = useState(19)
-    const [totalDefects, setTotalDefects] = useState(7)
+    const [totalInspections, setTotalInspections] = useState(0)
+    const [totalDefects, setTotalDefects] = useState(0)
     const { width, height } = Dimensions.get('window')
+    const [assets, setAssets] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [openCustomWO, setOpenCustomWO] = useState(false)
+    const [selectedAsset, setSelectedAsset] = useState('')
+    const [workOrderVariable, setWorkOrderVariable] = useState([]);
+    const [assignedMechanic, setAssignedMechanic] = useState('')
+    const [selectedDate, setSelectedDate] = useState(`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`);
+    const [openCalendar, setOpenCalendar] = useState(false)
+    const [addTask, setAddTask] = useState('')
+    const [alertIsVisible, setAlertIsVisible] = useState(false)
+    const [alertStatus, setAlertStatus] = useState('')
+
+    const { state: peopleState } = useContext(PeopleContext)
+    const { state: assetState, setAssetData } = useContext(AssetContext)
+    const { state: inHouseWOState, setInHouseWO } = useContext(InHouseWOContext)
+
 
 
     useEffect(() => {
@@ -106,50 +133,198 @@ const DueDaysInspectionPage = () => {
         }
     }, [selectedPage])
 
+    useEffect(() => {
+
+        fetchData()
+        const unsubscribe = subscribeToCollectionInHouseWorkOrder('myCollection', (newData) => {
+
+            console.log(newData)
+        });
+
+        return () => {
+            unsubscribe();
+        };
+    }, []);
+
+    function calculateInspectionStatus(objects) {
+        const currentDate = new Date().getTime();
+        let inspectionsDueIn7Days = 0;
+        let inspectionsAlreadyDue = 0;
+
+        for (const obj of objects) {
+            const lastInspectionDate = new Date(obj.lastInspection.seconds * 1000);
+            const nextInspectionDate = new Date(lastInspectionDate);
+            nextInspectionDate.setDate(nextInspectionDate.getDate() + 45);
+
+            const timeDifferenceInMilliseconds = nextInspectionDate.getTime() - currentDate;
+            const timeDifferenceInDays = timeDifferenceInMilliseconds / (1000 * 60 * 60 * 24);
+
+            if (timeDifferenceInMilliseconds < 0) {
+                inspectionsAlreadyDue++;
+            }
+
+            else if (timeDifferenceInDays <= 7) {
+                inspectionsDueIn7Days++;
+            }
+
+
+        }
+
+        const totalInspections = objects.length;
+        const totalInspectionsDue = inspectionsDueIn7Days + inspectionsAlreadyDue;
+
+        return {
+            inspectionsDueIn7Days,
+            inspectionsAlreadyDue,
+            totalInspectionsDue,
+            totalInspections,
+        };
+    }
+
+
+    const fetchData = async () => {
+
+        let temp = []
+        await getDocs(collection(db, 'Assets'), orderBy('TimeStamp', 'desc'))
+            .then((snapshot) => {
+                snapshot.forEach((doc) => {
+                    temp.push(doc.data())
+                })
+            })
+
+        if (temp.length != 0) {
+            const updatedArray = temp.map((object) => {
+                // Calculate the next inspection date by adding 45 days to the last inspection date
+                console.log(object)
+                const nextInspectionDate = new Date(object.lastInspection.seconds * 1000);
+                
+                nextInspectionDate.setDate(nextInspectionDate.getDate() + 45);
+                const nextUpdated = nextInspectionDate.getTime()
+                return {
+                    ...object,
+                    nextInspection: nextUpdated,
+                };
+            });
+
+            const inspectionStatus = calculateInspectionStatus(updatedArray);
+
+            setTotalInspections(inspectionStatus.inspectionsDueIn7Days)
+            setTotalDefects(inspectionStatus.inspectionsAlreadyDue);
+
+
+            // console.log(updatedArray);
+            setAssets(updatedArray)
+            setAssetData(updatedArray)
+            setLoading(false)
+        }
+
+
+
+        // new Date(selectedDefect.dateCreated.seconds * 1000).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' })
+    }
 
     const handleDownloadReportBtn = () => {
 
     }
 
-    const [fontsLoaded] = useFonts({
-        'futura-extra-black': require('../../assets/fonts/Futura-Extra-Black-font.ttf'),
-    });
+    const handleInHouseFormValue = (value) => {
 
-    if (!fontsLoaded) {
-        return null;
+        // console.log(value)
+
+        const myWO = inHouseWOState.value.data.filter((item) => item.assetNumber == value['Asset Number'])
+        // console.log(myWO)
+        props.onDashboardInHouseValueChange(myWO[0])
+        
     }
 
-    let driver = [{
-        name: "Ubaid",
-        company: "DVIR",
-        inspection: 5
-    },
-    {
-        name: "John",
-        company: "DVIR",
-        inspection: 2
-    },
-    {
-        name: "Doe",
-        company: "DVIR",
-        inspection: 0
-    }]
 
-    const asset = [{
-        name: "Truck1",
-        company: "DVIR",
-        inspection: 4,
-        defects: 1
-    },
-    {
-        name: "Truck2",
-        company: "DVIR",
-        inspection: 2,
-        defects: 3
-    }]
+    const handleFormValue = async (value) => {
 
-    const handleFormValue = (value) => {
-        console.log(value)
+        setSelectedAsset(value)
+        setOpenCustomWO(true)
+        // try {
+
+        //     let temp = []
+        //     await getDocs(query(collection(db, 'InHouseWorkOrders'), orderBy('TimeStamp', 'desc')))
+        //       .then((snapshot) => {
+        //         snapshot.forEach((docs) => {
+        //           temp.push(docs.data())
+        //         })
+        //       })
+        //     if (temp.length == 0) {
+
+        //       setDoc(doc(db, 'InHouseWorkOrders', '1'), {
+        //         id: 1,
+        //         'assetName': value['Asset Name'],
+        //         'assetNumber': value['Asset Number'].toString(),
+        //         'driverEmployeeNumber': '',
+        //         'driverName': '',
+        //         'defectID': '',
+        //         'defectedItems': [],
+        //         'assignedMechanic': assignedMechanic,
+        //         'dueDate': selectedDate,
+        //         'status': 'Pending',
+        //         'assetMake': value.Make,
+        //         'assetModel': value.Model,
+        //         'assetYear': value.Year,
+        //         'mileage': '',
+        //         'comments': [],
+        //         'completionDate': 0,
+        //         'severity': 'Undefined',
+        //         'priority': 'Undefined',
+        //         'TimeStamp': serverTimestamp()
+        //       })
+
+        //       setLoading(false)
+        //       setAlertStatus('successful')
+        //       setAlertIsVisible(true)
+        //     }
+        //     else {
+
+        //       setDoc(doc(db, 'WorkOrders', (temp[0].id + 1).toString()), {
+        //         id: (temp[0].id + 1),
+        //         'assetName': myAsset[0]['Asset Name'],
+        //         'assetNumber': myAsset[0]['Asset Number'].toString(),
+        //         'driverEmployeeNumber': '',
+        //         'driverName': '',
+        //         'defectID': '',
+        //         'defectedItems': [...workOrderVariable.map(item => ({
+        //           'title': item.title,
+        //           'TimeStamp': item.timeStamp,
+        //         }))],
+        //         'assignedMechanic': assignedMechanic,
+        //         'dueDate': selectedDate,
+        //         'status': 'Pending',
+        //         'assetMake': myAsset[0].Make,
+        //         'assetModel': myAsset[0].Model,
+        //         'assetYear': myAsset[0].Year,
+        //         'mileage': '',
+        //         'comments': [],
+        //         'completionDate': 0,
+        //         'severity': 'Undefined',
+        //         'priority': 'Undefined',
+        //         'TimeStamp': serverTimestamp()
+        //       })
+
+        //       setLoading(false)
+        //       setAlertStatus('successful')
+        //       setAlertIsVisible(true)
+        //     }
+
+        //     await updateDoc(doc(db, 'Assets', value['Asset Number'].toString()), {
+        //         'inhouseInspection' : 'issued'
+        //     })
+
+
+
+        //     fetchData()
+        // } catch (error) {
+        //     console.log(error)
+        // }
+    }
+
+    const inHouseValueChange = () => {
+        props.onDashbordInHouseInspection(value)
     }
 
     let newStatus = ''
@@ -181,36 +356,75 @@ const DueDaysInspectionPage = () => {
 
     // console.log(entriesDataCSV);
 
+    const handleDateChange = (dateString) => {
+
+        const [year, month, day] = dateString.split("/");
+        const dateObject = new Date(`${year}-${month}-${day}`);
+        const milliseconds = dateObject.getTime();
+        setSelectedDate(milliseconds)
+        setOpenCalendar(false)
+    };
+
+    const closeAlert = () => {
+        setAlertIsVisible(false)
+    }
+
+    const handleSaveWorkOrder = async () => {
+        try {      
+                setDoc(doc(db, 'InHouseWorkOrders', selectedAsset['Asset Number'].toString()), {
+                    id: 1,
+                    'assetName': selectedAsset['Asset Name'],
+                    'assetNumber': selectedAsset['Asset Number'].toString(),
+                    'driverEmployeeNumber': '',
+                    'driverName': '',
+                    'defectID': '',
+                    'defectedItems': [],
+                    'assignedMechanic': assignedMechanic,
+                    'dueDate': selectedDate,
+                    'status': 'Pending',
+                    'assetMake': selectedAsset.Make,
+                    'assetModel': selectedAsset.Model,
+                    'assetYear': selectedAsset.Year,
+                    'mileage': '',
+                    'comments': [],
+                    'completionDate': 0,
+                    'severity': 'Undefined',
+                    'priority': 'Undefined',
+                    'TimeStamp': serverTimestamp()
+                })
+
+                await updateDoc(doc(db, 'Assets', selectedAsset['Asset Number'].toString()), {
+                    'inhouseInspection': 'issued'
+                })
+
+                fetchData()
+                setAlertStatus('successful')
+                setAlertIsVisible(true)
+            
+        } catch (error) {
+            console.log(error)
+            setLoading(false)
+            setAlertStatus('failed')
+            setAlertIsVisible(true)
+        }
+
+    }
+
 
     return (
 
-        <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
-
-            <View style={{
-                position: 'absolute',
-                top: 0,
-                bottom: 0,
-                left: 0,
-                right: 0,
-                overflow: 'hidden',
-                height: height
-            }}>
-                <LinearGradient colors={['#AE276D', '#B10E62']} style={styles.gradient3} />
-                <LinearGradient colors={['#2980b9', '#3498db']} style={styles.gradient1} />
-                <LinearGradient colors={['#678AAC', '#9b59b6']} style={styles.gradient2} />
-                <LinearGradient colors={['#EFEAD2', '#FAE2BB']} style={styles.gradient4} />
-            </View>
-            <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
+        <View style={{ flex: 1, backgroundColor: '#f6f8f9' }}>
+            {/* <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} /> */}
             <ScrollView style={{ height: 100 }}>
                 <View style={{ flexDirection: 'row', marginLeft: 40, marginTop: 40, marginRight: 40, justifyContent: 'space-between' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <View style={{ backgroundColor: '#67E9DA', borderRadius: 15, }}>
-                            <Image style={{ width: 30, height: 30, margin: 10 }}
+                        <View style={{ backgroundColor: '#23d3d3', borderRadius: 15, }}>
+                            <Image style={{ width: 30, height: 30, margin: 7 }}
                                 tintColor='#FFFFFF'
                                 source={require('../../assets/inspection_icon.png')}></Image>
                         </View>
-                        <Text style={{ fontSize: 40, color: '#1E3D5C', fontWeight: '900', marginLeft: 10 }}>
-                            45 Days Inspection
+                        <Text style={{ fontSize: 30, color: '#335a75', fontFamily: 'inter-extrablack', marginLeft: 10 }}>
+                            In house Inspection
                         </Text>
                     </View>
                     <View style={{ flexDirection: 'row' }}>
@@ -222,7 +436,7 @@ const DueDaysInspectionPage = () => {
                     </View>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingTop: 30, paddingLeft: 40, paddingRight: 40 }}>
-                    <CSVLink style={{ textDecorationLine: 'none' }} data={entriesDataCSV} headers={columns} filename={"45_days_due_report.csv"}>
+                    {/* <CSVLink style={{ textDecorationLine: 'none' }} data={assets} headers={columns} filename={"45_days_due_report.csv"}>
                         <View >
                             <AppBtn
                                 title="Download Report"
@@ -230,23 +444,220 @@ const DueDaysInspectionPage = () => {
                                 btnTextStyle={styles.btnText}
                                 onPress={handleDownloadReportBtn}></AppBtn>
                         </View>
-                    </CSVLink>
+                    </CSVLink> */}
                 </View>
                 <View style={styles.contentCardStyle}>
-                    <Form
-                        columns={columns}
-                        entriesData={entriesDataCSV}
-                        titleForm="45 days Inspection"
-                        onValueChange={handleFormValue}
-                        row={styles.formRowStyle}
-                        cell={styles.formCellStyle}
-                        entryText={styles.formEntryTextStyle}
-                        columnHeaderRow={styles.formColumnHeaderRowStyle}
-                        columnHeaderCell={styles.formColumnHeaderCellStyle}
-                        columnHeaderText={styles.formColumnHeaderTextStyle} />
+                    {!loading ?
+                        <Form
+                            columns={columns}
+                            entriesData={assets}
+                            titleForm="45 days Inspection"
+                            onValueChange={(val) => {
+                                // setLoading(true)
+                                handleFormValue(val)
+                            }}
+                            inHouseValueChange={(val) => { handleInHouseFormValue(val) }}
+                            row={styles.formRowStyle}
+                            cell={styles.formCellStyle}
+                            entryText={styles.formEntryTextStyle}
+                            columnHeaderRow={styles.formColumnHeaderRowStyle}
+                            columnHeaderCell={styles.formColumnHeaderCellStyle}
+                            columnHeaderText={styles.formColumnHeaderTextStyle} />
+                        : null}
+
                 </View>
             </ScrollView>
-        </Animated.View>
+
+            <Modal
+                animationType="fade"
+                visible={openCustomWO}
+                transparent={true}>
+
+                <ScrollView style={{ backgroundColor: '#555555A0' }}
+                    contentContainerStyle={{ alignItems: 'center', justifyContent: 'center', flex: 1, width: '100%' }}>
+                    {/* <Blu intensity={40} tint="dark" style={StyleSheet.absoluteFill} /> */}
+                    <View style={{ width: '60%', backgroundColor: '#ffffff' }}>
+
+                        <View style={{ backgroundColor: 'white', width: '100%', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderBottomWidth: 1, borderBottomColor: '#C9C9C9', flexDirection: 'row' }}>
+                            <View>
+                                <Text style={{ fontFamily: 'inter-bold', color: 'grey', fontSize: 18 }}>Work Order</Text>
+                            </View>
+                            <TouchableOpacity onPress={() => setOpenCustomWO(false)}>
+                                <Image style={{ height: 25, width: 25 }} source={require('../../assets/cross_icon.png')}></Image>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={{ width: '100%', paddingHorizontal: 20, paddingBottom: 20, zIndex: 1 }}>
+
+
+                            {selectedAsset != ''
+                                ?
+                                <>
+                                    <View style={{ marginTop: 40, width: '100%', borderWidth: 1, borderColor: '#cccccc', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 15, }}>
+                                        <View style={{ marginVertical: 15, width: '40%' }}>
+                                            <Text style={{ fontFamily: 'inter-regular', fontSize: 14 }}>Due Date</Text>
+                                            <TouchableOpacity style={{ padding: 10, borderWidth: 1, borderColor: '#cccccc', marginTop: 10, borderRadius: 5, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }} onPress={() => setOpenCalendar(true)}>
+                                                <Text style={{ fontFamily: 'inter-regular', fontSize: 14 }}>{!selectedDate ? '' : new Date(selectedDate).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }).toString()}</Text>
+                                                <Image style={{ height: 25, width: 24 }} tintColor='#cccccc' source={require('../../assets/calendar_icon.png')} ></Image>
+                                            </TouchableOpacity>
+                                            {openCalendar
+                                                ?
+                                                <View style={{ height: 300, width: 300, position: 'absolute', bottom: 80 }}>
+                                                    <DatePicker
+                                                        options={{
+                                                            backgroundColor: '#FFFFFF',
+                                                            textHeaderColor: '#539097',
+                                                            textDefaultColor: '#000000',
+                                                            selectedTextColor: '#fff',
+                                                            mainColor: '#539097',
+                                                            textSecondaryColor: '#000000',
+                                                            borderColor: 'rgba(122, 146, 165, 0.1)',
+                                                        }}
+                                                        current={`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`}
+                                                        selected={`${new Date(selectedDate).getFullYear()}-${String(new Date(selectedDate).getMonth() + 1).padStart(2, '0')}-${String(new Date(selectedDate).getDate()).padStart(2, '0')}`}
+                                                        mode="calendar"
+                                                        minuteInterval={30}
+                                                        style={{ borderRadius: 10 }}
+                                                        onDateChange={handleDateChange}
+                                                    />
+                                                </View>
+                                                :
+                                                null}
+
+                                        </View>
+
+                                        <View style={{ marginVertical: 15, width: '40%', }}>
+                                            <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>Assignee</Text>
+                                            <View style={{ marginTop: 10, }}>
+                                                <DropDownComponent
+                                                    options={peopleState.value.data.map(item => item.Name)}
+                                                    onValueChange={(val) => {
+                                                        setAssignedMechanic(val)
+                                                    }}
+                                                    // title="Ubaid Arshad"
+                                                    selectedValue={assignedMechanic}
+                                                    imageSource={require('../../assets/up_arrow_icon.png')}
+                                                    container={styles.dropdownContainer}
+                                                    dropdownButton={styles.dropdownButton}
+                                                    selectedValueStyle={styles.dropdownSelectedValueStyle}
+                                                    optionsContainer={styles.dropdownOptionsContainer}
+                                                    option={styles.dropdownOption}
+                                                    hoveredOption={styles.dropdownHoveredOption}
+                                                    optionText={styles.dropdownOptionText}
+                                                    hoveredOptionText={styles.dropdownHoveredOptionText}
+                                                    dropdownButtonSelect={styles.dropdownButtonSelect}
+                                                    dropdownStyle={styles.dropdown}
+                                                />
+                                            </View>
+                                        </View>
+                                    </View>
+                                </>
+                                :
+                                null}
+                        </View>
+                        <View style={{ backgroundColor: '#ffffff', width: '100%', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderTopWidth: 1, borderTopColor: '#C9C9C9', flexDirection: 'row', zIndex: 0 }}>
+                            <View>
+                                <Text style={{ fontFamily: 'inter-medium', color: '#000000', fontSize: 14 }}>In House Inspection Work Order</Text>
+                            </View>
+                            <View style={{ flexDirection: 'row' }}>
+                                <View>
+                                    <AppBtn
+                                        title="Close"
+                                        btnStyle={[{
+                                            width: '100%',
+                                            height: 30,
+                                            backgroundColor: '#FFFFFF',
+                                            borderRadius: 5,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            shadowOffset: { width: 1, height: 1 },
+                                            shadowOpacity: 0.6,
+                                            shadowRadius: 3,
+                                            elevation: 0,
+                                            shadowColor: '#575757',
+
+                                        }, { minWidth: 70 }]}
+                                        btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                                        onPress={() => {
+                                            setOpenCustomWO(false)
+                                            // clearAll()
+                                        }} />
+                                </View>
+                                {assignedMechanic!= ''
+                                ?
+                                <View style={{ marginLeft: 20 }}>
+                                <AppBtn
+                                    title="Issue"
+                                    btnStyle={[{
+                                        width: '100%',
+                                        height: 30,
+                                        backgroundColor: '#FFFFFF',
+                                        borderRadius: 5,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        shadowOffset: { width: 1, height: 1 },
+                                        shadowOpacity: 0.6,
+                                        shadowRadius: 3,
+                                        elevation: 0,
+                                        shadowColor: '#575757',
+
+                                    }, { minWidth: 70 }]}
+                                    btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                                    onPress={() => {
+                                        setLoading(true)
+                                        setOpenCustomWO(false)
+                                        handleSaveWorkOrder()
+                                    }} />
+                            </View>
+                            :
+                            null}
+                               
+                            </View>
+                        </View>
+                    </View>
+                </ScrollView>
+
+            </Modal>
+
+            {alertStatus == 'successful'
+                ?
+
+                <AlertModal
+                    centeredViewStyle={styles.centeredView}
+                    modalViewStyle={styles.modalView}
+                    isVisible={alertIsVisible}
+                    onClose={closeAlert}
+                    img={require('../../assets/successful_icon.png')}
+                    txt='Successful'
+                    txtStyle={{ fontWeight: '500', fontSize: 20, marginLeft: 10 }}
+                    tintColor='green'>
+
+                </AlertModal>
+                :
+                alertStatus == 'failed'
+                    ?
+                    <AlertModal
+                        centeredViewStyle={styles.centeredView}
+                        modalViewStyle={styles.modalView}
+                        isVisible={alertIsVisible}
+                        onClose={closeAlert}
+                        img={require('../../assets/failed_icon.png')}
+                        txt='Failed'
+                        txtStyle={{ fontFamily: 'futura', fontSize: 20, marginLeft: 10 }}
+                        tintColor='red'>
+                    </AlertModal>
+                    : null
+            }
+
+
+            {loading ?
+                <View style={styles.activityIndicatorStyle}>
+                    <ActivityIndicator color="#23d3d3" size="large" />
+                </View>
+                : null}
+
+
+        </View>
 
     );
 }
@@ -255,6 +666,35 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         flexDirection: 'row',
+    },
+    centeredView: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        // backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalView: {
+        backgroundColor: 'white',
+        borderRadius: 8,
+        padding: 20,
+        alignItems: 'center',
+        elevation: 5,
+        maxHeight: '98%',
+        maxWidth: '95%'
+    },
+    activityIndicatorStyle: {
+        flex: 1,
+        position: 'absolute',
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        marginTop: 'auto',
+        marginBottom: 'auto',
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        backgroundColor: '#555555DD',
     },
     title: {
         fontSize: 48,
@@ -389,14 +829,17 @@ const styles = StyleSheet.create({
     contentCardStyle: {
         backgroundColor: '#FFFFFF',
         padding: 30,
-        borderRadius: 20,
+        borderRadius: 5,
         shadowColor: '#000000',
         shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.25,
+        shadowOpacity: 0.15,
         shadowRadius: 10,
         elevation: 5,
         margin: 40,
-        flex: 1
+        // flex:1,
+        width: 'auto',
+        height: 800,
+        // overflow: 'scroll'
     },
     btn: {
         width: '100%',
@@ -425,21 +868,26 @@ const styles = StyleSheet.create({
         shadowOpacity: 1,
         shadowRadius: 4,
         elevation: 0,
-        borderRadius: 20,
-        marginLeft: 5,
-        marginRight: 5
+        // borderRadius: 20,
+        // marginLeft: 5,
+        // marginRight: 5,
+        width: 'auto',
+        justifyContent: 'space-between'
     },
     formCellStyle: {
-        flex: 1,
         justifyContent: 'center',
-        alignItems: 'center',
-        height: 40,
+        flex: 1,
+        minHeight: 50,
+        maxWidth:150
+
+        // paddingLeft: 20
     },
     formEntryTextStyle: {
-        fontWeight: 'normal',
-        paddingHorizontal: 0,
-        // paddingVertical: 5,
-        fontSize: 12
+        fontFamily: 'inter-regular',
+        paddingHorizontal: 20,
+        paddingVertical: 5,
+        fontSize: 13,
+        color: '#000000'
     },
 
     formColumnHeaderRowStyle: {
@@ -448,19 +896,102 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#ccc',
         paddingVertical: 10,
-        alignItems: 'center',
+        width: 'auto',
+        justifyContent: 'space-between',
+        // alignItems: 'center',
     },
     formColumnHeaderCellStyle: {
+        // width: 160,
+        // paddingLeft:20
         flex: 1,
+        maxWidth:150
 
     },
     formColumnHeaderTextStyle: {
-        fontWeight: 'bold',
+        fontFamily: 'inter-bold',
         marginBottom: 5,
-        textAlign: 'center',
+        // textAlign: 'center',
         paddingHorizontal: 20,
         color: '#5A5A5A',
-        fontSize: 14
+        fontSize: 13
+    },
+    dropdownContainer: {
+        position: 'relative',
+
+
+    },
+    dropdownButton: {
+        padding: 12,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 8,
+        minWidth: 150,
+    },
+    dropdown: {
+        // Custom styles for the dropdown container
+        // For example:
+        // padding: 12,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 8,
+        minWidth: 150,
+        backgroundColor: '#FFFFFF',
+        height: 40,
+        paddingLeft: 12,
+        paddingRight: 12,
+        alignItems: 'center',
+
+
+    },
+    dropdownSelectedValueStyle: {
+        fontSize: 16,
+    },
+    dropdownOptionsContainer: {
+        position: 'absolute',
+        top: '100%',
+        right: 0,
+        left: 0,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 8,
+        backgroundColor: '#fff',
+        marginTop: 4,
+        ...Platform.select({
+            web: {
+                boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)', // Add boxShadow for web
+            },
+        }),
+
+    },
+    dropdownOption: {
+        padding: 12,
+        borderBottomWidth: 1,
+        borderColor: '#ccc',
+    },
+    dropdownHoveredOption: {
+        ...(Platform.OS === 'web' && {
+            backgroundColor: '#67E9DA',
+            cursor: 'pointer',
+            transitionDuration: '0.2s',
+        }),
+    },
+    dropdownOptionText: {
+        fontSize: 16,
+    },
+    dropdownHoveredOptionText: {
+        ...(Platform.OS === 'web' && {
+            color: '#FFFFFF',
+        }),
+    },
+    dropdownButtonSelect: {
+        borderColor: '#558BC1',
+        shadowColor: '#558BC1',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 1,
+        shadowRadius: 10,
+        elevation: 0,
+
+        backgroundColor: '#FFFFFF'
     },
 });
 
