@@ -29,9 +29,9 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
     const [openAddItems, setOpenAddItems] = useState(false)
     const [workOrderAddItemVariable, setWorkOrderAddItemVariable] = useState([])
     const [partsSubTotal, setPartsSubTotal] = useState('0')
-    const [partsTax, setPartsTax] = useState('')
+    const [partsTax, setPartsTax] = useState(value.partsTax)
     const [laborSubTotal, setLaborSubTotal] = useState('0')
-    const [laborTax, setLaborTax] = useState('')
+    const [laborTax, setLaborTax] = useState(value.laborTax)
     const [netTotal, setNetTotal] = useState('0.00')
     const [completionMileage, setCompletionMileage] = useState('')
     const flatlistRef = useRef()
@@ -44,6 +44,17 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
     const [totalItems, setTotalItems] = useState()
     const { state: assetState } = useContext(AssetContext)
     const { state: authState, setAuth } = useContext(AuthContext)
+    const { state: peopleState } = useContext(PeopleContext)
+
+    let debounceTimeout;
+
+    useEffect(() => {
+        return () => {
+            // Clear the debounce timeout when component is unmounted
+            clearTimeout(debounceTimeout);
+        };
+    }, []);
+
 
     useEffect(() => {
 
@@ -56,17 +67,14 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
     useEffect(() => {
 
         const unsubscribe = subscribeToCollectionWorkOrder('myCollection', (newData) => {
-            // console.log(newData)
-            // console.log(selectedDefect)
 
             const updatedSelectedWorkOrder = newData.find((workOrder) => workOrder.id === selectedWorkOrder.id);
 
             if (updatedSelectedWorkOrder) {
-                // console.log('found')
+
                 setSelectedWorkOrder(updatedSelectedWorkOrder); // Update the selectedDefect state with the latest data
             }
-            // setDefectedArray(newData)
-            // setDefect(newData)
+
             setLoading(false)
         });
 
@@ -79,10 +87,8 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
     useEffect(() => {
 
         const temp = [...selectedWorkOrder.defectedItems]
-
         if (temp.length != 0) {
             if (temp[0].hasOwnProperty('description')) {
-                console.log(temp)
 
                 let totalPartsSum = 0;
                 let totalLaborSum = 0
@@ -91,11 +97,9 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                     totalPartsSum += (parseFloat(item.parts) || 0) * (parseFloat(item.qty) || 0);
                     totalLaborSum += parseFloat(item.labor) || 0;
                 }
-
                 setNetTotal((totalPartsSum + totalLaborSum).toFixed(2).toString())
                 setPartsSubTotal(totalPartsSum.toString())
                 setLaborSubTotal(totalLaborSum.toString())
-
                 setWorkOrderVariable(temp)
             }
             else {
@@ -106,7 +110,7 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                     labor: 0,
                     qty: 0,
                     parts: 0,
-                    total: 0
+                    total: 0,
                 }));
                 setWorkOrderVariable(dataWithAdditionalProperties)
             }
@@ -116,7 +120,37 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
 
     }, [])
 
+    const replaceMechanicIdsWithNames = (workOrders, mechanics) => {
+        const workOrdersWithNames = workOrders.map(order => {
+            const mechanic = mechanics.find(m => m['Employee Number'].toString() === order.assignedMechanic);
+            const mechanicName = mechanic ? mechanic.Name : 'Unknown Mechanic';
+            console.log(mechanicName)
+            return { ...order, 'assignedMechanic': mechanicName };
+        });
+        return workOrdersWithNames;
+    };
+
+    const updateWorkOrdersWithAssetInfo = (workorders, assets) => {
+        return workorders.map(order => {
+            const asset = assets.find(asset => asset['Asset Number'].toString() === order.assetNumber);
+            if (asset) {
+                return {
+                    ...order,
+                    assetName: asset['Asset Name'],
+                    assetMake: asset.Make,
+                    assetModel: asset.Model,
+                    assetYear: asset.Year
+                };
+            } else {
+                return order; // Asset not found for this work order
+            }
+        });
+    };
+
+
+
     const handleUpdateTotal = async (index, total, labor, qty, parts) => {
+        console.log(labor, qty, parts, total)
         const updatedItems = [...workOrderVariable];
         updatedItems[index].total = total;
         updatedItems[index].qty = qty;
@@ -139,24 +173,20 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
             'defectedItems': [...updatedItems]
         })
         setWorkOrderVariable(updatedItems);
-
-        setLoading(false)
-
     };
 
     const handleUpdateDescription = async (index, description) => {
         const updatedItems = [...workOrderVariable];
         updatedItems[index].description = description;
-        console.log(updatedItems)
         setWorkOrderVariable(updatedItems);
         await updateDoc(doc(db, 'WorkOrders', selectedWorkOrder.id.toString()), {
             'defectedItems': [...updatedItems]
         })
-        setLoading(false)
     }
 
     const handleUpdateItems = async (index, item) => {
-        let totalPartsSum = 0;
+
+        let totalPartsSum = 0
         let totalLaborSum = 0
 
         for (const items of item) {
@@ -166,8 +196,8 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
 
         setNetTotal((totalPartsSum + totalLaborSum).toFixed(2).toString())
         setPartsSubTotal(totalPartsSum.toString())
-        setLaborSubTotal(totalLaborSum.toString())  
-        
+        setLaborSubTotal(totalLaborSum.toString())
+
         setWorkOrderVariable(item)
         await updateDoc(doc(db, 'WorkOrders', selectedWorkOrder.id.toString()), {
             'defectedItems': [...item]
@@ -189,11 +219,34 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
         const laborRef = useRef()
         const descriptionRef = useRef()
 
-        const calculateTotal = () => {
-            const labor = parseFloat(laborRef.current.value) || 0;
-            const qty = parseFloat(qtyRef.current.value) || 0;
-            const parts = parseFloat(partsRef.current.value) || 0;
-            return labor + (qty * parts);
+        const calculateTotal = (val) => {
+            return new Promise((resolve, reject) => {
+                if (val.item == 'labor') {
+                    const labor = parseFloat(val.val) || 0;
+                    const qty = parseFloat(qtyValue) || 0;
+                    const parts = parseFloat(partsValue) || 0;
+                    const total = labor + (qty * parts)
+                    resolve(total)
+                }
+
+                else if (val.item == 'parts') {
+                    const labor = parseFloat(laborValue) || 0;
+                    const qty = parseFloat(qtyValue) || 0;
+                    const parts = parseFloat(val.val) || 0;
+                    const total = labor + (qty * parts)
+                    resolve(total)
+                }
+                else if (val.item == 'qty') {
+                    const labor = parseFloat(laborValue) || 0;
+                    const qty = parseFloat(val.val) || 0;
+                    const parts = parseFloat(partsValue) || 0;
+                    const total = labor + (qty * parts)
+                    resolve(total)
+                }
+
+
+            })
+
         };
 
         const handleUpdateTotal = () => {
@@ -204,11 +257,48 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
             }
         }
 
-        const handleSaveDescription = () => {
-            onUpdateDescription(index, descriptionRef.current.value)
+        const handleSaveDescription = (text) => {
+            setDescriptionValue(text)
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(() => {
+                setLoading(true)
+                onUpdateDescription(index, text)
+            }, 2000);
+
         }
 
+        const handleLaborValue = (text) => {
+            setLaborValue(text)
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(async () => {
+                const newTotal = await calculateTotal({ item: 'labor', 'val': text });
+                if (newTotal !== parseFloat(item.total)) {
+                    onUpdateTotal(index, newTotal.toString(), text, qtyValue, partsValue);
+                }
+            }, 2000);
+        }
 
+        const handlePartsValue = (text) => {
+            setPartsValue(text)
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(async () => {
+                const newTotal = await calculateTotal({ item: 'parts', 'val': text });
+                if (newTotal !== parseFloat(item.total)) {
+                    onUpdateTotal(index, newTotal.toString(), laborValue, qtyValue, text);
+                }
+            }, 2000);
+        }
+
+        const handleQtyValue = (text) => {
+            setQtyValue(text)
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(async () => {
+                const newTotal = await calculateTotal({ item: 'qty', 'val': text });
+                if (newTotal !== parseFloat(item.total)) {
+                    onUpdateTotal(index, newTotal.toString(), laborValue, text, partsValue);
+                }
+            }, 2000);
+        }
 
 
         const handleDeleteWorkOrderItem = (index) => {
@@ -226,18 +316,17 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                 <View style={{ minWidth: 150 }}>
                     <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>{item.priority}</Text>
                 </View >
-                <View style={{ minWidth: 200, paddingRight: 5 }}>
+                <View style={{ width: 200, paddingRight: 5 }}>
                     <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>{item.title}</Text>
                 </View >
 
                 <TextInput style={[styles.input, { width: 300 }]}
                     ref={descriptionRef}
                     value={descriptionValue}
-                    onChangeText={setDescriptionValue}
-                    onSubmitEditing={() => {
-                        setLoading(true)
-                        handleSaveDescription()
-                    }}
+                    onChangeText={handleSaveDescription}
+                // onSubmitEditing={() => {
+                //     handleSaveDescription()
+                // }}
                 />
 
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 10 }}>
@@ -245,12 +334,10 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                     <TextInput style={[styles.input, { width: 100, }]}
                         ref={laborRef}
                         value={laborValue}
-                        onChangeText={setLaborValue}
+                        onChangeText={(val) => handleLaborValue(val.replace(/[^0-9]/g, ''))}
                         placeholder="0"
                         placeholderTextColor="#868383DC"
-                        onSubmitEditing={() => {
-                            handleUpdateTotal()
-                        }} />
+                    />
 
                 </View>
 
@@ -259,11 +346,9 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                     ref={qtyRef}
                     placeholder="0"
                     value={qtyValue}
-                    onChangeText={setQtyValue}
+                    onChangeText={(val) => handleQtyValue(val.replace(/[^0-9]/g, ''))}
                     placeholderTextColor="#868383DC"
-                    onSubmitEditing={() => {
-                        handleUpdateTotal()
-                    }} />
+                />
 
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 10 }}>
                     <Text style={{ fontFamily: 'inter-medium', fontSize: 14 }}>$</Text>
@@ -271,14 +356,12 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                         ref={partsRef}
                         placeholder="0"
                         value={partsValue}
-                        onChangeText={setPartsValue}
+                        onChangeText={(val) => handlePartsValue(val.replace(/[^0-9]/g, ''))}
                         placeholderTextColor="#868383DC"
-                        onSubmitEditing={() => {
-                            handleUpdateTotal()
-                        }} />
+                    />
                 </View>
 
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 10 }}>
                         <Text style={{ fontFamily: 'inter-medium', fontSize: 14 }}>$</Text>
                         <TextInput style={[styles.input, { width: 100 }]}
@@ -289,7 +372,8 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                     </View>
                     <TouchableOpacity style={{ marginLeft: 5, marginRight: 15 }} onPress={() => {
                         setLoading(true)
-                        handleDeleteWorkOrderItem(index)}}>
+                        handleDeleteWorkOrderItem(index)
+                    }}>
                         <Image style={{ height: 25, width: 25 }} source={require('../../assets/delete_icon.png')} tintColor="#4D4D4D"></Image>
                     </TouchableOpacity>
                 </View >
@@ -334,14 +418,14 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                 <View style={{ minWidth: 100 }}>
                     <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>#{index + 1}</Text>
                 </View>
-                <View style={{ minWidth: 250 }}>
+                <View style={{ flex: 1 }}>
                     <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>{item.title}</Text>
                 </View >
                 <View style={{ minWidth: 250, flexDirection: 'row', alignItems: 'center' }}>
                     <Image style={{ height: 25, width: 25 }} tintColor="#cccccc" source={require('../../assets/calendar_icon.png')}></Image>
                     <Text style={{ fontFamily: 'inter-regular', fontSize: 14, marginLeft: 10 }}>{(new Date().toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }).toString())}</Text>
                 </View>
-                <TouchableOpacity style={{ paddingVertical: 4, paddingHorizontal: 15, borderWidth: 1, borderColor: '#cccccc', borderRadius: 4, position: 'absolute', top: 10, bottom: 10, right: 15 }} onPress={() => handleDeleteWorkOrderItem(index)}>
+                <TouchableOpacity style={{ height: 40, width: 60, borderWidth: 1, borderColor: '#cccccc', borderRadius: 4, alignItems: 'center', justifyContent: 'center ' }} onPress={() => handleDeleteWorkOrderItem(index)}>
                     <Image style={{ height: 25, width: 25 }} source={require('../../assets/delete_icon.png')} tintColor="#4D4D4D"></Image>
                 </TouchableOpacity>
             </View>
@@ -411,6 +495,29 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
         })
     }
 
+    const handlePartsTax = async (text) => {
+        setPartsTax(text)
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(async () => {
+            await updateDoc(doc(db, 'WorkOrders', selectedWorkOrder.id.toString()), {
+                'partsTax': text,
+            })
+        }, 2000);
+
+
+    }
+
+    const handleLaborTax = async (text) => {
+        setLaborTax(text)
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(async () => {
+            await updateDoc(doc(db, 'WorkOrders', selectedWorkOrder.id.toString()), {
+                'laborTax': text
+            })
+        }, 2000)
+
+    }
+
 
     if (selectedWorkOrder.length != 0) {
         return (
@@ -444,14 +551,14 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                                 </View>
                                 <View style={styles.subViewStyle}>
                                     <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Status:</Text>
-                                    <View style={{flexDirection:'row', alignItems:'center'}}>
-                                    <Text style={{}}>{selectedWorkOrder.status}</Text>
-                                    {selectedWorkOrder.status == 'Completed'
-                                    ?
-                                <Image style={{height:20, width:20, marginLeft:10}} tintColor='green' source={require('../../assets/completed_icon.png')}></Image>
-                                : null}
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <Text style={{}}>{selectedWorkOrder.status}</Text>
+                                        {selectedWorkOrder.status == 'Completed'
+                                            ?
+                                            <Image style={{ height: 20, width: 20, marginLeft: 10 }} tintColor='green' source={require('../../assets/completed_icon.png')}></Image>
+                                            : null}
                                     </View>
-                                    
+
                                 </View>
                                 <View style={styles.subViewStyle}>
                                     <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Due Date:</Text>
@@ -459,7 +566,7 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                                 </View>
                                 <View style={styles.subViewStyle}>
                                     <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Assignee:</Text>
-                                    <Text style={{}}>{selectedWorkOrder.assignedMechanic}</Text>
+                                    <Text style={{}}>{peopleState.value.data.find(mechanic => mechanic["Employee Number"].toString() === selectedWorkOrder.assignedMechanic)?.Name || 'n/a'}</Text>
                                 </View>
                                 <View style={styles.subViewStyle}>
                                     <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Items:</Text>
@@ -474,11 +581,11 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
 
                                 <View style={styles.subViewStyle}>
                                     <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Asset Name:</Text>
-                                    <Text style={{}}>{selectedWorkOrder.assetName}</Text>
+                                    <Text style={{}}>{assetState.value.data.find(asset => asset["Asset Number"].toString() === selectedWorkOrder.assetNumber)?.['Asset Name'] || 'n/a'}</Text>
                                 </View>
                                 <View style={styles.subViewStyle}>
                                     <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Make, Model, Year:</Text>
-                                    <Text style={{}}>{`${selectedWorkOrder.assetMake}, ${selectedWorkOrder.assetModel}, ${selectedWorkOrder.assetYear}`}</Text>
+                                    <Text style={{}}>{`${assetState.value.data.find(asset => asset["Asset Number"].toString() === selectedWorkOrder.assetNumber)?.Make || 'n/a'}, ${assetState.value.data.find(asset => asset["Asset Number"].toString() === selectedWorkOrder.assetNumber)?.Model || 'n/a'}, ${assetState.value.data.find(asset => asset["Asset Number"].toString() === selectedWorkOrder.assetNumber)?.Year || 'n/a'}`}</Text>
                                 </View>
                                 <View style={styles.subViewStyle}>
                                     <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>License Plate:</Text>
@@ -509,7 +616,8 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                             </View>
 
                             <View style={{ width: '100%', borderColor: '#6B6B6B', paddingHorizontal: 25 }}>
-                                <ScrollView horizontal>
+                                <ScrollView horizontal
+                                >
                                     <View style={{ flexDirection: 'column' }}>
                                         <View style={{ flexDirection: 'row', marginVertical: 15, }}>
                                             <View style={{ width: 70 }}>
@@ -545,8 +653,8 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                                                     item={item}
                                                     index={index}
                                                     onUpdateTotal={(idx, total, labor, qty, parts) => handleUpdateTotal(idx, total, labor, qty, parts)}
-                                                    onUpdateDescription={(idx, description) => handleUpdateDescription(idx, description)} 
-                                                    onUpdateTotalItems={(idx, item) => handleUpdateItems(idx, item)}/>
+                                                    onUpdateDescription={(idx, description) => handleUpdateDescription(idx, description)}
+                                                    onUpdateTotalItems={(idx, item) => handleUpdateItems(idx, item)} />
                                             )
                                         })}
                                     </View>
@@ -584,12 +692,24 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                                             }
                                         }}
                                         renderItem={({ item, index }) => {
-                                            return (
-                                                <View key={index} style={{ width: '100%', marginVertical: 10, paddingHorizontal: 20, alignItems: item.sendBy == authState.value.name ? 'flex-start' : 'flex-end' }}>
-                                                    <Text style={{ fontFamily: 'inter-regular', fontSize: 12 }}>{item.sendBy}</Text>
-                                                    <Text style={{ fontFamily: 'inter-regular', fontSize: 12 }}>{item.msg}</Text>
-                                                </View>
-                                            )
+                                            if (item.sendBy == authState.value.name) {
+                                                return (
+                                                    <View key={index} style={{ width: '70%', marginVertical: 10, paddingHorizontal: 20, alignItems: 'flex-start', alignSelf: 'flex-start' }}>
+                                                        <Text style={{ fontFamily: 'inter-semibold', fontSize: 13 }}>{item.sendBy}</Text>
+                                                        <Text style={{ fontFamily: 'inter-regular', fontSize: 12, marginVertical: 5, color: '#AAAAAA' }}>{new Date(item.timeStamp).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }) + " " + new Date(item.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</Text>
+                                                        <Text style={{ fontFamily: 'inter-regular', fontSize: 13 }}>{item.msg}</Text>
+                                                    </View>
+                                                )
+                                            }
+                                            else {
+                                                return (
+                                                    <View key={index} style={{ width: '70%', marginVertical: 10, paddingHorizontal: 20, alignItems: 'flex-end', alignSelf: 'flex-end' }}>
+                                                        <Text style={{ fontFamily: 'inter-semibold', fontSize: 13 }}>{item.sendBy}</Text>
+                                                        <Text style={{ fontFamily: 'inter-regular', fontSize: 12, marginVertical: 5, color: '#AAAAAA' }}>{new Date(item.timeStamp).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }) + " " + new Date(item.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</Text>
+                                                        <Text style={{ fontFamily: 'inter-regular', fontSize: 13 }}>{item.msg}</Text>
+                                                    </View>
+                                                )
+                                            }
                                         }} />
                                 }
 
@@ -633,15 +753,16 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
 
                                     <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginVertical: 10, alignItems: 'center' }}>
                                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Parts Tax:</Text>
+                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Parts Tax: %</Text>
                                             <TextInput style={[styles.input, { width: 100, }]}
                                                 value={partsTax}
-                                                onChangeText={setPartsTax}
+                                                onChangeText={(val) => handlePartsTax(val.replace(/[^0-9]/g, ''))}
+                                                // onSubmitEditing={() => { handlePartsTax() }}
                                                 placeholder="0"
                                                 placeholderTextColor="#868383DC"
                                             />
                                         </View>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>{(parseFloat(partsSubTotal) || 0) * (parseFloat(partsTax) || 0) / 100}</Text>
+                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>{(parseFloat(partsSubTotal) || 0) * (parseFloat(selectedWorkOrder.partsTax) || 0) / 100}</Text>
                                     </View>
 
                                     <View style={{ width: '90%', borderBottomWidth: 1, borderBottomColor: '#C6C6C6', marginTop: 10, alignSelf: 'center' }}></View>
@@ -653,15 +774,15 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
 
                                     <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginVertical: 10, alignItems: 'center' }}>
                                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Labor Tax:</Text>
+                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Labor Tax: %+</Text>
                                             <TextInput style={[styles.input, { width: 100, }]}
                                                 value={laborTax}
-                                                onChangeText={setLaborTax}
+                                                onChangeText={(val) => handleLaborTax(val.replace(/[^0-9]/g, ''))}
                                                 placeholder="0"
                                                 placeholderTextColor="#868383DC"
                                             />
                                         </View>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>{(parseFloat(laborSubTotal) || 0) * (parseFloat(laborTax) || 0) / 100}</Text>
+                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>{(parseFloat(laborSubTotal) || 0) * (parseFloat(selectedWorkOrder.laborTax) || 0) / 100}</Text>
                                     </View>
 
                                     <View style={{ width: '90%', borderBottomWidth: 1, borderBottomColor: '#C6C6C6', marginTop: 10, alignSelf: 'center' }}></View>
@@ -669,7 +790,7 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                                     <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginTop: 20 }}>
                                         <Text style={{ fontFamily: 'inter-medium', fontSize: 20, color: '#000000' }}>Total:</Text>
                                         <Text style={{ fontFamily: 'inter-medium', fontSize: 20, color: '#000000' }}>
-                                            $ {((parseFloat(netTotal) || 0) + ((parseFloat(laborSubTotal) || 0) * (parseFloat(laborTax) || 0) / 100) + ((parseFloat(partsSubTotal) || 0) * (parseFloat(partsTax) || 0) / 100)).toFixed(2)}
+                                            $ {((parseFloat(netTotal) || 0) + ((parseFloat(laborSubTotal) || 0) * (parseFloat(selectedWorkOrder.laborTax) || 0) / 100) + ((parseFloat(partsSubTotal) || 0) * (parseFloat(selectedWorkOrder.partsTax) || 0) / 100)).toFixed(2)}
                                         </Text>
                                     </View>
 
@@ -693,7 +814,7 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                                                     ?
                                                     <TextInput style={[styles.input, { width: 200, marginTop: 10, paddingHorizontal: 10, marginLeft: 0 }]}
                                                         value={completionMileage}
-                                                        onChangeText={setCompletionMileage}
+                                                        onChangeText={(val) => setCompletionMileage(val.replace(/[^0-9]/g, ''))}
                                                         placeholder="0"
                                                         placeholderTextColor="#868383DC"
                                                     />
@@ -723,7 +844,7 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                                         <View style={{ width: '90%', alignSelf: 'center' }}>
                                             <AppBtn
                                                 title="Mark as Pending"
-                                                btnStyle={[styles.btn, {backgroundColor:'orange'}]}
+                                                btnStyle={[styles.btn, { backgroundColor: 'orange' }]}
                                                 btnTextStyle={styles.btnText}
                                                 onPress={() => {
                                                     updatePendingWOStatus()
@@ -885,10 +1006,14 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                                             setDeleteModal(false)
                                             setLoading(true)
                                             await deleteDoc(doc(db, "WorkOrders", selectedWorkOrder.id.toString()));
-                                            await updateDoc(doc(db, 'Defects', selectedWorkOrder.defectID.toString()), {
-                                                workOrder: 'not issued',
-                                                assignedMechanic: 'n/a'
-                                            })
+                                            if (selectedWorkOrder.defectID.toString() == '' || selectedWorkOrder.defectID.toString() == null || selectedWorkOrder.defectID.toString() == undefined) { }
+                                            else {
+                                                await updateDoc(doc(db, 'Defects', selectedWorkOrder.defectID.toString()), {
+                                                    workOrder: 'not issued',
+                                                    assignedMechanic: 'n/a'
+                                                })
+                                            }
+
                                             console.log('deleted')
                                             setAlertStatus('successful')
                                             setAlertIsVisible(true)

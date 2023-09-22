@@ -17,6 +17,7 @@ import { countrycodelist } from '../../components/codelist';
 import { DataContext } from '../store/context/DataContext';
 import { DefectContext } from '../store/context/DefectContext';
 import { WOContext } from '../store/context/WOContext';
+import { DriverDetailContext } from '../store/context/DriverDetailContext';
 
 const columns = [
     'Name',
@@ -72,6 +73,7 @@ const DriverPage = (props) => {
     const { state: dataState, setData } = useContext(DataContext)
     const { state: defectState, setDefect } = useContext(DefectContext)
     const {state : woState, setWO} = useContext(WOContext)
+    const {state : driverDetailState, setDriverDetail} = useContext(DriverDetailContext)
 
     const [selectedDriver, setSelectedDriver] = useState(null)
 
@@ -148,7 +150,8 @@ const DriverPage = (props) => {
     const handleFormValueChange = (value) => {
         console.log(value)
         setSelectedDriver(value)
-        setOpenDetail(true)
+        setDriverDetail(true)
+        // setOpenDetail(true)
         // setDeleteUser(value)
         // setDeleteAlertVisible(true)
     }
@@ -281,7 +284,8 @@ const DriverPage = (props) => {
                         Designation: 'Driver',
                         TimeStamp: serverTimestamp(),
                         'Employee Number': employeeNumber,
-                        dp: dpURL
+                        dp: dpURL,
+                        
                     });
 
                     setFetchLoading(!fetchLoading)
@@ -376,7 +380,7 @@ const DriverPage = (props) => {
     return (
         <>
 
-            {openDetail
+            {driverDetailState.value.data
                 ?
                 <View style={{ flex: 1, backgroundColor: '#f6f8f9'}}>
                    
@@ -392,6 +396,33 @@ const DriverPage = (props) => {
                                     Driver
                                 </Text>
                             </View>
+
+                            <View style={{alignItems:'center'}}>
+                                <AppBtn
+                                    title="Back"
+                                    btnStyle={[{
+                                        width: '100%',
+                                        height: 40,
+                                        backgroundColor: '#FFFFFF',
+                                        borderRadius: 5,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        shadowOffset: { width: 1, height: 1 },
+                                        shadowOpacity: 0.5,
+                                        shadowRadius: 3,
+                                        elevation: 0,
+                                        shadowColor: '#575757',
+                                        marginRight: 50
+                                    }, { minWidth: 70 }]}
+                                    btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                                    onPress={() => {
+                                        // setOpenDetail(false)
+                                        setDriverDetail(false)
+                                        setOptions('1')
+                                        // clearAll()
+                                    }} />
+                            </View>
+                            
 
                         </View>
                         <View style={{ flexDirection: 'row', margin: 10 }}>
@@ -409,7 +440,7 @@ const DriverPage = (props) => {
                             </TouchableOpacity>
                         </View>
 
-                        {openDetail
+                        {driverDetailState.value.data
                             ?
                             options == '1'
                                 ?
@@ -581,7 +612,7 @@ const DriverPage = (props) => {
 
                     </ScrollView>
 
-                    <View style={{ flexDirection: 'row', width: '100%', backgroundColor: '#67E9DA', paddingVertical: 20, justifyContent: 'flex-end', paddingRight: 80 }}>
+                    {/* <View style={{ flexDirection: 'row', width: '100%', backgroundColor: '#67E9DA', paddingVertical: 20, justifyContent: 'flex-end', paddingRight: 80 }}>
                         <View>
                             <AppBtn
                                 title="Close"
@@ -605,7 +636,7 @@ const DriverPage = (props) => {
                                     setOptions('1')
                                 }} />
                         </View>
-                        {/* <View style={{ marginLeft: 20 }}>
+                        <View style={{ marginLeft: 20 }}>
                             <AppBtn
                                 title="Save"
                                 btnStyle={[{
@@ -631,8 +662,8 @@ const DriverPage = (props) => {
                                     }
 
                                 }} />
-                        </View> */}
-                    </View>
+                        </View> 
+                    </View> */}
 
                 </View>
                 :

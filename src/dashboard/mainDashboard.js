@@ -172,6 +172,7 @@ const MainDashboard = (props) => {
 
         setAllDrivers(driversList)
         setDriverNumbers(driverNumber)
+        console.log(driverNumber)
         setLoading(false)
 
       } catch (error) {
@@ -276,6 +277,7 @@ const MainDashboard = (props) => {
               }
             })
             const driverNumbersArray = Array.from(uniqueDriverNumbers);
+            console.log(driverNumbersArray)
             setInspectingDrivers(Math.round(driverNumbersArray.length * 100 / driverNumbers.length))
             // console.log(temp.length)
             setPassedInspection(Math.round((total * 100) / temp.length))
@@ -330,6 +332,8 @@ const MainDashboard = (props) => {
             })
             // console.log(temp.length)
             const driverNumbersArray = Array.from(uniqueDriverNumbers);
+            console.log('1')
+            console.log(driverNumbersArray)
             setInspectingDrivers(Math.round(driverNumbersArray.length * 100 / driverNumbers.length))
             setPassedInspection(Math.round((total * 100) / temp.length))
             setDefectsReported(defects)
@@ -382,6 +386,8 @@ const MainDashboard = (props) => {
             })
             // console.log(temp.length)
             const driverNumbersArray = Array.from(uniqueDriverNumbers);
+            console.log('2')
+            console.log(driverNumbersArray)
             setInspectingDrivers(Math.round(driverNumbersArray.length * 100 / driverNumbers.length))
             setPassedInspection(Math.round((total * 100) / temp.length))
             setDefectsReported(defects)
@@ -437,6 +443,7 @@ const MainDashboard = (props) => {
 
             // console.log(uniqueDriverNumbers)
             const driverNumbersArray = Array.from(uniqueDriverNumbers);
+            console.log('3', driverNumbersArray)
             const val = (driverNumbersArray.length * 100) / driverNumbers.length
             setInspectingDrivers(val)
             setPassedInspection(Math.round((total * 100) / temp.length))
@@ -491,6 +498,7 @@ const MainDashboard = (props) => {
             })
             // console.log(temp.length)
             const driverNumbersArray = Array.from(uniqueDriverNumbers);
+            console.log('4', driverNumbersArray)
             setInspectingDrivers(Math.round(driverNumbersArray.length * 100 / driverNumbers.length))
             setPassedInspection(Math.round((total * 100) / temp.length))
             setDefectsReported(defects)

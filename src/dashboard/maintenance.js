@@ -52,7 +52,7 @@ const MaintenancePage = (props) => {
   const [openCustomWO, setOpenCustomWO] = useState(false)
   const [selectedAsset, setSelectedAsset] = useState('')
   const [workOrderVariable, setWorkOrderVariable] = useState([]);
-  const [inHouseWOArray , setInHouseWOArray] = useState([])
+  const [inHouseWOArray, setInHouseWOArray] = useState([])
   const [inHouseWOVariable, setInHouseWOVariable] = useState([])
   const [assignedMechanic, setAssignedMechanic] = useState('')
   const [selectedDate, setSelectedDate] = useState(`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`);
@@ -61,6 +61,8 @@ const MaintenancePage = (props) => {
   const [alertIsVisible, setAlertIsVisible] = useState(false)
   const [alertStatus, setAlertStatus] = useState('')
   const [options, setOptions] = useState('1')
+  const [assignedMechanicId, setAssignedMechanicId] = useState(0)
+  const [selectedAssetId, setSelectedAssetId] = useState(0)
 
   const { state: woState, setWO } = useContext(WOContext)
   const { state: assetState, } = useContext(AssetContext)
@@ -73,15 +75,19 @@ const MaintenancePage = (props) => {
   }, [])
 
 
-  const fetchInHouseData = async() => {
+  const fetchInHouseData = async () => {
     await getDocs(collection(db, 'InHouseWorkOrders'))
       .then((snapshot) => {
         let temp = []
         snapshot.forEach((docs) => {
           temp.push(docs.data())
         })
-        setInHouseWOArray(temp)
-        setInHouseWO(temp)
+
+        // const updatedWorkorders = updateWorkOrdersWithAssetInfo(temp, assetState.value.data);
+
+        setInHouseWOArray([...temp])
+        setInHouseWO([...temp])
+
         let i = 0
         let j = 0
         let k = 0
@@ -111,8 +117,17 @@ const MaintenancePage = (props) => {
         snapshot.forEach((docs) => {
           temp.push(docs.data())
         })
-        setWorkOrderArray(temp)
-        setWO(temp)
+
+        console.log(temp)
+
+        // const updatedWorkorders = updateWorkOrdersWithAssetInfo(temp, assetState.value.data);
+        // const workOrdersWithNames = replaceMechanicIdsWithNames([...updatedWorkorders], [...peopleState.value.data]);
+
+
+        // console.log(updatedWorkorders)
+
+        setWorkOrderArray([...temp])
+        setWO([...temp])
         let i = 0
         let j = 0
         let k = 0
@@ -135,6 +150,32 @@ const MaintenancePage = (props) => {
         setLoading(false)
       })
   }
+
+  const replaceMechanicIdsWithNames = (workOrders, mechanics) => {
+    const workOrdersWithNames = workOrders.map(order => {
+      const mechanic = mechanics.find(m => m['Employee Number'].toString() === order.assignedMechanic);
+      const mechanicName = mechanic ? mechanic.Name : 'Unknown Mechanic';
+      return { ...order, 'assignedMechanic': mechanicName };
+    });
+    return workOrdersWithNames;
+  };
+
+  const updateWorkOrdersWithAssetInfo = (workorders, assets) => {
+    return workorders.map(order => {
+      const asset = assets.find(asset => asset['Asset Number'].toString() === order.assetNumber);
+      if (asset) {
+        return {
+          ...order,
+          assetName: asset['Asset Name'],
+          assetMake: asset.Make,
+          assetModel: asset.Model,
+          assetYear: asset.Year
+        };
+      } else {
+        return order; // Asset not found for this work order
+      }
+    });
+  };
 
   const handleSearchWorkOrderValueChange = (value) => {
     setSearchWorkOrderSelectedOption(value)
@@ -165,18 +206,18 @@ const MaintenancePage = (props) => {
     }
 
     return (
-      <View style={{ flexDirection: 'row', padding: 15, borderWidth: 1, borderColor: '#cccccc', alignItems: 'center' }}>
+      <View style={{ flexDirection: 'row', padding: 15, borderWidth: 1, borderColor: '#cccccc', alignItems: 'center', width: '100%' }}>
         <View style={{ minWidth: 100 }}>
           <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>#{index + 1}</Text>
         </View>
-        <View style={{ minWidth: 250 }}>
+        <View style={{ flex: 1 }}>
           <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>{item.title}</Text>
         </View >
         <View style={{ minWidth: 250, flexDirection: 'row', alignItems: 'center' }}>
           <Image style={{ height: 25, width: 25 }} tintColor="#cccccc" source={require('../../assets/calendar_icon.png')}></Image>
           <Text style={{ fontFamily: 'inter-regular', fontSize: 14, marginLeft: 10 }}>{(new Date()).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }).toString()}</Text>
         </View>
-        <TouchableOpacity style={{ paddingVertical: 4, paddingHorizontal: 15, borderWidth: 1, borderColor: '#cccccc', borderRadius: 4, position: 'absolute', top: 10, bottom: 10, right: 15 }} onPress={() => handleDeleteWorkOrderItem(index)}>
+        <TouchableOpacity style={{ height: 40, width: 60, borderWidth: 1, borderColor: '#cccccc', borderRadius: 4, alignItems: 'center', justifyContent: 'center ' }} onPress={() => handleDeleteWorkOrderItem(index)}>
           <Image style={{ height: 25, width: 25 }} source={require('../../assets/delete_icon.png')} tintColor="#4D4D4D"></Image>
         </TouchableOpacity>
       </View>
@@ -217,7 +258,7 @@ const MaintenancePage = (props) => {
   const handleSaveWorkOrder = async () => {
 
     try {
-      const myAsset = [...assetState.value.data.filter((item) => item['Asset Name'].toString() === selectedAsset)]
+
       let temp = []
       await getDocs(query(collection(db, 'WorkOrders'), orderBy('TimeStamp', 'desc')))
         .then((snapshot) => {
@@ -227,10 +268,9 @@ const MaintenancePage = (props) => {
         })
       if (temp.length == 0) {
 
-        setDoc(doc(db, 'WorkOrders', '1'), {
+        await setDoc(doc(db, 'WorkOrders', '1'), {
           id: 1,
-          'assetName': myAsset[0]['Asset Name'],
-          'assetNumber': myAsset[0]['Asset Number'].toString(),
+          'assetNumber': selectedAssetId.toString(),
           'driverEmployeeNumber': '',
           'driverName': '',
           'defectID': '',
@@ -238,30 +278,30 @@ const MaintenancePage = (props) => {
             'title': item.title,
             'TimeStamp': item.timeStamp,
           }))],
-          'assignedMechanic': assignedMechanic,
+          'assignedMechanic': assignedMechanicId.toString(),
           'dueDate': selectedDate,
           'status': 'Pending',
-          'assetMake': myAsset[0].Make,
-          'assetModel': myAsset[0].Model,
-          'assetYear': myAsset[0].Year,
           'mileage': '',
           'comments': [],
           'completionDate': 0,
           'severity': 'Undefined',
           'priority': 'Undefined',
-          'TimeStamp': serverTimestamp()
+          'TimeStamp': serverTimestamp(),
+          'partsTax': '',
+          'laborTax': ''
         })
 
-        setLoading(false)
+
+
         setAlertStatus('successful')
         setAlertIsVisible(true)
+        fetchData()
       }
       else {
 
-        setDoc(doc(db, 'WorkOrders', (temp[0].id + 1).toString()), {
+        await setDoc(doc(db, 'WorkOrders', (temp[0].id + 1).toString()), {
           id: (temp[0].id + 1),
-          'assetName': myAsset[0]['Asset Name'],
-          'assetNumber': myAsset[0]['Asset Number'].toString(),
+          'assetNumber': selectedAssetId.toString(),
           'driverEmployeeNumber': '',
           'driverName': '',
           'defectID': '',
@@ -269,23 +309,22 @@ const MaintenancePage = (props) => {
             'title': item.title,
             'TimeStamp': item.timeStamp,
           }))],
-          'assignedMechanic': assignedMechanic,
+          'assignedMechanic': assignedMechanicId.toString(),
           'dueDate': selectedDate,
           'status': 'Pending',
-          'assetMake': myAsset[0].Make,
-          'assetModel': myAsset[0].Model,
-          'assetYear': myAsset[0].Year,
           'mileage': '',
           'comments': [],
           'completionDate': 0,
           'severity': 'Undefined',
           'priority': 'Undefined',
-          'TimeStamp': serverTimestamp()
+          'TimeStamp': serverTimestamp(),
+          'partsTax': '',
+          'laborTax': ''
         })
 
-        setLoading(false)
         setAlertStatus('successful')
         setAlertIsVisible(true)
+        fetchData()
       }
     } catch (error) {
       setLoading(false)
@@ -427,7 +466,8 @@ const MaintenancePage = (props) => {
             ?
             <Form
               columns={columns}
-              entriesData={searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter((item) => item.assetName.toLowerCase().includes(search.toLowerCase())) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter((item) => item.assignedMechanic.toLowerCase().includes(search.toLowerCase())) : workOrderArray}
+              entriesData={searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+              ) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray}
               // entriesData={workOrderArray}
               titleForm="Work Order"
               onValueChange={handleWorkOrderFormValueChange}
@@ -475,15 +515,16 @@ const MaintenancePage = (props) => {
             </View>
 
             <View style={{ width: '100%', paddingHorizontal: 20, paddingBottom: 20, zIndex: 1 }}>
-              <View style={{ marginVertical: 15, width: '40%', }}>
+              <View style={{ marginVertical: 15, width: '40%', zIndex: 2 }}>
                 <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>Assets</Text>
                 <View style={{ marginTop: 10, }}>
                   <DropDownComponent
-                    options={assetState.value.data.map(item => item['Asset Name'])}
+                    options={assetState.value.data.map(item => item)}
                     onValueChange={(val) => {
                       setSelectedAsset(val)
                     }}
                     // title="Ubaid Arshad"
+                    info='assetSelection'
                     selectedValue={selectedAsset}
                     imageSource={require('../../assets/up_arrow_icon.png')}
                     container={styles.dropdownContainer}
@@ -496,6 +537,11 @@ const MaintenancePage = (props) => {
                     hoveredOptionText={styles.dropdownHoveredOptionText}
                     dropdownButtonSelect={styles.dropdownButtonSelect}
                     dropdownStyle={styles.dropdown}
+                    onAssetSelection={(val) => {
+                      setSelectedAsset(val['Asset Name'])
+                      setSelectedAssetId(val['Asset Number'])
+                    }}
+
                   />
                 </View>
               </View>
@@ -553,6 +599,7 @@ const MaintenancePage = (props) => {
                             minuteInterval={30}
                             style={{ borderRadius: 10 }}
                             onDateChange={handleDateChange}
+                            minimumDate={getFormatedDate(new Date(), 'YYYY/MM/DD')}
                           />
                         </View>
                         :
@@ -564,11 +611,12 @@ const MaintenancePage = (props) => {
                       <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>Assignee</Text>
                       <View style={{ marginTop: 10, }}>
                         <DropDownComponent
-                          options={peopleState.value.data.map(item => item.Name)}
+                          options={peopleState.value.data.filter(item => item.Designation.includes('Mechanic')).map(item => item)}
                           onValueChange={(val) => {
                             setAssignedMechanic(val)
                           }}
                           // title="Ubaid Arshad"
+                          info='mechanicSelection'
                           selectedValue={assignedMechanic}
                           imageSource={require('../../assets/up_arrow_icon.png')}
                           container={styles.dropdownContainer}
@@ -581,6 +629,10 @@ const MaintenancePage = (props) => {
                           hoveredOptionText={styles.dropdownHoveredOptionText}
                           dropdownButtonSelect={styles.dropdownButtonSelect}
                           dropdownStyle={styles.dropdown}
+                          onMechanicSelection={(val) => {
+                            setAssignedMechanic(val.Name)
+                            setAssignedMechanicId(val['Employee Number'])
+                          }}
                         />
                       </View>
 
@@ -621,37 +673,37 @@ const MaintenancePage = (props) => {
                 </View>
                 {selectedAsset != '' ?
                   assignedMechanic != ''
-                  ?
-                  <View style={{ marginLeft: 20 }}>
-                  <AppBtn
-                    title="Save"
-                    btnStyle={[{
-                      width: '100%',
-                      height: 30,
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: 5,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      shadowOffset: { width: 1, height: 1 },
-                      shadowOpacity: 0.6,
-                      shadowRadius: 3,
-                      elevation: 0,
-                      shadowColor: '#575757',
+                    ?
+                    <View style={{ marginLeft: 20 }}>
+                      <AppBtn
+                        title="Save"
+                        btnStyle={[{
+                          width: '100%',
+                          height: 30,
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: 5,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          shadowOffset: { width: 1, height: 1 },
+                          shadowOpacity: 0.6,
+                          shadowRadius: 3,
+                          elevation: 0,
+                          shadowColor: '#575757',
 
-                    }, { minWidth: 70 }]}
-                    btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
-                    onPress={() => {
-                      setLoading(true)
-                      setOpenCustomWO(false)
-                      handleSaveWorkOrder()
-                    }} />
-                </View>
+                        }, { minWidth: 70 }]}
+                        btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                        onPress={() => {
+                          setLoading(true)
+                          setOpenCustomWO(false)
+                          handleSaveWorkOrder()
+                        }} />
+                    </View>
+                    :
+                    null
                   :
                   null
-                :
-                null
                 }
-               
+
               </View>
             </View>
           </View>
@@ -929,7 +981,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flex: 1,
     minHeight: 50,
-    maxWidth:150
+    maxWidth: 150
 
     // paddingLeft: 20
   },
@@ -955,7 +1007,7 @@ const styles = StyleSheet.create({
     // width: 160,
     // paddingLeft:20
     flex: 1,
-    maxWidth:150
+    maxWidth: 150
 
   },
   formColumnHeaderTextStyle: {

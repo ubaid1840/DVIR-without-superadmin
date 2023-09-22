@@ -131,6 +131,8 @@ const LoginPage = (props) => {
                             autoCapitalize="none"
                             onFocus={() => { setEmailTextInputBorderColor(true) }}
                             onBlur={() => { setEmailTextInputBorderColor(false) }}
+                            // onBlur={()=> {
+                            //     console.log('ubaid')}}
                         />
                         <View style={{ width: 350, marginBottom: 10 }}>
                             {!isEmailValid ? <Text style={{ color: 'red', paddingLeft: 5, fontSize: 10, alignSelf: 'flex-start' }}>Enter Valid Email</Text> : null}

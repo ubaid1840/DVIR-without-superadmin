@@ -6,6 +6,8 @@ import moment from 'moment'
 import { BlurView } from 'expo-blur';
 import { collection, getDocs, getFirestore, query, where } from 'firebase/firestore';
 import app from '../config/firebase';
+import { PeopleContext } from '../store/context/PeopleContext';
+import { AssetContext } from '../store/context/AssetContext';
 
 
 const FormDetail = ({ formValue, returnFormDetail }) => {
@@ -21,6 +23,8 @@ const FormDetail = ({ formValue, returnFormDetail }) => {
 
     const db = getFirestore(app)
     const { state: dataState, setData } = useContext(DataContext)
+    const {state : peopleState} = useContext(PeopleContext)
+    const {state : assetState} = useContext(AssetContext)
 
     useEffect(() => {
 
@@ -29,9 +33,61 @@ const FormDetail = ({ formValue, returnFormDetail }) => {
 
         if (formValue.length != 0) {
             const groupedData = groupData(formValue.form);
-            // console.log(groupedData)
-            setGroups(groupedData)
-            // console.log(groupedData)
+
+            const countTypeOccurrences = (groupedData) => {
+                const typeCounts = {};
+
+                for (const group of groupedData) {
+                    const firstItem = group[0];
+                    if (firstItem && firstItem.type) {
+                        const type = firstItem.type;
+                        typeCounts[type] = (typeCounts[type] || 0) + 1;
+                    }
+                }
+
+                // Remove types with only one occurrence
+                for (const type in typeCounts) {
+                    if (typeCounts[type] === 1) {
+                        delete typeCounts[type];
+                    }
+                }
+
+                return typeCounts;
+            };
+
+            const markFirstOccurrence = (groupedData) => {
+                const typeCounts = countTypeOccurrences(groupedData);
+                const typeAppearanceCounts = {};
+
+                for (const group of groupedData) {
+                    const firstItem = group[0];
+                    if (firstItem && firstItem.type) {
+                        const type = firstItem.type;
+                        firstItem.totalTypeOccurrences = typeCounts[firstItem.type] || 0;  // Add total type occurrences
+
+                        // Mark the appearance based on the count
+                        if (!typeAppearanceCounts[firstItem.type]) {
+                            typeAppearanceCounts[firstItem.type] = 1;
+                        } else {
+                            typeAppearanceCounts[firstItem.type]++;
+                        }
+
+                        firstItem.appearance = typeAppearanceCounts[firstItem.type];
+                    }
+                }
+
+                return groupedData;
+            };
+
+            // Usage
+
+
+            const groupedDataWithAppearance = markFirstOccurrence([...groupedData]);
+            // console.log(groupedDataWithAppearance)
+
+
+            setGroups(groupedDataWithAppearance)
+
         }
 
     }, [])
@@ -108,59 +164,72 @@ const FormDetail = ({ formValue, returnFormDetail }) => {
     const GroupComponent = useCallback(({ group }) => {
 
         return (
-            <View
-                style={{
-                    marginVertical: 10,
-                    backgroundColor: 'white',
-                    borderRadius: 4,
-                    width: 350,
-                    padding: 20,
-                    margin: 5,
-                }}
-            >
-                <Text
-                    style={{
+
+            <View style={{ marginVertical: 10, backgroundColor: 'white', borderRadius: 4, width: 350, padding: 20, margin: 5, }} >
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems:'center' }}>
+
+
+                    <Text style={{
                         fontFamily: 'inter-semibold',
                         fontSize: 20,
                         marginVertical: 5,
                     }}
-                >
-                    {group[0].type}
-                </Text>
-                {group.map((groupData, index) => (
-                    <View key={index}>
-                        {groupData.title == 'Mileage' ? (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}>
-                                <View style={{ height: 4, width: 4, backgroundColor: '#000000', borderRadius: 2 }}></View>
-                                <Text style={{ color: '#000000', marginLeft: 15, fontFamily: 'inter-regular', fontSize: 14 }}>{groupData.value} </Text>
-                            </View>
-                        ) : groupData.value == 'Fail' ? (
-                            <>
+                    >
+                        {group[0].type}
+                    </Text>
+                    {group[0].totalTypeOccurrences != 0
+                    ?
+                    <Text style={{ fontFamily: 'inter-semibold', fontSize: 16, marginVertical: 5,}} >
+                        {group[0].appearance} of {group[0].totalTypeOccurrences}
+                    </Text>
+                :
+                null}
+                   
+                </View>
+                <ScrollView style={{}}
+                    contentContainerStyle={{ maxHeight: 300, }}>
+                    {group.map((groupData, index) => (
+                        <View key={index}>
+                            {groupData.title == 'Mileage' ? (
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}>
                                     <View style={{ height: 4, width: 4, backgroundColor: '#000000', borderRadius: 2 }}></View>
-                                    <Text style={{ color: 'red', marginLeft: 15, fontFamily: 'inter-regular', fontSize: 14 }}>{groupData.title}</Text>
+                                    <Text style={{ color: '#000000', marginLeft: 15, fontFamily: 'inter-regular', fontSize: 14 }}>{groupData.value} </Text>
                                 </View>
-                                <TouchableOpacity key={index} onPress={() => { window.open(groupData.Defect.Image, '_blank'); }}>
-                                    <ImageBackground style={{ height: 300, width: '100%', marginVertical: 10, justifyContent: 'flex-end' }} source={{ uri: groupData.Defect.Image }}>
-                                        <Text style={{ width: '100%', color: 'red', margin: 20, fontSize: 13 }}>{groupData.Defect.Note}</Text>
-                                    </ImageBackground>
-                                </TouchableOpacity>
-                            </>
-                        ) : (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}>
-                                <View style={{ height: 4, width: 4, backgroundColor: '#000000', borderRadius: 2 }}></View>
-                                <Text style={{ color: '#000000', marginLeft: 15, fontFamily: 'inter-regular', fontSize: 13 }}>{groupData.title}</Text>
-                            </View>
-                        )}
-                    </View>
-                ))}
+                            ) : groupData.value == 'Fail' ? (
+                                <>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}>
+                                        <View style={{ height: 4, width: 4, backgroundColor: '#000000', borderRadius: 2 }}></View>
+                                        <Text style={{ color: 'red', marginLeft: 15, fontFamily: 'inter-regular', fontSize: 14 }}>{groupData.title}</Text>
+                                    </View>
+                                    <TouchableOpacity key={index} onPress={() => { window.open(groupData.Defect.Image, '_blank'); }}>
+                                        <View style={{ marginVertical: 10 }}>
+                                            <Image style={{ height: 300, width: 300, }} source={{ uri: groupData.Defect.Image }}>
+                                            </Image>
+                                            <View style={{ flexDirection: 'row', padding: 10 }}>
+                                                <Text style={{ width: 100, color: 'black', fontSize: 13, marginLeft: 5 }}>Comment:</Text>
+                                                <Text style={{ width: '100%', color: 'black', fontSize: 13, marginLeft: 5 }}>{groupData.Defect.Note}</Text>
+                                            </View>
+                                        </View>
+
+                                    </TouchableOpacity>
+                                </>
+                            ) : (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}>
+                                    <View style={{ height: 4, width: 4, backgroundColor: '#000000', borderRadius: 2 }}></View>
+                                    <Text style={{ color: '#000000', marginLeft: 15, fontFamily: 'inter-regular', fontSize: 13 }}>{groupData.title}</Text>
+                                </View>
+                            )}
+                        </View>
+                    ))}
+                </ScrollView>
                 {group[0].type != 'Mileage' ? (
-                    <View style={{flex:1, justifyContent:'flex-end'}}>
+                    <View style={{ flex: 1, justifyContent: 'flex-end', marginTop: 10 }}>
                         <View style={{ borderRadius: 5, marginTop: 10, backgroundColor: group[0].groupValue == 'Pass' ? 'green' : 'red', padding: 2, width: 50, alignItems: 'center', justifyContent: 'center' }}>
                             <Text style={{ color: '#FFFFFF', fontSize: 14 }}>{group[0].groupValue}</Text>
                         </View>
                     </View>
                 ) : null}
+
             </View>
         );
     }, [])
@@ -182,7 +251,7 @@ const FormDetail = ({ formValue, returnFormDetail }) => {
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                     <View style={{ flexDirection: 'column', }}>
                         <View style={{ flexDirection: 'row' }}>
-                            <Text style={[styles.selectedFormPropertyStyle, { fontFamily: 'inter-semibold' }]}>Form 1</Text>
+                            <Text style={[styles.selectedFormPropertyStyle, { fontFamily: 'inter-semibold' }]}>Form eDVIR</Text>
                             <Text style={{ color: '#FFFFFF', backgroundColor: formValue.formStatus == 'Passed' ? 'green' : 'red', width: 60, height: 20, textAlign: 'center', borderRadius: 5 }}>{formValue.formStatus}</Text>
                         </View>
                         <View style={{ flexDirection: 'row', }}>
@@ -204,19 +273,19 @@ const FormDetail = ({ formValue, returnFormDetail }) => {
                         <View style={{ flexDirection: 'column', alignItems: 'center', marginRight: 20 }}>
                             {driverPicture ? <Image style={{ height: 40, width: 40, borderRadius: 20 }} source={{ uri: driverPicture }}></Image> :
                                 <Image style={{ height: 40, width: 40, borderRadius: 20 }} source={require('../../assets/driver_icon.png')}></Image>}
-                            <Text style={{ fontFamily: 'inter-regular', fontSize: 15, height: 25, marginTop: 5 }}>{formValue.driverName}</Text>
+                            <Text style={{ fontFamily: 'inter-regular', fontSize: 15, height: 25, marginTop: 5 }}>{peopleState.value.data.filter(d => d.Designation === 'Driver').find(driver => driver["Employee Number"].toString() === formValue.driverEmployeeNumber)?.Name || 'Unknown Driver'}</Text>
                         </View>
 
                         <View style={{ flexDirection: 'column', alignItems: 'center' }}>
                             <Image style={{ height: 40, width: 40 }} source={require('../../assets/vehicle_icon.png')}></Image>
-                            <Text style={{ fontFamily: 'inter-regular', fontSize: 15, height: 25, marginTop: 5 }}>{formValue.assetName}</Text>
+                            <Text style={{ fontFamily: 'inter-regular', fontSize: 15, height: 25, marginTop: 5 }}>{assetState.value.data.find(asset => asset["Asset Number"].toString() === formValue.assetNumber)?.['Asset Name'] || 'Unknown Asset'}</Text>
                         </View>
 
                     </View>
                 </View>
 
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text style={[styles.selectedFormKeyStyle, { width: 150 }]}>Check on </Text>
+                    <Text style={[styles.selectedFormKeyStyle, { width: 300 }]}>Check on </Text>
                     <TouchableOpacity style={{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E2E2', padding: 5 }} onPress={() => {
 
                         const mapsURL = `https://www.google.com/maps?q=${formValue.location._lat},${formValue.location._long}`;
@@ -283,7 +352,7 @@ const FormDetail = ({ formValue, returnFormDetail }) => {
                                         fetchData()
                                     }}
 
-                                    style={[{ width: 100, height: 40, backgroundColor: '#FFFFFF', borderRadius: 5, alignItems: 'center', justifyContent: 'center', shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.9, shadowRadius: 5, elevation: 0, shadowColor: '#575757', marginHorizontal: 10 }, deleteOptionHover[0] && { backgroundColor: '#67E9DA', borderColor: '#67E9DA' }]}>
+                                    style={[{ width: 100, height: 40, backgroundColor: '#FFFFFF', borderRadius: 5, alignItems: 'center', justifyContent: 'center', shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.9, shadowRadius: 5, elevation: 0, shadowColor: '#575757', marginHorizontal: 10 }, deleteOptionHover[0] && { backgroundColor: '#558BC1', borderColor: '#558BC1' }]}>
                                     <Text style={[{ fontSize: 16 }, deleteOptionHover[0] && { color: '#FFFFFF' }]}>Yes</Text>
                                 </TouchableOpacity>
                             </View>
@@ -292,7 +361,7 @@ const FormDetail = ({ formValue, returnFormDetail }) => {
                                 onMouseLeave={() => setDeleteOptionHover({ [1]: false })}>
                                 <TouchableOpacity
                                     onPress={() => setDeleteModal(false)}
-                                    style={[{ width: 100, height: 40, backgroundColor: '#FFFFFF', borderRadius: 5, alignItems: 'center', justifyContent: 'center', shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.9, shadowRadius: 5, elevation: 0, shadowColor: '#575757', marginHorizontal: 10 }, deleteOptionHover[1] && { backgroundColor: '#67E9DA', borderColor: '#67E9DA' }]}>
+                                    style={[{ width: 100, height: 40, backgroundColor: '#FFFFFF', borderRadius: 5, alignItems: 'center', justifyContent: 'center', shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.9, shadowRadius: 5, elevation: 0, shadowColor: '#575757', marginHorizontal: 10 }, deleteOptionHover[1] && { backgroundColor: '#558BC1', borderColor: '#558BC1' }]}>
                                     <Text style={[{ fontSize: 16 }, deleteOptionHover[1] && { color: '#FFFFFF' }]}>No</Text>
                                 </TouchableOpacity>
                             </View>
@@ -589,7 +658,7 @@ const styles = StyleSheet.create({
     selectedFormPropertyStyle: {
         fontFamily: 'inter-regular',
         fontSize: 15,
-        width: 150,
+        width: 300,
         height: 25
     },
     selectedFormKeyStyle: {

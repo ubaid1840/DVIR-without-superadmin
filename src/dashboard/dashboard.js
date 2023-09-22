@@ -28,6 +28,8 @@ import MaintenancePage from './maintenance';
 import WorkOrderDetail from './workOrderDetail';
 import { WOContext } from '../store/context/WOContext';
 import InHouseWorkOrderDetail from './inHouseWorkOrderDetail';
+import { AssetDetailContext } from '../store/context/AssetDetailContext';
+import { DriverDetailContext } from '../store/context/DriverDetailContext';
 
 
 const DashboardPage = (props) => {
@@ -87,6 +89,8 @@ const DashboardPage = (props) => {
   const [inHouseInspectionFormValue, setInHouseInspectionFormValue] = useState([])
 
   const { state: woState, setWO } = useContext(WOContext)
+  const {state : assetDetailState, setAssetDetail} = useContext(AssetDetailContext)
+  const {state : driverDetailState, setDriverDetail} = useContext(DriverDetailContext)
 
 
   const backgroundColor = colorAnimation.interpolate({
@@ -383,7 +387,8 @@ const DashboardPage = (props) => {
           onAddAssetBtn={handleAddAssetBtn}
           onDashboardValue={handleFormValue}
           onDashboardDefectValue={handleDefectValue}
-          onDashboardWOValue={handleWorkOrderValue} />
+          onDashboardWOValue={handleWorkOrderValue}
+          onDashboardWODetailValue={handleWOValue} />
       );
     }
     else if (selectedPage == "Inspection") {
@@ -683,6 +688,7 @@ const DashboardPage = (props) => {
                   // setInspectionOptionExpand(false)
                   // setInspectionSelectedPage("")
                   closeAllExpands('Assets')
+                  setAssetDetail(false)
                 }}>
                 <Text style={selectedPage == 'Assets' ? [styles.navText, styles.navTextHover] : [styles.navText, assetsHovered && styles.navTextHover]}>Assets</Text>
               </TouchableOpacity> : null}
@@ -721,9 +727,11 @@ const DashboardPage = (props) => {
                       setSelectedPage("Users")
                       // setProfileSelected(false)
                       setOtherSelection('nill')
+                      setDriverDetail(false)
+                      console.log('ubaid')
                     }}
                   >
-                    <Text style={usersSelectedPage == 'Driver' ? [styles.navTextSub, { color: '#FFFFFF', opacity: 1, }] : [styles.navTextSub, driverHovered && { color: '#FFFFFF', opacity: 1 }]}>Driver</Text>
+                    <Text style={usersSelectedPage == 'Driver' ? [styles.navTextSub, { color: '#FFFFFF', opacity: 1, }] : [styles.navTextSub, driverHovered && { color: '#FFFFFF', opacity: 1 }]}>Drivers</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -823,7 +831,14 @@ const DashboardPage = (props) => {
                 defectFormValue.length != 0
                   ?
                   <DefectDetail
-                    value={defectFormValue} />
+                    value={defectFormValue}
+                    onDashboardOpenWO={(item)=>{
+                      const temp = [...woState.value.data.filter((value) => value.id == item.workOrder)]
+                      if (temp.length != 0) {
+                        setWorkOrderFormValue(temp[0])
+                        setOtherSelection('workorder')
+                      }
+                    }} />
                   : null
                 :
                 otherSelection == 'workorder'

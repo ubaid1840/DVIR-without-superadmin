@@ -1,0 +1,1 @@
+export const SET_DRIVER_DETAIL = 'SET_DRIVER_DETAIL'

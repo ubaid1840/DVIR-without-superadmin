@@ -7,7 +7,7 @@ import { getAuth, signOut } from 'firebase/auth';
 
 const DropDownComponent = (props) => {
 
-    const { options, onValueChange, title, imageSource, selectedValue, container, dropdownButton, selectedValueStyle, optionsContainer, option, hoveredOption, optionText, hoveredOptionText, dropdownButtonSelect, dropdownStyle, info } = props
+    const { options, onValueChange, title, imageSource, selectedValue, container, dropdownButton, selectedValueStyle, optionsContainer, option, hoveredOption, optionText, hoveredOptionText, dropdownButtonSelect, dropdownStyle, info, onMechanicSelection, onAssetSelection } = props
 
     const [showOptions, setShowOptions] = useState(false);
     const [hoveredIndex, setHoveredIndex] = useState(-1);
@@ -70,10 +70,22 @@ const DropDownComponent = (props) => {
         signOut(auth).then(() => {
             // Sign-out successful.
             router.replace('/')
-          }).catch((error) => {
+        }).catch((error) => {
             // An error happened.
-          });
-    
+        });
+
+    }
+
+    const handleMechanicSelection = (value) => {
+        onMechanicSelection(value)
+        handleDropdownToggle();
+        handleOptionHover(-1);
+    }
+
+    const handleAssetSelection = (value) => {
+        onAssetSelection(value)
+        handleDropdownToggle();
+        handleOptionHover(-1);
     }
 
     return (
@@ -83,7 +95,7 @@ const DropDownComponent = (props) => {
                 <View style={container}>
 
                     <TouchableOpacity
-                        style={[dropdownStyle, {width:100, height:40}, dropdownSelect && dropdownButtonSelect, { flexDirection: 'row', justifyContent: 'space-between' }]}
+                        style={[dropdownStyle, { width: 100, height: 40 }, dropdownSelect && dropdownButtonSelect, { flexDirection: 'row', justifyContent: 'space-between' }]}
                         onPress={() => handleDropdownToggle()}
                     >
                         <Text style={[selectedValueStyle]}>
@@ -96,23 +108,23 @@ const DropDownComponent = (props) => {
                         ></Animated.Image> */}
                     </TouchableOpacity>
                     {showOptions && (
-                        <ScrollView style={[optionsContainer, {width:250}, { right: 20, maxHeight: 140 }]}>
+                        <ScrollView style={[optionsContainer, { width: 250 }, { right: 20, maxHeight: 140 }]}>
 
                             {options.map((item, index) => (
-                                    <TouchableOpacity
-                                        key={item.name}
-                                        style={[{flexDirection:'row'},
-                                            option,
-                                            hoveredIndex === index && hoveredOption, // Apply the hoveredOption style conditionally
-                                        ]}
-                                        onPress={() => {
-                                            handleOptionSelect(item.code);
-                                        }}
-                                        onMouseEnter={() => handleOptionHover(index)}
-                                        onMouseLeave={() => handleOptionHover(-1)}
-                                    >
-                                        <Text style={[optionText, hoveredIndex === index && hoveredOptionText]}>{item.code} {item.name}</Text>
-                                    </TouchableOpacity>
+                                <TouchableOpacity
+                                    key={index.toString()}
+                                    style={[{ flexDirection: 'row' },
+                                        option,
+                                    hoveredIndex === index && hoveredOption, // Apply the hoveredOption style conditionally
+                                    ]}
+                                    onPress={() => {
+                                        handleOptionSelect(item.code);
+                                    }}
+                                    onMouseEnter={() => handleOptionHover(index)}
+                                    onMouseLeave={() => handleOptionHover(-1)}
+                                >
+                                    <Text style={[optionText, hoveredIndex === index && hoveredOptionText]}>{item.code} {item.name}</Text>
+                                </TouchableOpacity>
                             ))}
 
 
@@ -120,66 +132,153 @@ const DropDownComponent = (props) => {
                     )}
                 </View>
                 :
+                info == 'mechanicSelection'
+                    ?
+                    <View style={container}>
 
-                <View style={container}>
+                        <TouchableOpacity
+                            style={[dropdownStyle, dropdownSelect && dropdownButtonSelect, { flexDirection: 'row', justifyContent: 'space-between' }]}
+                            onPress={() => handleDropdownToggle()}
+                        >
+                            <Text style={[selectedValueStyle]}>
+                                {selectedValue}
+                            </Text>
+                            <Text style={{ fontSize: 15, fontFamily: 'inter-semibold', color: '#5B5B5B' }}>{title}</Text>
+                            <Animated.Image
+                                style={{ marginLeft: 10, width: 20, height: 20, transform: [{ rotate: rotateInterpolation }], alignSelf: 'center' }}
+                                source={imageSource}
+                            ></Animated.Image>
+                        </TouchableOpacity>
+                        {showOptions && (
+                            <ScrollView style={[optionsContainer, { right: 20, maxHeight: 150 }]}>
 
-                    <TouchableOpacity
-                        style={[dropdownStyle, dropdownSelect && dropdownButtonSelect, { flexDirection: 'row', justifyContent: 'space-between' }]}
-                        onPress={() => handleDropdownToggle()}
-                    >
-                        <Text style={[selectedValueStyle]}>
-                            {selectedValue}
-                        </Text>
-                        <Text style={{ fontSize: 15, fontFamily:'inter-semibold', color: '#5B5B5B' }}>{title}</Text>
-                        <Animated.Image
-                            style={{ marginLeft: 10, width: 20, height: 20, transform: [{ rotate: rotateInterpolation }], alignSelf: 'center' }}
-                            source={imageSource}
-                        ></Animated.Image>
-                    </TouchableOpacity>
-                    {showOptions && (
-                        <ScrollView style={[optionsContainer, { right: 20, maxHeight: 150 }]}>
+                                {options.map((item, index) => (
+                                        <TouchableOpacity
+                                            key={index.toString()}
+                                            style={[
+                                                option,
+                                                hoveredIndex === index && hoveredOption, // Apply the hoveredOption style conditionally
+                                            ]}
+                                            onPress={() => {
+                                                handleMechanicSelection(item);
+                                            }}
+                                            onMouseEnter={() => handleOptionHover(index)}
+                                            onMouseLeave={() => handleOptionHover(-1)}
+                                        >
+                                            <Text style={[optionText, hoveredIndex === index && hoveredOptionText]}>
+                                                {item.Name}
+                                            </Text>
+                                        </TouchableOpacity>
+                                ))}
 
-                            {options.map((item, index) => (
-                                item == 'Logout'
-                                    ?
-                                    <View key={item} style={{ justifyContent: 'center', alignItems: 'center' }}>
 
-                                        <View style={{ width: '90%', marginVertical: 10 }}>
-                                            <AddBtn
-                                                title="Logout"
-                                                imgSource={require('../assets/logout_icon.png')}
-                                                btnStyle={styles.btn}
-                                                btnTextStyle={styles.btnText}
-                                                onPress={()=>{
-                                                // console.log('logout')    
-                                                    handleOptionSelect('Logout')
-                                                }}
-                                            />
+                            </ScrollView>
+                        )}
+                    </View>
+                    :
+                    info == 'assetSelection'
+                    ?
+                    <View style={container}>
+
+                        <TouchableOpacity
+                            style={[dropdownStyle, dropdownSelect && dropdownButtonSelect, { flexDirection: 'row', justifyContent: 'space-between' }]}
+                            onPress={() => handleDropdownToggle()}
+                        >
+                            <Text style={[selectedValueStyle]}>
+                                {selectedValue}
+                            </Text>
+                            <Text style={{ fontSize: 15, fontFamily: 'inter-semibold', color: '#5B5B5B' }}>{title}</Text>
+                            <Animated.Image
+                                style={{ marginLeft: 10, width: 20, height: 20, transform: [{ rotate: rotateInterpolation }], alignSelf: 'center' }}
+                                source={imageSource}
+                            ></Animated.Image>
+                        </TouchableOpacity>
+                        {showOptions && (
+                            <ScrollView style={[optionsContainer, { right: 20, maxHeight: 150 }]}>
+
+                                {options.map((item, index) => (
+                                        <TouchableOpacity
+                                            key={index.toString()}
+                                            style={[
+                                                option,
+                                                hoveredIndex === index && hoveredOption, // Apply the hoveredOption style conditionally
+                                            ]}
+                                            onPress={() => {
+                                                handleAssetSelection(item);
+                                            }}
+                                            onMouseEnter={() => handleOptionHover(index)}
+                                            onMouseLeave={() => handleOptionHover(-1)}
+                                        >
+                                            <Text style={[optionText, hoveredIndex === index && hoveredOptionText]}>
+                                                {item['Asset Name']}
+                                            </Text>
+                                        </TouchableOpacity>
+                                ))}
+
+
+                            </ScrollView>
+                        )}
+                    </View>
+                    :
+                    <View style={container}>
+
+                        <TouchableOpacity
+                            style={[dropdownStyle, dropdownSelect && dropdownButtonSelect, { flexDirection: 'row', justifyContent: 'space-between' }]}
+                            onPress={() => handleDropdownToggle()}
+                        >
+                            <Text style={[selectedValueStyle]}>
+                                {selectedValue}
+                            </Text>
+                            <Text style={{ fontSize: 15, fontFamily: 'inter-semibold', color: '#5B5B5B' }}>{title}</Text>
+                            <Animated.Image
+                                style={{ marginLeft: 10, width: 20, height: 20, transform: [{ rotate: rotateInterpolation }], alignSelf: 'center' }}
+                                source={imageSource}
+                            ></Animated.Image>
+                        </TouchableOpacity>
+                        {showOptions && (
+                            <ScrollView style={[optionsContainer, { right: 20, maxHeight: 150 }]}>
+
+                                {options.map((item, index) => (
+                                    item == 'Logout'
+                                        ?
+                                        <View key={index.toString()} style={{ justifyContent: 'center', alignItems: 'center' }}>
+
+                                            <View style={{ width: '90%', marginVertical: 10 }}>
+                                                <AddBtn
+                                                    title="Logout"
+                                                    imgSource={require('../assets/logout_icon.png')}
+                                                    btnStyle={styles.btn}
+                                                    btnTextStyle={styles.btnText}
+                                                    onPress={() => {
+                                                        // console.log('logout')    
+                                                        handleOptionSelect('Logout')
+                                                    }}
+                                                />
+                                            </View>
                                         </View>
-                                    </View>
-                                    :
-                                    <TouchableOpacity
-                                        key={item}
-                                        style={[
-                                            option,
-                                            hoveredIndex === index && hoveredOption, // Apply the hoveredOption style conditionally
-                                        ]}
-                                        onPress={() => {
-                                            handleOptionSelect(item);
-                                        }}
-                                        onMouseEnter={() => handleOptionHover(index)}
-                                        onMouseLeave={() => handleOptionHover(-1)}
-                                    >
-                                        <Text style={[optionText, hoveredIndex === index && hoveredOptionText]}>
-                                            {item}
-                                        </Text>
-                                    </TouchableOpacity>
-                            ))}
+                                        :
+                                        <TouchableOpacity
+                                            key={index.toString()}
+                                            style={[
+                                                option,
+                                                hoveredIndex === index && hoveredOption, // Apply the hoveredOption style conditionally
+                                            ]}
+                                            onPress={() => {
+                                                handleOptionSelect(item);
+                                            }}
+                                            onMouseEnter={() => handleOptionHover(index)}
+                                            onMouseLeave={() => handleOptionHover(-1)}
+                                        >
+                                            <Text style={[optionText, hoveredIndex === index && hoveredOptionText]}>
+                                                {item}
+                                            </Text>
+                                        </TouchableOpacity>
+                                ))}
 
 
-                        </ScrollView>
-                    )}
-                </View>
+                            </ScrollView>
+                        )}
+                    </View>
             }
         </>
     );

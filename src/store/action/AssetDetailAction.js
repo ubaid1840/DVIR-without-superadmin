@@ -1,0 +1,1 @@
+export const SET_ASSET_DETAIL = 'SET_ASSET_DETAIL'

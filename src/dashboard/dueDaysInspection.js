@@ -113,6 +113,7 @@ const DueDaysInspectionPage = (props) => {
     const [addTask, setAddTask] = useState('')
     const [alertIsVisible, setAlertIsVisible] = useState(false)
     const [alertStatus, setAlertStatus] = useState('')
+    const [assignedMechanicId, setAssignedMechanicId] = useState(0)
 
     const { state: peopleState } = useContext(PeopleContext)
     const { state: assetState, setAssetData } = useContext(AssetContext)
@@ -197,7 +198,7 @@ const DueDaysInspectionPage = (props) => {
                 // Calculate the next inspection date by adding 45 days to the last inspection date
                 console.log(object)
                 const nextInspectionDate = new Date(object.lastInspection.seconds * 1000);
-                
+
                 nextInspectionDate.setDate(nextInspectionDate.getDate() + 45);
                 const nextUpdated = nextInspectionDate.getTime()
                 return {
@@ -234,7 +235,7 @@ const DueDaysInspectionPage = (props) => {
         const myWO = inHouseWOState.value.data.filter((item) => item.assetNumber == value['Asset Number'])
         // console.log(myWO)
         props.onDashboardInHouseValueChange(myWO[0])
-        
+
     }
 
 
@@ -370,37 +371,71 @@ const DueDaysInspectionPage = (props) => {
     }
 
     const handleSaveWorkOrder = async () => {
-        try {      
-                setDoc(doc(db, 'InHouseWorkOrders', selectedAsset['Asset Number'].toString()), {
+
+
+        try {
+            let temp = []
+            await getDocs(query(collection(db, 'InHouseWorkOrders'), orderBy('TimeStamp', 'desc')))
+                .then((snapshot) => {
+                    snapshot.forEach((docs) => {
+                        temp.push(docs.data())
+                    })
+                })
+            if (temp.length == 0) {
+                setDoc(doc(db, 'InHouseWorkOrders', '1'), {
                     id: 1,
-                    'assetName': selectedAsset['Asset Name'],
                     'assetNumber': selectedAsset['Asset Number'].toString(),
                     'driverEmployeeNumber': '',
                     'driverName': '',
                     'defectID': '',
                     'defectedItems': [],
-                    'assignedMechanic': assignedMechanic,
+                    'assignedMechanic': assignedMechanicId.toString(),
                     'dueDate': selectedDate,
                     'status': 'Pending',
-                    'assetMake': selectedAsset.Make,
-                    'assetModel': selectedAsset.Model,
-                    'assetYear': selectedAsset.Year,
                     'mileage': '',
                     'comments': [],
                     'completionDate': 0,
                     'severity': 'Undefined',
                     'priority': 'Undefined',
-                    'TimeStamp': serverTimestamp()
+                    'TimeStamp': serverTimestamp(),
+                    'partsTax': '',
+                    'laborTax': ''
                 })
-
                 await updateDoc(doc(db, 'Assets', selectedAsset['Asset Number'].toString()), {
-                    'inhouseInspection': 'issued'
+                    'inhouseInspection': 1
                 })
-
                 fetchData()
                 setAlertStatus('successful')
                 setAlertIsVisible(true)
-            
+            }
+            else {
+                setDoc(doc(db, 'InHouseWorkOrders', (temp[0].id + 1).toString()), {
+                    id: (temp[0].id + 1),
+                    'assetNumber': selectedAsset['Asset Number'].toString(),
+                    'driverEmployeeNumber': '',
+                    'driverName': '',
+                    'defectID': '',
+                    'defectedItems': [],
+                    'assignedMechanic': assignedMechanicId.toString(),
+                    'dueDate': selectedDate,
+                    'status': 'Pending',
+                    'mileage': '',
+                    'comments': [],
+                    'completionDate': 0,
+                    'severity': 'Undefined',
+                    'priority': 'Undefined',
+                    'TimeStamp': serverTimestamp(),
+                    'partsTax': '',
+                    'laborTax': ''
+                })
+                await updateDoc(doc(db, 'Assets', selectedAsset['Asset Number'].toString()), {
+                    'inhouseInspection': (temp[0].id + 1)
+                })
+                fetchData()
+                setAlertStatus('successful')
+                setAlertIsVisible(true)
+            }
+
         } catch (error) {
             console.log(error)
             setLoading(false)
@@ -409,7 +444,6 @@ const DueDaysInspectionPage = (props) => {
         }
 
     }
-
 
     return (
 
@@ -519,6 +553,7 @@ const DueDaysInspectionPage = (props) => {
                                                         minuteInterval={30}
                                                         style={{ borderRadius: 10 }}
                                                         onDateChange={handleDateChange}
+                                                        minimumDate={getFormatedDate(new Date(), 'YYYY/MM/DD')}
                                                     />
                                                 </View>
                                                 :
@@ -530,11 +565,12 @@ const DueDaysInspectionPage = (props) => {
                                             <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>Assignee</Text>
                                             <View style={{ marginTop: 10, }}>
                                                 <DropDownComponent
-                                                    options={peopleState.value.data.map(item => item.Name)}
+                                                    options={peopleState.value.data .filter(item => item.Designation.includes('Mechanic')).map(item => item)}
                                                     onValueChange={(val) => {
                                                         setAssignedMechanic(val)
                                                     }}
                                                     // title="Ubaid Arshad"
+                                                    info = 'mechanicSelection'
                                                     selectedValue={assignedMechanic}
                                                     imageSource={require('../../assets/up_arrow_icon.png')}
                                                     container={styles.dropdownContainer}
@@ -547,6 +583,10 @@ const DueDaysInspectionPage = (props) => {
                                                     hoveredOptionText={styles.dropdownHoveredOptionText}
                                                     dropdownButtonSelect={styles.dropdownButtonSelect}
                                                     dropdownStyle={styles.dropdown}
+                                                    onMechanicSelection={(val)=>{
+                                                            setAssignedMechanic(val.Name)
+                                                            setAssignedMechanicId(val['Employee Number'])
+                                                    }}
                                                 />
                                             </View>
                                         </View>
@@ -583,35 +623,35 @@ const DueDaysInspectionPage = (props) => {
                                             // clearAll()
                                         }} />
                                 </View>
-                                {assignedMechanic!= ''
-                                ?
-                                <View style={{ marginLeft: 20 }}>
-                                <AppBtn
-                                    title="Issue"
-                                    btnStyle={[{
-                                        width: '100%',
-                                        height: 30,
-                                        backgroundColor: '#FFFFFF',
-                                        borderRadius: 5,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        shadowOffset: { width: 1, height: 1 },
-                                        shadowOpacity: 0.6,
-                                        shadowRadius: 3,
-                                        elevation: 0,
-                                        shadowColor: '#575757',
+                                {assignedMechanic != ''
+                                    ?
+                                    <View style={{ marginLeft: 20 }}>
+                                        <AppBtn
+                                            title="Issue"
+                                            btnStyle={[{
+                                                width: '100%',
+                                                height: 30,
+                                                backgroundColor: '#FFFFFF',
+                                                borderRadius: 5,
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                shadowOffset: { width: 1, height: 1 },
+                                                shadowOpacity: 0.6,
+                                                shadowRadius: 3,
+                                                elevation: 0,
+                                                shadowColor: '#575757',
 
-                                    }, { minWidth: 70 }]}
-                                    btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
-                                    onPress={() => {
-                                        setLoading(true)
-                                        setOpenCustomWO(false)
-                                        handleSaveWorkOrder()
-                                    }} />
-                            </View>
-                            :
-                            null}
-                               
+                                            }, { minWidth: 70 }]}
+                                            btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                                            onPress={() => {
+                                                setLoading(true)
+                                                setOpenCustomWO(false)
+                                                handleSaveWorkOrder()
+                                            }} />
+                                    </View>
+                                    :
+                                    null}
+
                             </View>
                         </View>
                     </View>
@@ -878,7 +918,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         flex: 1,
         minHeight: 50,
-        maxWidth:150
+        maxWidth: 150
 
         // paddingLeft: 20
     },
@@ -904,7 +944,7 @@ const styles = StyleSheet.create({
         // width: 160,
         // paddingLeft:20
         flex: 1,
-        maxWidth:150
+        maxWidth: 150
 
     },
     formColumnHeaderTextStyle: {

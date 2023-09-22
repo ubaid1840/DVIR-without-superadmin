@@ -14,6 +14,8 @@ import app from '../config/firebase';
 import { AuthContext } from '../store/context/AuthContext';
 import { DefectContext } from '../store/context/DefectContext';
 import { subscribeToCollection } from './defectFirebaseService';
+import { PeopleContext } from '../store/context/PeopleContext';
+import { AssetContext } from '../store/context/AssetContext';
 
 const columns = [
     'id',
@@ -50,6 +52,8 @@ const DefectsPage = (props) => {
     const { state: dataState, setData } = useContext(DataContext)
     const { state: authState, setAuth } = useContext(AuthContext)
     const { state: defectState, setDefect } = useContext(DefectContext)
+    const {state : peopleState, } = useContext(PeopleContext)
+    const {state : assetState} = useContext(AssetContext)
 
 
 
@@ -381,7 +385,7 @@ const DefectsPage = (props) => {
                         <View style={{ flexDirection: 'row' }}>
                             <View style={{ marginRight: 10 }}>
                                 <TextInput
-                                    style={[styles.input, { marginTop: 0 }, searchTextInputBorderColor && styles.withBorderInputContainer]}
+                                    style={[styles.input, { marginTop: 0 }, ]}
                                     placeholder="Type to search"
                                     placeholderTextColor="#868383DC"
                                     value={search}
@@ -438,7 +442,9 @@ const DefectsPage = (props) => {
                             ?
                             <Form
                                 columns={columns}
-                                entriesData={searchDefectSelectedOption == 'Asset' ? defectedArray.filter((item) => item.assetName.toLowerCase().includes(search.toLowerCase())) : searchDefectSelectedOption == 'Driver' ? defectedArray.filter((item) => item.driverName.toLowerCase().includes(search.toLowerCase())) : defectedArray}
+                                entriesData={searchDefectSelectedOption == 'Asset' ? defectedArray.filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+              ) : searchDefectSelectedOption == 'Driver' ? defectedArray.filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.driverEmployeeNumber)?.Name?.toLowerCase().includes(search.toLowerCase())
+              ) : defectedArray}
                                 titleForm="Defects"
                                 onValueChange={handleDefectsFormValueChange}
                                 onOpenWorkOrder={handleOpenWorkOrderValue}
@@ -680,17 +686,20 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between'
     },
     formCellStyle: {
-        justifyContent: 'center',
+        justifyContent:'space-around',
         flex: 1,
-        minHeight: 50,
-        maxWidth:150
+        height: 50,
+        maxWidth:150,
+        
+        overflow:'hidden', 
+        
 
         // paddingLeft: 20
     },
     formEntryTextStyle: {
         fontFamily: 'inter-regular',
         paddingHorizontal: 5,
-        paddingVertical: 5,
+        // paddingVertical: 5,
         fontSize: 13,
         color: '#000000'
     },
@@ -789,12 +798,12 @@ const styles = StyleSheet.create({
         }),
     },
     dropdownButtonSelect: {
-        borderColor: '#558BC1',
-        shadowColor: '#558BC1',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 1,
-        shadowRadius: 10,
-        elevation: 0,
+        // borderColor: '#558BC1',
+        // shadowColor: '#558BC1',
+        // shadowOffset: { width: 0, height: 0 },
+        // shadowOpacity: 1,
+        // shadowRadius: 10,
+        // elevation: 0,
 
         backgroundColor: '#FFFFFF'
     },

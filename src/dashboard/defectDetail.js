@@ -12,8 +12,9 @@ import DatePicker, { getFormatedDate } from 'react-native-modern-datepicker';
 import { PeopleContext } from "../store/context/PeopleContext";
 import { AssetContext } from "../store/context/AssetContext";
 import AlertModal from "../../components/AlertModal";
+import { WOContext } from "../store/context/WOContext";
 
-const DefectDetail = ({ value }) => {
+const DefectDetail = ({ value, onDashboardOpenWO }) => {
     const today = new Date()
     const startData = getFormatedDate(today.setDate(today.getDate() + 1), 'YYYY/MM/DD')
     const db = getFirestore(app)
@@ -27,6 +28,7 @@ const DefectDetail = ({ value }) => {
     const { state: defectState, setDefect } = useContext(DefectContext)
     const { state: peopleState, setPeople } = useContext(PeopleContext)
     const { state: assetState, setAssetData } = useContext(AssetContext)
+    const {state : woState, setWO } = useContext(WOContext)
 
     const [selectedDefect, setSelectedDefect] = useState(value)
     const [loading, setLoading] = useState(false)
@@ -45,6 +47,7 @@ const DefectDetail = ({ value }) => {
     const [workOrderID, setWorkOrderID] = useState(1)
     const [alertIsVisible, setAlertIsVisible] = useState(false)
     const [alertStatus, setAlertStatus] = useState('')
+    const [assignedMechanicId, setAssignedMechanicId] = useState(0)
 
     const handleDateChange = (dateString) => {
 
@@ -60,7 +63,8 @@ const DefectDetail = ({ value }) => {
         const unsubscribe = subscribeToCollection('myCollection', (newData) => {
             // console.log(newData)
             // console.log(selectedDefect)
-
+            // const updatedWorkorders = updateWorkOrdersWithAssetInfo(newData, assetState.value.data);
+            // const workOrdersWithNames = replaceMechanicIdsWithNames([...updatedWorkorders], [...peopleState.value.data]);
             const updatedSelectedDefect = newData.find((defect) => defect.id === selectedDefect.id);
 
             if (updatedSelectedDefect) {
@@ -77,6 +81,33 @@ const DefectDetail = ({ value }) => {
             unsubscribe();
         };
     }, []);
+
+    const replaceMechanicIdsWithNames = (workOrders, mechanics) => {
+        const workOrdersWithNames = workOrders.map(order => {
+            const mechanic = mechanics.find(m => m['Employee Number'].toString() === order.assignedMechanic);
+            const mechanicName = mechanic ? mechanic.Name : 'Unknown Mechanic';
+            console.log(mechanicName)
+            return { ...order, 'assignedMechanic': mechanicName };
+        });
+        return workOrdersWithNames;
+    };
+
+    const updateWorkOrdersWithAssetInfo = (workorders, assets) => {
+        return workorders.map(order => {
+          const asset = assets.find(asset => asset['Asset Number'].toString() === order.assetNumber);
+          if (asset) {
+            return {
+              ...order,
+              assetName: asset['Asset Name'],
+              assetMake: asset.Make,
+              assetModel: asset.Model,
+              assetYear: asset.Year
+            };
+          } else {
+            return order; // Asset not found for this work order
+          }
+        });
+      };
 
     useEffect(() => {
         if (selectedDefect) {
@@ -104,6 +135,11 @@ const DefectDetail = ({ value }) => {
         await updateDoc(dbRef, {
             comments: oldComments
         })
+    }
+
+    const openWorkOrder = (item) => {
+        console.log(item)
+        onDashboardOpenWO(item)
     }
 
     const updateStatus = async (value) => {
@@ -161,14 +197,14 @@ const DefectDetail = ({ value }) => {
                 <View style={{ minWidth: 100 }}>
                     <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>#{index + 1}</Text>
                 </View>
-                <View style={{ minWidth: 250 }}>
+                <View style={{ flex: 1 }}>
                     <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>{item.title}</Text>
                 </View >
                 <View style={{ minWidth: 250, flexDirection: 'row', alignItems: 'center' }}>
                     <Image style={{ height: 25, width: 25 }} tintColor="#cccccc" source={require('../../assets/calendar_icon.png')}></Image>
                     <Text style={{ fontFamily: 'inter-regular', fontSize: 14, marginLeft: 10 }}>{item.dateCreated ? (new Date(item.dateCreated.seconds * 1000)).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }).toString() : new Date(item.timeStamp).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }).toString()}</Text>
                 </View>
-                <TouchableOpacity style={{ paddingVertical: 4, paddingHorizontal: 15, borderWidth: 1, borderColor: '#cccccc', borderRadius: 4, position: 'absolute', top: 10, bottom: 10, right: 15 }} onPress={() => handleDeleteWorkOrderItem(index)}>
+                <TouchableOpacity style={{ height: 40, width: 60, borderWidth: 1, borderColor: '#cccccc', borderRadius: 4, alignItems: 'center', justifyContent: 'center ' }} onPress={() => handleDeleteWorkOrderItem(index)}>
                     <Image style={{ height: 25, width: 25 }} source={require('../../assets/delete_icon.png')} tintColor="#4D4D4D"></Image>
                 </TouchableOpacity>
             </View>
@@ -190,7 +226,6 @@ const DefectDetail = ({ value }) => {
     const handleSaveWorkOrder = async () => {
 
         try {
-            const myAsset = [...assetState.value.data.filter((item) => item['Asset Number'].toString() === selectedDefect.assetNumber)]
             let temp = []
             await getDocs(query(collection(db, 'WorkOrders'), orderBy('TimeStamp', 'desc')))
                 .then((snapshot) => {
@@ -202,36 +237,34 @@ const DefectDetail = ({ value }) => {
 
                 setDoc(doc(db, 'WorkOrders', '1'), {
                     id: 1,
-                    'assetName': selectedDefect.assetName,
                     'assetNumber': selectedDefect.assetNumber,
-                    'driverEmployeeNumber' : selectedDefect.driverEmployeeNumber,
-                    'driverName' : selectedDefect.driverName,
+                    'driverEmployeeNumber': selectedDefect.driverEmployeeNumber,
+                    'driverName': selectedDefect.driverName,
                     'defectID': selectedDefect.id,
                     'defectedItems': [...workOrderVariable.map(item => ({
                         'title': item.title,
                         'TimeStamp': item.dateCreated ? item.dateCreated.seconds * 1000 : item.timeStamp,
                     }))],
-                    'assignedMechanic': assignedMechanic,
+                    'assignedMechanic': assignedMechanicId.toString(),
                     'dueDate': selectedDate,
                     'status': 'Pending',
-                    'assetMake': myAsset[0].Make,
-                    'assetModel': myAsset[0].Model,
-                    'assetYear': myAsset[0].Year,
                     'mileage': mileage,
                     'comments': [],
                     'completionDate': 0,
-                    'severity' : severitySelectedOption,
-                    'priority' : prioritySelectedOption,
-                    'TimeStamp': serverTimestamp()
+                    'severity': severitySelectedOption,
+                    'priority': prioritySelectedOption,
+                    'TimeStamp': serverTimestamp(),
+                    'partsTax' : '',
+                    'laborTax' : ''
                 })
 
 
                 await updateDoc(doc(db, 'Defects', selectedDefect.id.toString()), {
                     'workOrder': 1,
-                    'assignedMechanic' : assignedMechanic
+                    'assignedMechanic': assignedMechanicId.toString()
                 })
 
-                setLoading(false)
+                await updateWorkOrders()
                 setAlertStatus('successful')
                 setAlertIsVisible(true)
             }
@@ -239,35 +272,34 @@ const DefectDetail = ({ value }) => {
 
                 setDoc(doc(db, 'WorkOrders', (temp[0].id + 1).toString()), {
                     id: (temp[0].id + 1),
-                    'assetName': selectedDefect.assetName,
                     'assetNumber': selectedDefect.assetNumber,
                     'defectID': selectedDefect.id,
-                    'driverEmployeeNumber' : selectedDefect.driverEmployeeNumber,
-                    'driverName' : selectedDefect.driverName,
+                    'driverEmployeeNumber': selectedDefect.driverEmployeeNumber,
+                    'driverName': selectedDefect.driverName,
                     'defectedItems': [...workOrderVariable.map(item => ({
                         'title': item.title,
                         'TimeStamp': item.dateCreated ? item.dateCreated.seconds * 1000 : item.timeStamp,
                     }))],
-                    'assignedMechanic': assignedMechanic,
+                    'assignedMechanic': assignedMechanicId.toString(),
                     'dueDate': selectedDate,
                     'status': 'Pending',
-                    'assetMake': myAsset[0].Make,
-                    'assetModel': myAsset[0].Model,
-                    'assetYear': myAsset[0].Year,
                     'mileage': mileage,
                     'comments': [],
                     'completionDate': 0,
-                    'severity' : severitySelectedOption,
-                    'priority' : prioritySelectedOption,
-                    'TimeStamp': serverTimestamp()
+                    'severity': severitySelectedOption,
+                    'priority': prioritySelectedOption,
+                    'TimeStamp': serverTimestamp(),
+                    'partsTax' : '',
+                    'laborTax' : ''
                 })
 
                 await updateDoc(doc(db, 'Defects', selectedDefect.id.toString()), {
                     'workOrder': (temp[0].id + 1),
-                    'assignedMechanic' : assignedMechanic
-                })
+                    'assignedMechanic': assignedMechanicId.toString()
+                }) 
 
-                setLoading(false)
+                await updateWorkOrders()
+                
                 setAlertStatus('successful')
                 setAlertIsVisible(true)
             }
@@ -276,6 +308,19 @@ const DefectDetail = ({ value }) => {
             setAlertStatus('failed')
             setAlertIsVisible(true)
         }
+    }
+
+    const updateWorkOrders = async () => {
+        await getDocs(query(collection(db, 'WorkOrders'), orderBy('TimeStamp', 'desc')))
+        .then((snapshot) => {
+            let temp = []
+            snapshot.forEach((docs) => {
+                temp.push(docs.data())
+            })
+            setWO(temp)
+        })
+        setLoading(false)
+        
     }
 
     const closeAlert = () => {
@@ -337,15 +382,15 @@ const DefectDetail = ({ value }) => {
                                 </View>
                                 <View style={{ flexDirection: 'row', marginLeft: 25, marginVertical: 10, alignItems: 'center' }}>
                                     <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Asset</Text>
-                                    <Text style={{ fontFamily: 'inter-regular', fontSize: 15 }}>{selectedDefect.assetName}</Text>
+                                    <Text style={{ fontFamily: 'inter-regular', fontSize: 15 }}>{assetState.value.data.find(asset => asset["Asset Number"].toString() === selectedDefect.assetNumber)?.['Asset Name'] || 'Unknown Asset'}</Text>
                                 </View>
                                 <View style={{ flexDirection: 'row', marginLeft: 25, marginVertical: 10, alignItems: 'center' }}>
                                     <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Driver</Text>
-                                    <Text style={{ fontFamily: 'inter-regular', fontSize: 15 }}>{selectedDefect.driverName}</Text>
+                                    <Text style={{ fontFamily: 'inter-regular', fontSize: 15 }}>{peopleState.value.data.filter(d => d.Designation === 'Driver').find(driver => driver["Employee Number"].toString() === selectedDefect.driverEmployeeNumber)?.Name || 'Unknown Driver'}</Text>
                                 </View>
-                                <View style={{ flexDirection: 'row', marginLeft: 25, marginVertical: 10, alignItems: 'center' }}>
+                                <View style={{ flexDirection: 'row', marginHorizontal: 25, marginVertical: 10, alignItems: 'center' }}>
                                     <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Driver Comment</Text>
-                                    <Text style={{ fontFamily: 'inter-regular', fontSize: 15 }}>{selectedDefect.defect.Note}</Text>
+                                    <Text style={{ fontFamily: 'inter-regular', fontSize: 15, flex: 1, }}>{selectedDefect.defect.Note}</Text>
                                 </View>
                                 <View style={{ flexDirection: 'row', marginLeft: 25, marginVertical: 10, alignItems: 'center', zIndex: 2 }}>
                                     <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Severity</Text>
@@ -398,7 +443,7 @@ const DefectDetail = ({ value }) => {
                                 </View>
                                 <View style={{ flexDirection: 'row', marginLeft: 25, marginVertical: 10, alignItems: 'center' }}>
                                     <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Assigned Mechanic</Text>
-                                    <Text style={{ fontFamily: 'inter-regular', fontSize: 15 }}>{selectedDefect.assignedMechanic ? selectedDefect.assignedMechanic : 'n/a' }</Text>
+                                    <Text style={{ fontFamily: 'inter-regular', fontSize: 15 }}>{selectedDefect.assignedMechanic ? peopleState.value.data.find(mechanic => mechanic["Employee Number"].toString() === selectedDefect.assignedMechanic)?.Name || 'Unknown Mechanic' : 'n/a'}</Text>
                                 </View>
                                 <View style={{ flexDirection: 'row', marginLeft: 25, marginVertical: 10, alignItems: 'center' }}>
                                     <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Work Order</Text>
@@ -412,7 +457,9 @@ const DefectDetail = ({ value }) => {
                                                 onPress={() => { setOpenCreateWOModal(true) }} />
                                         </View>
                                         :
-                                        <Text style={{ fontFamily: 'inter-regular', fontSize: 15 }}>WO-{selectedDefect.workOrder}</Text>
+                                        <TouchableOpacity onPress={()=>{openWorkOrder(selectedDefect)}}>
+                                            <Text style={{ fontFamily: 'inter-regular', fontSize: 15, color:'#67E9DA' }}>WO-{selectedDefect.workOrder}</Text>
+                                        </TouchableOpacity>
                                     }
 
                                 </View>
@@ -483,25 +530,25 @@ const DefectDetail = ({ value }) => {
                                             }}
                                             renderItem={({ item, index }) => {
 
-                                                if(item.sendBy == authState.value.name){
+                                                if (item.sendBy == authState.value.name) {
                                                     return (
-                                                        <View key={index} style={{ width: '70%', marginVertical: 10, paddingHorizontal: 20, alignItems:'flex-start', alignSelf:'flex-start' }}>
+                                                        <View key={index} style={{ width: '70%', marginVertical: 10, paddingHorizontal: 20, alignItems: 'flex-start', alignSelf: 'flex-start' }}>
                                                             <Text style={{ fontFamily: 'inter-semibold', fontSize: 13 }}>{item.sendBy}</Text>
-                                                            <Text style={{ fontFamily: 'inter-regular', fontSize: 12, marginVertical:5, color:'#AAAAAA' }}>{new Date(item.timeStamp).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }) + " " + new Date(item.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</Text>
+                                                            <Text style={{ fontFamily: 'inter-regular', fontSize: 12, marginVertical: 5, color: '#AAAAAA' }}>{new Date(item.timeStamp).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }) + " " + new Date(item.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</Text>
                                                             <Text style={{ fontFamily: 'inter-regular', fontSize: 13 }}>{item.msg}</Text>
                                                         </View>
                                                     )
                                                 }
-                                                else{
+                                                else {
                                                     return (
-                                                        <View key={index} style={{ width: '70%', marginVertical: 10, paddingHorizontal: 20, alignItems:'flex-end', alignSelf:'flex-end' }}>
-                                                             <Text style={{ fontFamily: 'inter-semibold', fontSize: 13 }}>{item.sendBy}</Text>
-                                                            <Text style={{ fontFamily: 'inter-regular', fontSize: 12, marginVertical:5, color:'#AAAAAA' }}>{new Date(item.timeStamp).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }) + " " + new Date(item.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</Text>
+                                                        <View key={index} style={{ width: '70%', marginVertical: 10, paddingHorizontal: 20, alignItems: 'flex-end', alignSelf: 'flex-end' }}>
+                                                            <Text style={{ fontFamily: 'inter-semibold', fontSize: 13 }}>{item.sendBy}</Text>
+                                                            <Text style={{ fontFamily: 'inter-regular', fontSize: 12, marginVertical: 5, color: '#AAAAAA' }}>{new Date(item.timeStamp).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }) + " " + new Date(item.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</Text>
                                                             <Text style={{ fontFamily: 'inter-regular', fontSize: 13 }}>{item.msg}</Text>
                                                         </View>
-                                                    )  
+                                                    )
                                                 }
-                                              
+
                                             }} />
                                     }
 
@@ -618,6 +665,7 @@ const DefectDetail = ({ value }) => {
                                                         minuteInterval={30}
                                                         style={{ borderRadius: 10 }}
                                                         onDateChange={handleDateChange}
+                                                        minimumDate={getFormatedDate(new Date(), 'YYYY/MM/DD')}
                                                     />
                                                 </View>
                                                 :
@@ -629,11 +677,12 @@ const DefectDetail = ({ value }) => {
                                             <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>Assignee</Text>
                                             <View style={{ marginTop: 10, }}>
                                                 <DropDownComponent
-                                                    options={peopleState.value.data.map(item => item.Name)}
+                                                    options={peopleState.value.data .filter(item => item.Designation.includes('Mechanic')).map(item => item)}
                                                     onValueChange={(val) => {
                                                         setAssignedMechanic(val)
                                                     }}
                                                     // title="Ubaid Arshad"
+                                                    info = 'mechanicSelection'
                                                     selectedValue={assignedMechanic}
                                                     imageSource={require('../../assets/up_arrow_icon.png')}
                                                     container={styles.dropdownContainer}
@@ -646,6 +695,10 @@ const DefectDetail = ({ value }) => {
                                                     hoveredOptionText={styles.dropdownHoveredOptionText}
                                                     dropdownButtonSelect={styles.dropdownButtonSelect}
                                                     dropdownStyle={styles.dropdown}
+                                                    onMechanicSelection={(val)=>{
+                                                        setAssignedMechanic(val.Name)
+                                                        setAssignedMechanicId(val['Employee Number'])
+                                                }}
                                                 />
                                             </View>
 
@@ -684,34 +737,34 @@ const DefectDetail = ({ value }) => {
                                                 }} />
                                         </View>
                                         {assignedMechanic
-                                        ?
-                                        <View style={{ marginLeft: 20 }}>
-                                        <AppBtn
-                                            title="Save"
-                                            btnStyle={[{
-                                                width: '100%',
-                                                height: 30,
-                                                backgroundColor: '#FFFFFF',
-                                                borderRadius: 5,
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                shadowOffset: { width: 1, height: 1 },
-                                                shadowOpacity: 0.6,
-                                                shadowRadius: 3,
-                                                elevation: 0,
-                                                shadowColor: '#575757',
+                                            ?
+                                            <View style={{ marginLeft: 20 }}>
+                                                <AppBtn
+                                                    title="Save"
+                                                    btnStyle={[{
+                                                        width: '100%',
+                                                        height: 30,
+                                                        backgroundColor: '#FFFFFF',
+                                                        borderRadius: 5,
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        shadowOffset: { width: 1, height: 1 },
+                                                        shadowOpacity: 0.6,
+                                                        shadowRadius: 3,
+                                                        elevation: 0,
+                                                        shadowColor: '#575757',
 
-                                            }, { minWidth: 70 }]}
-                                            btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
-                                            onPress={() => {
-                                                setLoading(true)
-                                                setOpenCreateWOModal(false)
-                                                handleSaveWorkOrder()
-                                            }} />
-                                    </View>
-                                    :
-                                    null}
-                                      
+                                                    }, { minWidth: 70 }]}
+                                                    btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                                                    onPress={() => {
+                                                        setLoading(true)
+                                                        setOpenCreateWOModal(false)
+                                                        handleSaveWorkOrder()
+                                                    }} />
+                                            </View>
+                                            :
+                                            null}
+
                                     </View>
                                 </View>
                             </View>

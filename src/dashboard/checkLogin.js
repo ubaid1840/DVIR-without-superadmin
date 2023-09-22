@@ -10,23 +10,17 @@ const CheckLoginPage = () => {
 
     const db = getFirestore(app)
     const auth = getAuth(app)
-    const {state : authState, setAuth} = useContext(AuthContext)
 
 
     useEffect(() => {
         onAuthStateChanged(auth, async (user) => {
+
             if (user) {
-                await getDocs(query(collection(db, "AllowedUsers"), where('Email', '==', auth.currentUser.email)))
-                    .then((snapshot) => {
-                        console.log(snapshot)
-                        snapshot.forEach((doc) => {
-                            setAuth(doc.data().Number, doc.data().Name, doc.data().Designation, doc.data()['Employee Number'], doc.data().dp)
-                            router.replace('/dashboardLogin')
-                        })
-                    })
+                router.replace('/dashboardLogin')
             }
             else {
                 router.replace('/login')
+
             }
         });
     }, [])

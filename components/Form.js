@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, FlatList, StyleSheet, Image, Platform, Animated, Pressable, Dimensions, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, FlatList, StyleSheet, Image, Platform, Animated, Pressable, Dimensions, Modal, ActivityIndicator, Switch } from 'react-native';
 import Checkbox from 'expo-checkbox';
 import AppBtn from './Button';
 import DropDownComponent from './DropDown';
@@ -10,8 +10,9 @@ import AppModal from './Modal';
 import { Firestore, deleteDoc, doc, getFirestore, updateDoc } from 'firebase/firestore';
 import app from '../src/config/firebase';
 import { AssetContext } from '../src/store/context/AssetContext';
+import { PeopleContext } from '../src/store/context/PeopleContext';
 
-const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, columnHeaderCell, columnHeaderText, titleForm, onValueChange, onOpenWorkOrder, inHouseValueChange }) => {
+const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, columnHeaderCell, columnHeaderText, titleForm, onValueChange, onOpenWorkOrder, inHouseValueChange, onHandleAssetStatus }) => {
 
     const priorityOptionList = ['High', 'Medium', 'Low', 'Undefined'];
     const severityOptionList = ['Non critical', 'Critical', 'Undefined'];
@@ -49,7 +50,9 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
     const [severityHovered, setSeverityHovered] = useState({})
 
     const [loading, setLoading] = useState(false)
-    const {state : assetState} = useContext(AssetContext)
+    const { state: assetState } = useContext(AssetContext)
+
+    const { state: peopleState } = useContext(PeopleContext)
 
     // const [receivedPriorityData, setReceivedPriorityData] = useState('');
     // const [receivedSeverityData, setReceivedSeverityData] = useState('');
@@ -217,6 +220,10 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
         }
     };
 
+    const handleAssetStatus = (item) => {
+        onHandleAssetStatus(item)
+    }
+
 
     useEffect(() => {
         // Create an animation configuration
@@ -375,11 +382,11 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                         :
                                         column == 'assetName'
                                             ?
-                                            <Text style={[entryText, {}, rowHovered[index] && { color: '#FFFFFF', }]}>{item[column]}</Text>
+                                            <Text style={[entryText, {}, rowHovered[index] && { color: '#FFFFFF', }]}>{assetState.value.data.find(asset => asset["Asset Number"].toString() === item.assetNumber)?.['Asset Name'] || 'Unknown Asset'}</Text>
                                             :
                                             column == 'driverName'
                                                 ?
-                                                <Text style={[entryText, {}, rowHovered[index] && { color: '#FFFFFF', }]}>{item[column]}</Text>
+                                                <Text style={[entryText, {}, rowHovered[index] && { color: '#FFFFFF', }]}>{peopleState.value.data.filter(d => d.Designation === 'Driver').find(driver => driver["Employee Number"].toString() === item.driverEmployeeNumber)?.Name || 'Unknown Driver'}</Text>
                                                 :
                                                 column == 'TimeStamp'
                                                     ?
@@ -489,7 +496,7 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
         const visibleEntries = entriesData.slice(startIndex, endIndex);
 
         const handleInHouseWO = (item) => {
-           inHouseValueChange(item)
+            inHouseValueChange(item)
         }
 
         const renderRow = ({ item, index }) => {
@@ -575,22 +582,22 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                         :
                                         column == 'Action'
                                             ?
-                                            item.inhouseInspection == 'issued'
+                                            item.inhouseInspection == 'not issued'
                                                 ?
-                                                    <TouchableOpacity onPress={()=>{  handleInHouseWO(item) }}>
-                                                        <Text style={[entryText,{color:'#67E9DA', fontFamily: 'inter-regular', fontSize: 13}]}>Open WO</Text>
-                                                    </TouchableOpacity>
-                                                :
                                                 <View style={{ maxWidth: 100 }}>
                                                     <AppBtn
                                                         title="Create WO"
                                                         btnStyle={[{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#8C8C8C', height: 40, width: '100%', justifyContent: 'center', alignItems: 'center' }]}
                                                         btnTextStyle={[styles.btnText, { color: '#000000', fontFamily: 'inter-regular', fontSize: 13 }]}
                                                         onPress={() => {
-                                                           
                                                             handleValueChange(item)
                                                         }} />
                                                 </View>
+
+                                                :
+                                                <TouchableOpacity onPress={() => { handleInHouseWO(item) }}>
+                                                    <Text style={[entryText, { color: '#67E9DA', fontFamily: 'inter-regular', fontSize: 13 }]}>WO-{item.inhouseInspection}</Text>
+                                                </TouchableOpacity>
                                             :
                                             column == 'status'
                                                 ?
@@ -677,38 +684,76 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                 <Animated.View style={[row,]}>
                     {columns.map((column) => {
                         return (
-                            item[column] == undefined ? null :
 
 
+                            <View
+                                key={column}
+                                style={[cell]}
+                            >
+                                {column === "Action" ?
+                                    <TouchableOpacity
+                                        onPress={() => handleValueChange(item)}
+                                        key={column}
+                                        style={[cell, { paddingHorizontal: 20 }]}
+                                        onMouseEnter={() => handleMouseEnter(index)}
+                                        onMouseLeave={() => handleMouseLeave(index)}
+                                    >
+                                        <Image
+                                            style={[styles.btn, { transform: [{ rotate: '90deg' }] }]}
+                                            resizeMode='contain'
+                                            source={require('../assets/up_arrow_action_icon.png')}
+                                            tintColor={imageHovered[index] ? '#67E9DA' : '#1E3D5C'}
+                                        />
+                                    </TouchableOpacity>
 
-                                <View
-                                    key={column}
-                                    style={[cell]}
-                                >
-                                    {column === "Action" ?
-                                        <TouchableOpacity
-                                            onPress={() => handleValueChange(item)}
-                                            key={column}
-                                            style={[cell, { paddingHorizontal: 20 }]}
-                                            onMouseEnter={() => handleMouseEnter(index)}
-                                            onMouseLeave={() => handleMouseLeave(index)}
-                                        >
-                                            <Image
-                                                style={[styles.btn, { transform: [{ rotate: '90deg' }] }]}
-                                                resizeMode='contain'
-                                                source={require('../assets/up_arrow_action_icon.png')}
-                                                tintColor={imageHovered[index] ? '#67E9DA' : '#1E3D5C'}
-                                            />
-                                        </TouchableOpacity>
-                                        :
+                                    :
+                                    column === 'Asset Name'
+                                        ?
                                         <View style={[styles.cell,]}>
                                             <Text style={entryText}>{item[column]}</Text>
                                         </View>
-                                    }
+                                        :
+                                        column === 'Plate Number'
+                                            ?
+                                            <View style={[styles.cell,]}>
+                                                <Text style={entryText}>{item[column]}</Text>
+                                            </View>
+                                            :
+                                            column === 'Engine Type'
+                                                ?
+                                                <View style={[styles.cell,]}>
+                                                    <Text style={entryText}>{item[column]}</Text>
+                                                </View>
+                                                :
+                                                column === 'ADA'
+                                                    ?
+                                                    <View style={[styles.cell,]}>
+                                                        <Text style={entryText}>{item[column]}</Text>
+                                                    </View>
+                                                    :
+                                                    column === 'Asset Type'
+                                                        ?
+                                                        <View style={[styles.cell,]}>
+                                                            <Text style={entryText}>{item[column]}</Text>
+                                                        </View>
+                                                        :
+                                                        column === 'Status'
+                                                            ?
+                                                            <View style={[styles.cell]}>
+                                                                <Switch
+                                                                    style={{ marginLeft: 20 }}
+                                                                    value={item.active}
+                                                                    onValueChange={()=>handleAssetStatus(item)} />
+                                                            </View>
+                                                            :
+                                                            null
+
+
+                                }
 
 
 
-                                </View>
+                            </View>
                         )
                     })}
                 </Animated.View>
@@ -922,11 +967,11 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                         :
                                         column == 'assetName'
                                             ?
-                                            <Text style={[entryText, {}, rowHovered[index] && { color: '#FFFFFF', }]}>{item[column]}</Text>
+                                            <Text style={[entryText, {}, rowHovered[index] && { color: '#FFFFFF', }]}>{assetState.value.data.find(asset => asset["Asset Number"].toString() === item.assetNumber)?.['Asset Name'] || 'Unknown Asset'}</Text>
                                             :
                                             column == 'driverName'
                                                 ?
-                                                <Text style={[entryText, {}, rowHovered[index] && { color: '#FFFFFF', }]}>{item[column]}</Text>
+                                                <Text style={[entryText, {}, rowHovered[index] && { color: '#FFFFFF', }]}>{peopleState.value.data.filter(d => d.Designation === 'Driver').find(driver => driver["Employee Number"].toString() === item.driverEmployeeNumber)?.Name || 'Unknown Driver'}</Text>
                                                 :
                                                 column == 'dateCreated'
                                                     ?
@@ -942,7 +987,7 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                                             :
                                                             column == 'title'
                                                                 ?
-                                                                <Text style={[entryText, {}, rowHovered[index] && { color: '#FFFFFF', }]}>{item[column]}</Text>
+                                                                <Text style={[entryText, {}, rowHovered[index] && { color: '#FFFFFF' }, {}]}>{item[column].length > 35 ? item[column].slice(0,30) + "..." : item[column]}</Text>
                                                                 :
                                                                 column == 'Work Order'
                                                                     ?
@@ -1076,18 +1121,11 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                         :
                                         column == 'assetName'
                                             ?
-                                            <Text style={[entryText, {},]}>{item[column]}</Text>
+                                            <Text style={[entryText, {},]}>{assetState.value.data.find(asset => asset["Asset Number"].toString() === item.assetNumber)?.['Asset Name'] || 'Unknown Asset'}</Text>
                                             :
                                             column == 'defectedItems'
                                                 ?
-                                                item[column].map((val, index1) => {
-                                                    return (
-                                                        <View key={index1} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                                            <View style={{ height: 6, width: 6, borderRadius: 3, backgroundColor: '#000000' }}></View>
-                                                            <Text style={[entryText, { paddingHorizontal: 8 }]}>{val.title}</Text>
-                                                        </View>
-                                                    )
-                                                })
+                                                <Text style={[entryText, {},]}>{item[column].length}</Text>
 
                                                 :
                                                 column == 'dueDate'
@@ -1097,7 +1135,7 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                                     :
                                                     column == 'assignedMechanic'
                                                         ?
-                                                        <Text style={[entryText, {},]}>{item[column]}</Text>
+                                                        <Text style={[entryText, {},]}>{peopleState.value.data.find(mechanic => mechanic["Employee Number"].toString() === item.assignedMechanic)?.Name || 'Unknown Mechanic'}</Text>
                                                         :
                                                         column == 'Action'
                                                             ?
