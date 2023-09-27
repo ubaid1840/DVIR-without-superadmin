@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext, useRef } from 'react';
-import { Text, View, ScrollView, StyleSheet, Image, Animated, Dimensions, ActivityIndicator, TouchableOpacity, FlatList } from 'react-native';
+import { Text, View, ScrollView, StyleSheet, Image, Animated, Dimensions, ActivityIndicator, TouchableOpacity, FlatList, TouchableWithoutFeedback } from 'react-native';
 import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -16,6 +16,7 @@ import { DefectContext } from '../store/context/DefectContext';
 import { subscribeToCollection } from './defectFirebaseService';
 import { PeopleContext } from '../store/context/PeopleContext';
 import { AssetContext } from '../store/context/AssetContext';
+import { CloseAllDropDowns } from '../../components/CloseAllDropdown';
 
 const columns = [
     'id',
@@ -52,8 +53,8 @@ const DefectsPage = (props) => {
     const { state: dataState, setData } = useContext(DataContext)
     const { state: authState, setAuth } = useContext(AuthContext)
     const { state: defectState, setDefect } = useContext(DefectContext)
-    const {state : peopleState, } = useContext(PeopleContext)
-    const {state : assetState} = useContext(AssetContext)
+    const { state: peopleState, } = useContext(PeopleContext)
+    const { state: assetState } = useContext(AssetContext)
 
 
 
@@ -166,254 +167,75 @@ const DefectsPage = (props) => {
 
     return (
 
-        <Animated.View style={{ flex: 1, backgroundColor: '#f6f8f9' }}>
+        <View style={{ flex: 1, backgroundColor: '#f6f8f9' }}
+        >
 
-            {selectedDefect ?
-                <ScrollView style={{ height: 100 }}>
-                    <View style={{ flexDirection: 'row', padding: 40, justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Text style={{ fontSize: 30, color: '#335a75', fontFamily: 'inter-extrablack', marginLeft: 10 }}>
-                                {selectedDefect.title}
-                            </Text>
+                <TouchableWithoutFeedback onPress={()=> {
+                    CloseAllDropDowns()
+                }}>
+                    <ScrollView style={{ height: 100 }}>
+                        <View style={{ flexDirection: 'row', marginLeft: 40, marginVertical: 40, marginRight: 40, justifyContent: 'space-between', alignItems: 'center' }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <View style={{ backgroundColor: '#23d3d3', borderRadius: 15, }}>
+                                    <Image style={{ width: 30, height: 30, margin: 7 }}
+                                        tintColor="#FFFFFF"
+                                        source={require('../../assets/defects_icon.png')}></Image>
+                                </View>
+                                <Text style={{ fontSize: 30, color: '#335a75', fontFamily: 'inter-extrablack', marginLeft: 10 }}>
+                                    Defects
+                                </Text>
+                            </View>
+                            <View style={{ flexDirection: 'row' }}>
+                                <View style={{ alignItems: 'center' }}>
+                                    <Text style={{ color: '#5B5B5B', fontSize: 20, fontFamily: 'inter-medium' }}>{totalNew}</Text>
+                                    <Text style={{ color: '#5B5B5B', fontSize: 17 }}>New</Text>
+                                </View>
+                                <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 25, opacity: 0.5, }}></View>
+                                <View style={{ alignItems: 'center' }}>
+                                    <Text style={{ color: '#5B5B5B', fontSize: 20, fontFamily: 'inter-medium' }}>{totalInProgress}</Text>
+                                    <Text style={{ color: '#5B5B5B', fontSize: 17 }}>In Progress</Text>
+                                </View>
+                                <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 25, opacity: 0.5 }}></View>
+                                <View style={{ alignItems: 'center' }}>
+                                    <Text style={{ color: '#5B5B5B', fontSize: 20, fontFamily: 'inter-medium' }}>{totalCorrected}</Text>
+                                    <Text style={{ color: '#5B5B5B', fontSize: 17 }}>Corrected</Text>
+                                </View>
+                            </View>
                         </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <View>
-                                <AppBtn
-                                    title="Mark as In Progress"
-                                    btnStyle={[styles.btn, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#ADADAD' }]}
-                                    btnTextStyle={[styles.btnText, { fontFamily: 'inter-regular', color: '#000000', fontSize: 13 }]}
-                                    onPress={handleDownloadReportBtn} />
-                            </View>
-                            <View style={{ marginLeft: 5 }}>
-                                <AppBtn
-                                    title="Mark as Corrected"
-                                    btnStyle={[styles.btn, { backgroundColor: '#23d3d3' }]}
-                                    btnTextStyle={[styles.btnText, { fontFamily: 'inter-regular', fontSize: 14 }]}
-                                    onPress={handleDownloadReportBtn} />
-                            </View>
-                        </View>
-                    </View>
-
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', margin: 40 }}>
-                        <View style={[styles.newContentCardStyle, { paddingVertical: 25, marginRight: 20 }]}>
-                            <View style={{ borderBottomWidth: 1, borderBottomColor: '#C6C6C6', paddingHorizontal: 25, paddingBottom: 25 }}>
-                                <Text style={{ color: '#353535', fontFamily: 'inter-medium', fontSize: 20 }}>Details</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', marginLeft: 25, marginVertical: 10, alignItems: 'center', marginTop: 25 }}>
-                                <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Defect ID</Text>
-                                <Text style={{ fontFamily: 'inter-regular', fontSize: 15 }}>{selectedDefect.id}</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', marginLeft: 25, marginVertical: 10, alignItems: 'center' }}>
-                                <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Status</Text>
-                                <Text style={{ fontFamily: 'inter-regular', fontSize: 15 }}>{selectedDefect.status}</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', marginLeft: 25, marginVertical: 10, alignItems: 'center' }}>
-                                <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Asset</Text>
-                                <Text style={{ fontFamily: 'inter-regular', fontSize: 15 }}>{selectedDefect.assetName}</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', marginLeft: 25, marginVertical: 10, alignItems: 'center' }}>
-                                <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Driver</Text>
-                                <Text style={{ fontFamily: 'inter-regular', fontSize: 15 }}>{selectedDefect.driverName}</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', marginLeft: 25, marginVertical: 10, alignItems: 'center' }}>
-                                <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Driver Comment</Text>
-                                <Text style={{ fontFamily: 'inter-regular', fontSize: 15 }}>{selectedDefect.defect.Note}</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', marginLeft: 25, marginVertical: 10, alignItems: 'center' }}>
-                                <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Severity</Text>
-                                <Text style={{ fontFamily: 'inter-regular', fontSize: 15 }}>{selectedDefect.severity}</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', marginLeft: 25, marginVertical: 10, alignItems: 'center' }}>
-                                <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Priority</Text>
-                                <Text style={{ fontFamily: 'inter-regular', fontSize: 15 }}>{selectedDefect.priority}</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', marginLeft: 25, marginVertical: 10, alignItems: 'center' }}>
-                                <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Assigned Mechanic</Text>
-                                <Text style={{ fontFamily: 'inter-regular', fontSize: 15 }}>n/a</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', marginLeft: 25, marginVertical: 10, alignItems: 'center' }}>
-                                <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Work Order</Text>
-                                <View>
-                                    <AppBtn
-                                        title="Create WO"
-                                        btnStyle={[styles.btn, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#8C8C8C', height: 40 }]}
-                                        btnTextStyle={[styles.btnText, { color: '#000000', fontFamily: 'inter-regular', fontSize: 13 }]}
-                                        onPress={() => { }} />
-                                </View>
-                            </View>
-                            <View style={{ flexDirection: 'row', marginLeft: 25, marginVertical: 10, alignItems: 'center' }}>
-                                <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Date Created</Text>
-                                <Text style={{ fontFamily: 'inter-regular', fontSize: 15 }}>{new Date(selectedDefect.dateCreated.seconds * 1000).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }) + " " + new Date(selectedDefect.dateCreated.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', marginLeft: 25, marginVertical: 10, alignItems: 'center' }}>
-                                <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Company</Text>
-                                <Text style={{ fontFamily: 'inter-regular', fontSize: 15 }}>Octa Soft</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', marginLeft: 25, marginVertical: 10, alignItems: 'center' }}>
-                                <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Inspection Form</Text>
-                                <Text style={{ fontFamily: 'inter-regular', fontSize: 15 }}>Form 1</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', marginLeft: 25, marginVertical: 10, alignItems: 'center' }}>
-                                <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Defect Card</Text>
-                                <Text style={{ fontFamily: 'inter-regular', fontSize: 15 }}>{selectedDefect.type}</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', marginLeft: 25, marginVertical: 10, alignItems: 'center' }}>
-                                <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Inspection ID</Text>
-                                <Text style={{ fontFamily: 'inter-regular', fontSize: 15 }}>{selectedDefect.inspectionId}</Text>
-                            </View>
-
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <View style={[styles.newContentCardStyle, { width: '100%' }]}>
-                                <View style={{ borderBottomWidth: 1, borderBottomColor: '#C6C6C6', padding: 25 }}>
-                                    <Text style={{ color: '#353535', fontFamily: 'inter-medium', fontSize: 20 }}>Attachments</Text>
-                                </View>
-                                <View style={{ margin: 25, borderBottomWidth: 1, paddingBottom: 10, borderBottomColor: '#23d3d3' }}>
-                                    <Text style={{ fontFamily: 'inter-medium', fontSize: 15, color: '#23d3d3' }}>Photos</Text>
-                                </View>
-                                <TouchableOpacity style={{ marginLeft: 25, marginBottom: 25 }} onPress={() => {
-                                    window.open(selectedDefect.defect.Image, '_blank');
-                                }}>
-                                    <Image style={{ height: 150, width: 150 }} source={{ uri: selectedDefect.defect.Image }}></Image>
-                                </TouchableOpacity>
-                            </View>
-
-                            <View style={[styles.newContentCardStyle, { marginTop: 20, width: '100%' }]}>
-                                <View style={{ borderBottomWidth: 1, borderBottomColor: '#C6C6C6', padding: 25 }}>
-                                    <Text style={{ color: '#353535', fontFamily: 'inter-medium', fontSize: 20 }}>Activity</Text>
-                                </View>
-
-                                <View style={{ margin: 25, borderBottomWidth: 1, paddingBottom: 10, borderBottomColor: '#23d3d3' }}>
-                                    <Text style={{ fontFamily: 'inter-medium', fontSize: 15, color: '#23d3d3' }}>Comments</Text>
-                                </View>
-                                {selectedDefect.comments.length == 0
-                                    ?
-                                    <View style={{ borderWidth: 1, padding: 35, margin: 25, borderColor: '#C6C6C6' }}>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 14 }}>There are no comments</Text>
-                                    </View>
-                                    :
-                                    <FlatList
-                                        style={{ maxHeight: 200 }}
-                                        data={selectedDefect.comments}
-                                        ref={flatlistRef}
-                                        onContentSizeChange={() => {
-                                            if (selectedDefect.comments.length != 0) {
-                                                flatlistRef.current.scrollToEnd({ animated: true })
-                                            }
-                                        }}
-                                        onLayout={() => {
-                                            if (selectedDefect.comments.length != 0) {
-                                                flatlistRef.current.scrollToEnd()
-                                            }
-                                        }}
-                                        renderItem={({ item, index }) => {
-                                            return (
-                                                <View key={index} style={{ width: '100%', marginVertical: 10, paddingHorizontal: 20, alignItems: item.sendBy == authState.value.name ? 'flex-start' : 'flex-end' }}>
-                                                    <Text style={{ fontFamily: 'inter-regular', fontSize: 12 }}>{item.sendBy}</Text>
-                                                    <Text style={{ fontFamily: 'inter-regular', fontSize: 12 }}>{item.msg}</Text>
-                                                </View>
-                                            )
-                                        }} />
-                                }
-
-                                <View style={{ flexDirection: 'row', marginHorizontal: 25, alignItems: 'center' }}>
-                                    <Image style={{ height: 30, width: 30 }} source={require('../../assets/profile_icon.png')} tintColor="#8C8C8C" resizeMode='contain'></Image>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 40, paddingRight: 40, zIndex: 1, }}>
+                            <View style={{ flexDirection: 'row' }}>
+                                <View style={{ marginRight: 10 }}>
                                     <TextInput
-                                        style={[styles.input, { marginLeft: 5 }, searchTextInputBorderColor && styles.withBorderInputContainer]}
-                                        placeholder=""
+                                        style={[styles.input, { marginTop: 0 },]}
+                                        placeholder="Type to search"
                                         placeholderTextColor="#868383DC"
-                                        value={comment}
-                                        onChangeText={(val) => { setComment(val) }}
+                                        value={search}
+                                        onChangeText={(val) => { setSearch(val) }}
                                         onFocus={() => { setSearchTextInputBorderColor(true) }}
                                         onBlur={() => { setSearchTextInputBorderColor(false) }}
                                     />
                                 </View>
-                                <View style={{ width: 130, marginTop: 20, marginBottom: 25, marginLeft: 25 }}>
-                                    <AppBtn
-                                        title="Add Comment"
-                                        btnStyle={[styles.btn, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#8C8C8C', height: 40 }]}
-                                        btnTextStyle={[styles.btnText, { color: '#000000', fontFamily: 'inter-regular', fontSize: 13 }]}
-                                        onPress={() => {
-                                            if (comment == null || comment == '') { }
-                                            else {
-                                                setComment("")
-                                                updateComment()
-                                            }
-
-                                        }} />
+                                <View style={{ marginRight: 10 }}>
+                                    <DropDownComponent
+                                        options={searchDefectOptionList}
+                                        onValueChange={handleSearchDefectValueChange}
+                                        // title="Ubaid Arshad"
+                                        info='searchSelection'
+                                        selectedValue={searchDefectSelectedOption}
+                                        imageSource={require('../../assets/up_arrow_icon.png')}
+                                        container={styles.dropdownContainer}
+                                        dropdownButton={styles.dropdownButton}
+                                        selectedValueStyle={styles.dropdownSelectedValueStyle}
+                                        optionsContainer={styles.dropdownOptionsContainer}
+                                        option={styles.dropdownOption}
+                                        hoveredOption={styles.dropdownHoveredOption}
+                                        optionText={styles.dropdownOptionText}
+                                        hoveredOptionText={styles.dropdownHoveredOptionText}
+                                        dropdownButtonSelect={styles.dropdownButtonSelect}
+                                        dropdownStyle={styles.dropdown}
+                                    />
                                 </View>
-
-                            </View>
-
-
-
-                        </View>
-                    </View>
-
-                </ScrollView>
-                :
-                <ScrollView style={{ height: 100 }}>
-                    <View style={{ flexDirection: 'row', marginLeft: 40, marginVertical: 40, marginRight: 40, justifyContent: 'space-between', alignItems: 'center' }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <View style={{ backgroundColor: '#23d3d3', borderRadius: 15, }}>
-                                <Image style={{ width: 30, height: 30, margin: 7 }}
-                                    tintColor="#FFFFFF"
-                                    source={require('../../assets/defects_icon.png')}></Image>
-                            </View>
-                            <Text style={{ fontSize: 30, color: '#335a75', fontFamily: 'inter-extrablack', marginLeft: 10 }}>
-                                Defects
-                            </Text>
-                        </View>
-                        <View style={{ flexDirection: 'row' }}>
-                            <View style={{ alignItems: 'center' }}>
-                                <Text style={{ color: '#5B5B5B', fontSize: 20, fontFamily: 'inter-medium' }}>{totalNew}</Text>
-                                <Text style={{ color: '#5B5B5B', fontSize: 17 }}>New</Text>
-                            </View>
-                            <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 25, opacity: 0.5, }}></View>
-                            <View style={{ alignItems: 'center' }}>
-                                <Text style={{ color: '#5B5B5B', fontSize: 20, fontFamily: 'inter-medium' }}>{totalInProgress}</Text>
-                                <Text style={{ color: '#5B5B5B', fontSize: 17 }}>In Progress</Text>
-                            </View>
-                            <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 25, opacity: 0.5 }}></View>
-                            <View style={{ alignItems: 'center' }}>
-                                <Text style={{ color: '#5B5B5B', fontSize: 20, fontFamily: 'inter-medium' }}>{totalCorrected}</Text>
-                                <Text style={{ color: '#5B5B5B', fontSize: 17 }}>Corrected</Text>
-                            </View>
-                        </View>
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 40, paddingRight: 40, zIndex: 1, }}>
-                        <View style={{ flexDirection: 'row' }}>
-                            <View style={{ marginRight: 10 }}>
-                                <TextInput
-                                    style={[styles.input, { marginTop: 0 }, ]}
-                                    placeholder="Type to search"
-                                    placeholderTextColor="#868383DC"
-                                    value={search}
-                                    onChangeText={(val) => { setSearch(val) }}
-                                    onFocus={() => { setSearchTextInputBorderColor(true) }}
-                                    onBlur={() => { setSearchTextInputBorderColor(false) }}
-                                />
-                            </View>
-                            <View style={{ marginRight: 10 }}>
-                                <DropDownComponent
-                                    options={searchDefectOptionList}
-                                    onValueChange={handleSearchDefectValueChange}
-                                    // title="Ubaid Arshad"
-                                    selectedValue={searchDefectSelectedOption}
-                                    imageSource={require('../../assets/up_arrow_icon.png')}
-                                    container={styles.dropdownContainer}
-                                    dropdownButton={styles.dropdownButton}
-                                    selectedValueStyle={styles.dropdownSelectedValueStyle}
-                                    optionsContainer={styles.dropdownOptionsContainer}
-                                    option={styles.dropdownOption}
-                                    hoveredOption={styles.dropdownHoveredOption}
-                                    optionText={styles.dropdownOptionText}
-                                    hoveredOptionText={styles.dropdownHoveredOptionText}
-                                    dropdownButtonSelect={styles.dropdownButtonSelect}
-                                    dropdownStyle={styles.dropdown}
-                                />
-                            </View>
-                            {/* <View style={{ marginRight: 10 }}>
+                                {/* <View style={{ marginRight: 10 }}>
                                     <TouchableOpacity
                                         onMouseEnter={() => setSearchBtnHover(true)}
                                         onMouseLeave={() => setSearchBtnHover(false)}
@@ -427,49 +249,48 @@ const DefectsPage = (props) => {
                                             source={require('../../assets/search_icon.png')}></Image>
                                     </TouchableOpacity>
                                 </View> */}
-                            {/* <CSVLink style={{ textDecorationLine: 'none' }} data={[]} headers={[]} filename={"defects_report.csv"}>
+                                {/* <CSVLink style={{ textDecorationLine: 'none' }} data={[]} headers={[]} filename={"defects_report.csv"}>
                     <AppBtn
                         title="Download Report"
                         btnStyle={styles.btn}
                         btnTextStyle={styles.btnText}
                         onPress={handleDownloadReportBtn} />
                 </CSVLink> */}
+                            </View>
+
                         </View>
+                        <View style={styles.contentCardStyle}>
+                            {defectedArray.length != 0
+                                ?
+                                <Form
+                                    columns={columns}
+                                    entriesData={searchDefectSelectedOption == 'Asset' ? defectedArray.filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+                                    ) : searchDefectSelectedOption == 'Driver' ? defectedArray.filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.driverEmployeeNumber)?.Name?.toLowerCase().includes(search.toLowerCase())
+                                    ) : defectedArray}
+                                    titleForm="Defects"
+                                    onValueChange={handleDefectsFormValueChange}
+                                    onOpenWorkOrder={handleOpenWorkOrderValue}
+                                    row={styles.formRowStyle}
+                                    cell={styles.formCellStyle}
+                                    entryText={styles.formEntryTextStyle}
+                                    columnHeaderRow={styles.formColumnHeaderRowStyle}
+                                    columnHeaderCell={styles.formColumnHeaderCellStyle}
+                                    columnHeaderText={styles.formColumnHeaderTextStyle}
+                                />
+                                :
+                                null}
 
-                    </View>
-                    <View style={styles.contentCardStyle}>
-                        {defectedArray.length != 0
-                            ?
-                            <Form
-                                columns={columns}
-                                entriesData={searchDefectSelectedOption == 'Asset' ? defectedArray.filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
-              ) : searchDefectSelectedOption == 'Driver' ? defectedArray.filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.driverEmployeeNumber)?.Name?.toLowerCase().includes(search.toLowerCase())
-              ) : defectedArray}
-                                titleForm="Defects"
-                                onValueChange={handleDefectsFormValueChange}
-                                onOpenWorkOrder={handleOpenWorkOrderValue}
-                                row={styles.formRowStyle}
-                                cell={styles.formCellStyle}
-                                entryText={styles.formEntryTextStyle}
-                                columnHeaderRow={styles.formColumnHeaderRowStyle}
-                                columnHeaderCell={styles.formColumnHeaderCellStyle}
-                                columnHeaderText={styles.formColumnHeaderTextStyle}
-                            />
-                            :
-                            null}
-
-                    </View>
-                </ScrollView>
-            }
-
-
+                        </View>
+                    </ScrollView>
+                </TouchableWithoutFeedback>
+            
             {loading ?
                 <View style={styles.activityIndicatorStyle}>
                     <ActivityIndicator color="#23d3d3" size="large" />
                 </View>
                 : null}
 
-        </Animated.View>
+        </View>
 
     );
 }
@@ -686,13 +507,13 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between'
     },
     formCellStyle: {
-        justifyContent:'space-around',
+        justifyContent: 'space-around',
         flex: 1,
         height: 50,
-        maxWidth:150,
-        
-        overflow:'hidden', 
-        
+        maxWidth: 150,
+
+        overflow: 'hidden',
+
 
         // paddingLeft: 20
     },
@@ -718,7 +539,7 @@ const styles = StyleSheet.create({
         // width: 160,
         // paddingLeft:20
         flex: 1,
-        maxWidth:150
+        maxWidth: 150
 
     },
     formColumnHeaderTextStyle: {

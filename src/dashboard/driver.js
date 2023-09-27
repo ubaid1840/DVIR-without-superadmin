@@ -18,6 +18,7 @@ import { DataContext } from '../store/context/DataContext';
 import { DefectContext } from '../store/context/DefectContext';
 import { WOContext } from '../store/context/WOContext';
 import { DriverDetailContext } from '../store/context/DriverDetailContext';
+import { CloseAllDropDowns } from '../../components/CloseAllDropdown';
 
 const columns = [
     'Name',
@@ -70,10 +71,15 @@ const DriverPage = (props) => {
     const [openDetail, setOpenDetail] = useState(false)
     const [options, setOptions] = useState('1')
 
+    const [firstNameBorder, setFirstNameBorder] = useState('#cccccc')
+    const [lastNameBorder, setLastNameBorder] = useState('#cccccc')
+    const [numberCodeBorder, setNumberCodeBorder] = useState('#cccccc')
+    const [numberBorder, setNumberBorder] = useState('#cccccc')
+
     const { state: dataState, setData } = useContext(DataContext)
     const { state: defectState, setDefect } = useContext(DefectContext)
-    const {state : woState, setWO} = useContext(WOContext)
-    const {state : driverDetailState, setDriverDetail} = useContext(DriverDetailContext)
+    const { state: woState, setWO } = useContext(WOContext)
+    const { state: driverDetailState, setDriverDetail } = useContext(DriverDetailContext)
 
     const [selectedDriver, setSelectedDriver] = useState(null)
 
@@ -82,52 +88,12 @@ const DriverPage = (props) => {
 
     useEffect(() => {
 
-        const fetchData = async () => {
-          
-            try {
-                let temp = []
-                await getDocs(collection(db, 'AllowedUsers'))
-                    .then((snapshot) => {
-
-                        snapshot.forEach((docs) => {
-                            if (docs.data().Designation != 'Owner')
-                                temp.push(docs.data())
-                        })
-                    })
-                console.log(temp)
-                const sort = temp.slice().sort((a, b) => b.TimeStamp - a.TimeStamp);
-                console.log(sort)
-                setEmployeeNumber(sort.length == 0 ? 1 : sort[0]['Employee Number'] + 1)
-
-                // setTotalManager(snapshot.data().count)
-
-                // const dbRef = collection(db, "AllowedUsers")
-                // const q = query(dbRef, where('Designation', '==', 'Driver'))
-                // const querysnapshot = await getDocs(q)
-                // const dbData = []
-                // querysnapshot.forEach((doc) => {
-                //     dbData.push(doc.data())
-                // })
-
-                const updatedItems = sort.filter((item, i) => item.Designation === 'Driver');
-
-                // const sortedArray = dbData.slice().sort((a, b) => b.TimeStamp - a.TimeStamp);
-
-                setTotalDriver(updatedItems.length)
-                setEntriesData(updatedItems)
-                setloading(false)
-
-            } catch (e) {
-                console.log(e)
-            }
-
-        }
-
-
         fetchData()
 
 
     }, [fetchLoading])
+
+
 
 
     useEffect(() => {
@@ -145,6 +111,53 @@ const DriverPage = (props) => {
             setCreateNewDriverIsVisible(false)
         }
     }, [])
+
+    useEffect(() => {
+        CloseAllDropDowns()
+    }, [driverDetailState.value.data, createNewDriverIsVisible, options])
+
+    const fetchData = async () => {
+
+        CloseAllDropDowns()
+
+        try {
+            let temp = []
+            await getDocs(collection(db, 'AllowedUsers'))
+                .then((snapshot) => {
+
+                    snapshot.forEach((docs) => {
+                        if (docs.data().Designation != 'Owner')
+                            temp.push(docs.data())
+                    })
+                })
+            console.log(temp)
+            const sort = temp.slice().sort((a, b) => b.TimeStamp - a.TimeStamp);
+            console.log(sort)
+            setEmployeeNumber(sort.length == 0 ? 1 : sort[0]['Employee Number'] + 1)
+
+            // setTotalManager(snapshot.data().count)
+
+            // const dbRef = collection(db, "AllowedUsers")
+            // const q = query(dbRef, where('Designation', '==', 'Driver'))
+            // const querysnapshot = await getDocs(q)
+            // const dbData = []
+            // querysnapshot.forEach((doc) => {
+            //     dbData.push(doc.data())
+            // })
+
+            const updatedItems = sort.filter((item, i) => item.Designation === 'Driver');
+
+            // const sortedArray = dbData.slice().sort((a, b) => b.TimeStamp - a.TimeStamp);
+
+            setTotalDriver(updatedItems.length)
+            setEntriesData(updatedItems)
+            setloading(false)
+
+        } catch (e) {
+            console.log(e)
+        }
+
+    }
 
 
     const handleFormValueChange = (value) => {
@@ -268,14 +281,37 @@ const DriverPage = (props) => {
 
         if (i != 0) {
             console.log('user already exists')
-            setAlertStatus('failed')
+            setAlertStatus('Failed : User already exists with same number')
             setAlertIsVisible(true)
             setloading(false)
         }
         else {
-            if (fileUri) {
-                const dpURL = await uploadImage(fileUri)
-                if (dpURL) {
+            try {
+                if (fileUri) {
+                    const dpURL = await uploadImage(fileUri)
+                    if (dpURL) {
+                        await setDoc(doc(db, 'AllowedUsers', (numberCode + number).toString()), {
+                            Name: `${firstName} ${lastName}`,
+                            Company: 'netsol',
+                            Number: numberCode + number,
+                            Designation: role,
+                            Designation: 'Driver',
+                            TimeStamp: serverTimestamp(),
+                            'Employee Number': employeeNumber,
+                            dp: dpURL,
+
+                        });
+
+                        setFetchLoading(!fetchLoading)
+                        clearAll()
+                        setCreateNewDriverIsVisible(false)
+                        setAlertStatus('successful')
+                        setAlertIsVisible(true)
+                        console.log('added')
+                    }
+                }
+
+                else {
                     await setDoc(doc(db, 'AllowedUsers', (numberCode + number).toString()), {
                         Name: `${firstName} ${lastName}`,
                         Company: 'netsol',
@@ -284,8 +320,7 @@ const DriverPage = (props) => {
                         Designation: 'Driver',
                         TimeStamp: serverTimestamp(),
                         'Employee Number': employeeNumber,
-                        dp: dpURL,
-                        
+                        dp: ""
                     });
 
                     setFetchLoading(!fetchLoading)
@@ -295,27 +330,13 @@ const DriverPage = (props) => {
                     setAlertIsVisible(true)
                     console.log('added')
                 }
-            }
 
-            else {
-                await setDoc(doc(db, 'AllowedUsers', (numberCode + number).toString()), {
-                    Name: `${firstName} ${lastName}`,
-                        Company: 'netsol',
-                        Number: numberCode + number,
-                        Designation: role,
-                        Designation: 'Driver',
-                        TimeStamp: serverTimestamp(),
-                        'Employee Number': employeeNumber,
-                    dp: ""
-                });
-
-                setFetchLoading(!fetchLoading)
-                clearAll()
-                setCreateNewDriverIsVisible(false)
-                setAlertStatus('successful')
+            } catch (error) {
+                setAlertStatus(`Failed : ${error}`)
                 setAlertIsVisible(true)
-                console.log('added')
+                setloading(false)
             }
+
         }
 
 
@@ -346,6 +367,10 @@ const DriverPage = (props) => {
         setDobMonth('')
         setDobYear('')
         setNumberCode('Select')
+        setFirstNameBorder('#cccccc')
+        setLastNameBorder('#cccccc')
+        setNumberCodeBorder('#cccccc')
+        setNumberBorder('#cccccc')
     }
 
     const closeMobileModal = () => {
@@ -382,8 +407,11 @@ const DriverPage = (props) => {
 
             {driverDetailState.value.data
                 ?
-                <View style={{ flex: 1, backgroundColor: '#f6f8f9'}}>
-                   
+                <TouchableWithoutFeedback style={{ flex: 1, backgroundColor: '#f6f8f9' }}
+                    onPress={() => {
+                        CloseAllDropDowns()
+                    }}>
+
                     <ScrollView style={{ height: 100 }}>
                         <View style={{ flexDirection: 'row', marginHorizontal: 40, marginVertical: 40, justifyContent: 'space-between', alignItems: 'center' }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -397,7 +425,7 @@ const DriverPage = (props) => {
                                 </Text>
                             </View>
 
-                            <View style={{alignItems:'center'}}>
+                            <View style={{ alignItems: 'center' }}>
                                 <AppBtn
                                     title="Back"
                                     btnStyle={[{
@@ -422,7 +450,7 @@ const DriverPage = (props) => {
                                         // clearAll()
                                     }} />
                             </View>
-                            
+
 
                         </View>
                         <View style={{ flexDirection: 'row', margin: 10 }}>
@@ -459,11 +487,11 @@ const DriverPage = (props) => {
                                                     <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
                                                         <Text style={{ fontSize: 16, fontWeight: '500' }}>Employee Number*</Text>
                                                         <TextInput
-                                                            style={[styles.input, ]}
+                                                            style={[styles.input,]}
                                                             placeholderTextColor="#868383DC"
                                                             value={selectedDriver['Employee Number']}
-                                                            // onChangeText={(val)=>setEmployeeNumber(val)}
-                                                         
+                                                        // onChangeText={(val)=>setEmployeeNumber(val)}
+
                                                         />
                                                     </View>
                                                     <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
@@ -483,7 +511,7 @@ const DriverPage = (props) => {
                                                             placeholderTextColor="#868383DC"
                                                             // keyboardType='numeric'
                                                             value={selectedDriver.Number}
-                                                        
+
                                                         />
                                                     </View>
                                                 </View>
@@ -516,8 +544,8 @@ const DriverPage = (props) => {
                                                             style={[styles.input,]}
                                                             placeholderTextColor="#868383DC"
                                                             value={selectedDriver.Designation}
-                                                            // onChangeText={(val) => { setWorkPhone(val) }}
-                                                           
+                                                        // onChangeText={(val) => { setWorkPhone(val) }}
+
                                                         />
                                                     </View>
 
@@ -584,26 +612,26 @@ const DriverPage = (props) => {
                                         options == '4'
                                             ?
                                             <>
-                                             <View style={styles.optioncontentCardStyle}>
-                                                <Form
-                                                    columns={[
-                                                        'id',
-                                                        'assetName',
-                                                        'defectedItems',
-                                                        'dueDate',
-                                                        'assignedMechanic',
-                                                        'Action',
-                                                    ]}
-                                                    entriesData={woState.value.data.filter((item) => item.driverEmployeeNumber == selectedDriver['Employee Number'])}
-                                                    titleForm="Work Order"
-                                                    onValueChange={handleWOFormValue}
-                                                    row={styles.formRowStyle}
-                                                    cell={styles.formCellStyle}
-                                                    entryText={styles.formEntryTextStyle}
-                                                    columnHeaderRow={styles.formColumnHeaderRowStyle}
-                                                    columnHeaderCell={styles.formColumnHeaderCellStyle}
-                                                    columnHeaderText={styles.formColumnHeaderTextStyle} />
-                                            </View>
+                                                <View style={styles.optioncontentCardStyle}>
+                                                    <Form
+                                                        columns={[
+                                                            'id',
+                                                            'assetName',
+                                                            'defectedItems',
+                                                            'dueDate',
+                                                            'assignedMechanic',
+                                                            'Action',
+                                                        ]}
+                                                        entriesData={woState.value.data.filter((item) => item.driverEmployeeNumber == selectedDriver['Employee Number'])}
+                                                        titleForm="Work Order"
+                                                        onValueChange={handleWOFormValue}
+                                                        row={styles.formRowStyle}
+                                                        cell={styles.formCellStyle}
+                                                        entryText={styles.formEntryTextStyle}
+                                                        columnHeaderRow={styles.formColumnHeaderRowStyle}
+                                                        columnHeaderCell={styles.formColumnHeaderCellStyle}
+                                                        columnHeaderText={styles.formColumnHeaderTextStyle} />
+                                                </View>
                                             </>
                                             :
                                             null
@@ -611,78 +639,25 @@ const DriverPage = (props) => {
                             <></>}
 
                     </ScrollView>
-
-                    {/* <View style={{ flexDirection: 'row', width: '100%', backgroundColor: '#67E9DA', paddingVertical: 20, justifyContent: 'flex-end', paddingRight: 80 }}>
-                        <View>
-                            <AppBtn
-                                title="Close"
-                                btnStyle={[{
-                                    width: '100%',
-                                    height: 30,
-                                    backgroundColor: '#FFFFFF',
-                                    borderRadius: 5,
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    shadowOffset: { width: 2, height: 2 },
-                                    shadowOpacity: 0.9,
-                                    shadowRadius: 5,
-                                    elevation: 0,
-                                    shadowColor: '#575757',
-                                    marginHorizontal: 10
-                                }, { minWidth: 70 }]}
-                                btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
-                                onPress={() => {
-                                    setOpenDetail(false)
-                                    setOptions('1')
-                                }} />
-                        </View>
-                        <View style={{ marginLeft: 20 }}>
-                            <AppBtn
-                                title="Save"
-                                btnStyle={[{
-                                    width: '100%',
-                                    height: 30,
-                                    backgroundColor: '#FFFFFF',
-                                    borderRadius: 5,
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    shadowOffset: { width: 2, height: 2 },
-                                    shadowOpacity: 0.9,
-                                    shadowRadius: 5,
-                                    elevation: 0,
-                                    shadowColor: '#575757',
-                                    marginHorizontal: 10
-                                }, { minWidth: 70 }]}
-                                btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
-                                onPress={() => {
-                                    if (plateNumber == '' || make == '' || year == '' || model == '' || color == 'Select' || engineType == 'Select' || ADA == 'Select' || airBrakes == 'Select' || assetType == 'Select' || mileage == '') { }
-                                    else {
-                                        setloading(true)
-                                        handleAddNewAsset()
-                                    }
-
-                                }} />
-                        </View> 
-                    </View> */}
-
-                </View>
+                </TouchableWithoutFeedback>
                 :
 
 
                 createNewDriverIsVisible
                     ?
-                    <Animated.View style={{ flex: 1, backgroundColor: '#f6f8f9'}}>
-                        <ScrollView style={{ height: 100 }}
-                        contentContainerStyle={{flex:1}}>
-                            <View style={{ flexDirection: 'row', marginHorizontal: 40, marginTop: 40, alignItems: 'center', justifyContent: 'space-between' }}>
-                                <Text style={{ fontSize: 26, color: '#335a75', fontFamily: 'inter-extrablack', marginLeft: 10, borderBottomColor: '#67E9DA', paddingBottom: 5, borderBottomWidth: 5 }}>
-                                    Create New Driver
-                                </Text>
-                            </View>
-
-
-                        
-                                <View style={[styles.contentCardStyle, {height:'auto'}]}>
+                    <TouchableWithoutFeedback style={{ flex: 1, backgroundColor: '#f6f8f9' }}
+                        onPress={() => {
+                            CloseAllDropDowns()
+                        }}>
+                        <View style={{ flex: 1 }}>
+                            <ScrollView style={{ height: 100 }}
+                                contentContainerStyle={{ flex: 1 }}>
+                                <View style={{ flexDirection: 'row', marginHorizontal: 40, marginTop: 40, alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <Text style={{ fontSize: 26, color: '#335a75', fontFamily: 'inter-extrablack', marginLeft: 10, borderBottomColor: '#67E9DA', paddingBottom: 5, borderBottomWidth: 5 }}>
+                                        Create New Driver
+                                    </Text>
+                                </View>
+                                <View style={[styles.contentCardStyle, { height: 'auto' }]}>
                                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                         <View style={{ height: 10, width: 10, borderRadius: 5, backgroundColor: '#67E9DA' }}></View>
                                         <Text style={{ color: '#1E3D5C', fontSize: 20, fontWeight: 'bold', marginLeft: 10 }}>
@@ -707,24 +682,23 @@ const DriverPage = (props) => {
                                                 <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
                                                     <Text style={{ fontSize: 16, fontWeight: '500' }}>First Name*</Text>
                                                     <TextInput
-                                                        style={[styles.input, textInputBorderColor == 'First Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                        style={[styles.input, { borderColor: firstNameBorder }]}
                                                         placeholderTextColor="#868383DC"
                                                         value={firstName}
                                                         onChangeText={(val) => { setFirstName(val) }}
-                                                        onFocus={() => { setTextInputBorderColor('First Name') }}
-                                                        onBlur={() => { setTextInputBorderColor('') }}
+                                                        onFocus={() => { setFirstNameBorder('#cccccc') }}
+
                                                     />
                                                 </View>
 
                                                 <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
                                                     <Text style={{ fontSize: 16, fontWeight: '500' }}>Last Name*</Text>
                                                     <TextInput
-                                                        style={[styles.input, textInputBorderColor == 'Last Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                        style={[styles.input, { borderColor: lastNameBorder }]}
                                                         placeholderTextColor="#868383DC"
                                                         value={lastName}
                                                         onChangeText={(val) => { setLastName(val) }}
-                                                        onFocus={() => { setTextInputBorderColor('Last Name') }}
-                                                        onBlur={() => { setTextInputBorderColor('') }}
+                                                        onFocus={() => { setLastNameBorder('#cccccc') }}
                                                     />
                                                 </View>
 
@@ -732,18 +706,20 @@ const DriverPage = (props) => {
                                                 <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
                                                     <Text style={{ fontSize: 16, fontWeight: '500' }}>Mobile Phone*</Text>
                                                     <View style={{ marginLeft: 10 }}>
-                                                        <TouchableOpacity style={[styles.input, { width: 80, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 0 }]} onPress={() => setMobileModalVisible(true)}>
+                                                        <TouchableOpacity style={[styles.input, { width: 80, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 0 }, { borderColor: numberCodeBorder }]} onPress={() => {
+                                                            setNumberCodeBorder('#cccccc')
+                                                            setMobileModalVisible(true)
+                                                        }}>
                                                             <Text>{numberCode}</Text>
                                                         </TouchableOpacity>
                                                     </View>
                                                     <TextInput
-                                                        style={[styles.input, { width: 150 }, textInputBorderColor == 'Mobile Phone' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                        style={[styles.input, { width: 150 }, { borderColor: numberBorder }]}
                                                         placeholderTextColor="#868383DC"
                                                         keyboardType='numeric'
                                                         value={number}
                                                         onChangeText={(val) => { setNumber(val.replace(/[^0-9]/g, '')) }}
-                                                        onFocus={() => { setTextInputBorderColor('Mobile Phone') }}
-                                                        onBlur={() => { setTextInputBorderColor('') }}
+                                                        onFocus={() => { setNumberBorder('#cccccc') }}
                                                     />
                                                 </View>
                                             </View>
@@ -789,65 +765,81 @@ const DriverPage = (props) => {
                                         </View>
                                     </ScrollView>
                                 </View>
-                           
-                        </ScrollView>
 
-                        <View style={{ flexDirection: 'row', width: '100%', backgroundColor: '#67E9DA', paddingVertical: 20, justifyContent: 'flex-end', paddingRight: 80 }}>
-                            <View>
-                                <AppBtn
-                                    title="Close"
-                                    btnStyle={[{
-                                        width: '100%',
-                                        height: 40,
-                                        backgroundColor: '#FFFFFF',
-                                        borderRadius: 5,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        shadowOffset: { width: 2, height: 2 },
-                                        shadowOpacity: 0.9,
-                                        shadowRadius: 5,
-                                        elevation: 0,
-                                        shadowColor: '#575757',
-                                        marginHorizontal: 10
-                                    }, { minWidth: 100 }]}
-                                    btnTextStyle={{ fontSize: 17, fontWeight: '400', color: '#000000' }}
-                                    onPress={() => {
-                                        setCreateNewDriverIsVisible(false)
-                                        clearAll()
-                                    }} />
-                            </View>
-                            <View style={{ marginLeft: 20 }}>
-                                <AppBtn
-                                    title="Save"
-                                    btnStyle={[{
-                                        width: '100%',
-                                        height: 40,
-                                        backgroundColor: '#FFFFFF',
-                                        borderRadius: 5,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        shadowOffset: { width: 2, height: 2 },
-                                        shadowOpacity: 0.9,
-                                        shadowRadius: 5,
-                                        elevation: 0,
-                                        shadowColor: '#575757',
-                                        marginHorizontal: 10
-                                    }, { minWidth: 100 }]}
-                                    btnTextStyle={{ fontSize: 17, fontWeight: '400', color: '#000000' }}
-                                    onPress={() => {
-                                        if (firstName == '' || lastName == '' || number == '' || numberCode == 'Select') { }
-                                        else {
-                                            setloading(true)
-                                            handleAddNewDriver()
+                            </ScrollView>
 
-                                        }
-                                    }} />
+                            <View style={{ flexDirection: 'row', width: '100%', backgroundColor: '#67E9DA', paddingVertical: 20, justifyContent: 'flex-end', paddingRight: 80 }}>
+                                <View>
+                                    <AppBtn
+                                        title="Close"
+                                        btnStyle={[{
+                                            width: '100%',
+                                            height: 30,
+                                            backgroundColor: '#FFFFFF',
+                                            borderRadius: 5,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            shadowOffset: { width: 2, height: 2 },
+                                            shadowOpacity: 0.9,
+                                            shadowRadius: 5,
+                                            elevation: 0,
+                                            shadowColor: '#575757',
+                                            marginHorizontal: 10
+                                        }, { minWidth: 70 }]}
+                                        btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                                        onPress={() => {
+                                            setCreateNewDriverIsVisible(false)
+                                            clearAll()
+                                        }} />
+                                </View>
+                                <View style={{ marginLeft: 20 }}>
+                                    <AppBtn
+                                        title="Save"
+                                        btnStyle={[{
+                                            width: '100%',
+                                            height: 30,
+                                            backgroundColor: '#FFFFFF',
+                                            borderRadius: 5,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            shadowOffset: { width: 2, height: 2 },
+                                            shadowOpacity: 0.9,
+                                            shadowRadius: 5,
+                                            elevation: 0,
+                                            shadowColor: '#575757',
+                                            marginHorizontal: 10
+                                        }, { minWidth: 70 }]}
+                                        btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                                        onPress={() => {
+                                            if (firstName == '') {
+                                                setFirstNameBorder('red')
+                                            }
+                                            if (lastName == '') {
+                                                setLastNameBorder('red')
+                                            }
+                                            if (numberCode == 'Select') {
+                                                setNumberCodeBorder('red')
+                                            }
+                                            if (number == '') {
+                                                setNumberBorder('red')
+                                            }
+                                            if (firstName == '' || lastName == '' || number == '' || numberCode == 'Select') { }
+                                            else {
+                                                setloading(true)
+                                                handleAddNewDriver()
+
+                                            }
+                                        }} />
+                                </View>
                             </View>
                         </View>
 
-                    </Animated.View>
+                    </TouchableWithoutFeedback>
                     :
-                    <Animated.View style={{ flex: 1, backgroundColor: '#f6f8f9'}}>
+                    <TouchableWithoutFeedback style={{ flex: 1, backgroundColor: '#f6f8f9' }}
+                        onPress={() => {
+                            CloseAllDropDowns()
+                        }}>
                         <ScrollView style={{ height: 100 }}>
                             <View style={{ flexDirection: 'row', margin: 40, justifyContent: 'space-between', alignItems: 'center' }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -891,7 +883,7 @@ const DriverPage = (props) => {
                                 />
                             </View>
                         </ScrollView>
-                    </Animated.View>}
+                    </TouchableWithoutFeedback>}
 
             {alertStatus == 'successful'
                 ?
@@ -908,7 +900,7 @@ const DriverPage = (props) => {
 
                 </AlertModal>
                 :
-                alertStatus == 'failed'
+                alertStatus.includes('Failed')
                     ?
                     <AlertModal
                         centeredViewStyle={styles.centeredView}
@@ -916,7 +908,7 @@ const DriverPage = (props) => {
                         isVisible={alertIsVisible}
                         onClose={closeAlert}
                         img={require('../../assets/failed_icon.png')}
-                        txt='Failed'
+                        txt={alertStatus}
                         txtStyle={{ fontFamily: 'futura', fontSize: 20, marginLeft: 10 }}
                         tintColor='red'>
                     </AlertModal>
@@ -1279,7 +1271,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         flex: 1,
         minHeight: 50,
-        maxWidth:150
+        maxWidth: 150
 
         // paddingLeft: 20
     },
@@ -1305,7 +1297,7 @@ const styles = StyleSheet.create({
         // width: 160,
         // paddingLeft:20
         flex: 1,
-        maxWidth:150
+        maxWidth: 150
 
     },
     formColumnHeaderTextStyle: {

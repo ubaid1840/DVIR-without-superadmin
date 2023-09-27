@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useState } from 'react';
-import { ActivityIndicator, Dimensions, FlatList, Modal, ScrollView, TouchableOpacity, View, StyleSheet, Text, Image, ImageBackground } from 'react-native';
+import { ActivityIndicator, Dimensions, FlatList, Modal, ScrollView, TouchableOpacity, View, StyleSheet, Text, Image, ImageBackground, TouchableWithoutFeedback } from 'react-native';
 import AlertModal from '../../components/AlertModal';
 import { DataContext } from '../store/context/DataContext';
 import moment from 'moment'
@@ -8,23 +8,33 @@ import { collection, getDocs, getFirestore, query, where } from 'firebase/firest
 import app from '../config/firebase';
 import { PeopleContext } from '../store/context/PeopleContext';
 import { AssetContext } from '../store/context/AssetContext';
+import { HeaderOptionContext } from '../store/context/HeaderOptionContext';
+import { CloseAllDropDowns } from '../../components/CloseAllDropdown';
+import AppBtn from '../../components/Button';
+import jsPDF from 'jspdf';
+import * as interbold from '../../assets/fonts/Inter-Bold-normal'
+import * as interregular from '../../assets/fonts/Inter-Regular-normal'
 
 
-const FormDetail = ({ formValue, returnFormDetail }) => {
+
+const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection }) => {
 
     const [driverPicture, setDriverPicture] = useState(null)
     const [groups, setGroups] = useState([])
     const [deleteModal, setDeleteModal] = useState(false)
     const [deleteOptionHover, setDeleteOptionHover] = useState({})
-    const [loading, setLoading] = useState(false)
+    const [loading, setLoading] = useState(true)
     const [alertIsVisible, setAlertIsVisible] = useState(false)
     const [alertStatus, setAlertStatus] = useState('')
+    const [pdf, setPdf] = useState(null)
 
 
     const db = getFirestore(app)
     const { state: dataState, setData } = useContext(DataContext)
-    const {state : peopleState} = useContext(PeopleContext)
-    const {state : assetState} = useContext(AssetContext)
+    const { state: peopleState } = useContext(PeopleContext)
+    const { state: assetState } = useContext(AssetContext)
+    const { state: headerOptionState, setHeaderOption } = useContext(HeaderOptionContext)
+
 
     useEffect(() => {
 
@@ -87,10 +97,221 @@ const FormDetail = ({ formValue, returnFormDetail }) => {
 
 
             setGroups(groupedDataWithAppearance)
+            // Call this function when setting the groups
+            createPdf(groupedDataWithAppearance)
+
+
 
         }
 
     }, [])
+
+    const mergeGroupsByType = (groups) => {
+        const mergedGroups = [];
+    
+        groups.forEach((group) => {
+            const existingGroup = mergedGroups.find((mergedGroup) => mergedGroup[0].type === group[0].type);
+    
+            if (existingGroup) {
+                // Merge the data of groups with the same type
+                existingGroup.push(...group);
+            } else {
+                // Add the group as a new merged group
+                mergedGroups.push([...group]);
+            }
+        });
+    
+        return mergedGroups;
+    };
+
+    const createPdf = async (data) => {
+        const mergedGroups = mergeGroupsByType(data);
+        const doc = await generatePDFContent(mergedGroups)
+        setPdf(doc)
+    }
+
+    const fetchImageAsDataUrl = async (imageUrl) => {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+        });
+    };
+
+    const generatePDFContent = async (groups) => {
+        const doc = new jsPDF();
+        interbold
+        interregular
+        const pageHeight = doc.internal.pageSize.height;
+        const pageWidth = doc.internal.pageSize.width;
+
+        let yOffset = 20;
+
+        doc.getFontList()
+
+        doc.setFont('Inter-Bold', 'normal');
+        doc.setFontSize(14);
+        doc.text('Form:', 20, yOffset);
+        doc.text('eDVIR', 80, yOffset);
+        doc.text('Form Status:', 20, yOffset += 8)
+        doc.setTextColor('#FF0000');
+        doc.text(`${formValue.formStatus}`, 80, yOffset);
+        yOffset += 15;
+        doc.setFont('Inter-Regular', 'normal');
+        doc.setTextColor('#000000')
+        doc.setFontSize(12);
+        doc.text('Date Received:', 20, yOffset)
+        doc.text(`${((new Date(formValue.TimeStamp.seconds * 1000)).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }) + " " + (new Date(formValue.TimeStamp.seconds * 1000)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })).toString()}`, 80, yOffset)
+        yOffset += 8;
+        doc.text('Date Inspected:', 20, yOffset)
+        doc.text(`${((new Date(formValue.TimeStamp.seconds * 1000)).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }) + " " + (new Date(formValue.TimeStamp.seconds * 1000)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }))}`, 80, yOffset);
+        yOffset += 8;
+        doc.text('Inspection Duration', 20, yOffset)
+        doc.text(`${moment.duration(formValue.duration).minutes() + ':' + moment.duration(formValue.duration).seconds() + " minutes"}`, 80, yOffset);
+        yOffset += 8;
+        doc.text('Driver:', 20, yOffset)
+        doc.text(`${peopleState.value.data.filter(d => d.Designation === 'Driver').find(driver => driver["Employee Number"].toString() === formValue.driverEmployeeNumber)?.Name || 'Unknown Driver'}`, 80, yOffset);
+        yOffset += 8;
+        doc.text('Vehicle:', 20, yOffset)
+        doc.text(`${assetState.value.data.find(asset => asset["Asset Number"].toString() === formValue.assetNumber)?.['Asset Name'] || 'Unknown Asset'}`, 80, yOffset);
+
+        yOffset += 20; // Move down for groups
+
+        let i = 1;
+
+        for (const group of groups) {
+          
+            doc.setFont('Inter-Bold', 'normal');
+            doc.setFontSize(16);
+            doc.text(`${i}- ${group[0].type}`, 20, yOffset);
+
+            let j = 1
+
+            for (const groupData of group) {
+                
+                yOffset += 8;
+
+                // Check if the content exceeds the page height
+                if (yOffset > pageHeight - 20) {
+                    doc.addPage(); // Move to the next page
+                    yOffset = 20; // Reset the yOffset for the new page
+                }
+
+                doc.setFont('Inter-Regular', 'normal');
+
+                doc.setFontSize(12);
+
+                const title = `${groupData.title}:`;
+                const value = `${groupData.value}`;
+
+
+                // Split title and value into multiple lines
+                const titleLines = doc.splitTextToSize(`${i}.${j}- ${groupData.title}:`, pageWidth - 50);
+                const valueLines = doc.splitTextToSize(`${groupData.value}`, pageWidth - 50);
+
+
+
+                // Display each line
+                titleLines.forEach((line, i) => {
+                    doc.setFont('Inter-Bold', 'normal');
+                    doc.text(line, 25, yOffset + (i * 5));
+                });
+
+                yOffset += titleLines.length * 8;
+
+                const valueColor = groupData.value === 'Fail' ? '#FF0000' : groupData.value === 'Pass' ? '#008000' : '#000000';
+
+                valueLines.forEach((line, i) => {
+                    // Check if the content exceeds the page height
+                    if (yOffset > pageHeight - 20) {
+                        doc.addPage(); // Move to the next page
+                        yOffset = 20; // Reset the yOffset for the new page
+                    }
+
+                    doc.setFont('Inter-Regular', 'normal');
+                    doc.setTextColor(valueColor)
+                    doc.text(line, 25, yOffset + i * 5);
+                });
+
+
+                doc.setTextColor('#000000')
+                yOffset += valueLines.length*8; // Move to the next line
+
+
+                // Add image
+                if (groupData.Defect && groupData.Defect.Image) {
+                    yOffset += 8
+                    let imgData;
+                    try {
+                        imgData = await fetchImageAsDataUrl(groupData.Defect.Image);
+                    } catch (error) {
+                        console.log(error);
+                    }
+                    const imgHeight = 100;
+                    const imgWidth = 100;
+
+                    // Check if there's enough space for the image
+                    if (yOffset + imgHeight > pageHeight - 20) {
+                        doc.addPage(); // Move to the next page
+                        yOffset = 20; // Reset the yOffset for the new page
+                    }
+
+                    doc.addImage(imgData, 'JPEG', 25, yOffset, imgWidth, imgHeight);
+                    yOffset += imgHeight;
+                }
+
+                if (groupData.Defect && groupData.Defect.Note) {
+                    yOffset += 8
+                    doc.setTextColor('#000000'); // Reset text color to default
+                    doc.setFont('Inter-Bold', 'normal');
+                    doc.text('Comment:', 25, yOffset += 8);
+                    const commentLines = doc.splitTextToSize(`${groupData.Defect.Note}`, pageWidth - 40);
+                    yOffset += 8
+
+                    if (yOffset > pageHeight - 20) {
+                        doc.addPage(); // Move to the next page
+                        yOffset = 20; // Reset the yOffset for the new page
+                    }
+                    commentLines.forEach((line, i) => {
+                        doc.setFont('helvetica', 'italic');
+                        doc.text(line, 30, yOffset + i * 5);
+                    });
+
+                    yOffset += commentLines.length*5; // Move to the next line
+                }
+                j++
+            }
+
+            yOffset += 20; // Add some spacing between groups
+            i++
+        }
+
+
+        if(yOffset > pageHeight - 20){
+            doc.addPage();
+            yOffset = 20
+        }
+
+        doc.setFont('Inter-Bold', 'normal');
+        doc.setFontSize(14);
+        doc.text('Signature:', 20, yOffset);
+
+        yOffset += 8
+
+        if(yOffset + 80 > pageHeight - 20)
+        {
+            doc.addPage();
+            yOffset = 20
+        }
+
+        doc.addImage(`${formValue.signature}`, 'JPEG', 25, yOffset, 50, 80);
+
+        setLoading(false);
+        return doc;
+    };
+
 
     const fetchDriverDp = async () => {
         await getDocs(query(collection(db, 'AllowedUsers'), where('Designation', '==', 'Driver')))
@@ -166,7 +387,7 @@ const FormDetail = ({ formValue, returnFormDetail }) => {
         return (
 
             <View style={{ marginVertical: 10, backgroundColor: 'white', borderRadius: 4, width: 350, padding: 20, margin: 5, }} >
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems:'center' }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
 
 
                     <Text style={{
@@ -178,13 +399,13 @@ const FormDetail = ({ formValue, returnFormDetail }) => {
                         {group[0].type}
                     </Text>
                     {group[0].totalTypeOccurrences != 0
-                    ?
-                    <Text style={{ fontFamily: 'inter-semibold', fontSize: 16, marginVertical: 5,}} >
-                        {group[0].appearance} of {group[0].totalTypeOccurrences}
-                    </Text>
-                :
-                null}
-                   
+                        ?
+                        <Text style={{ fontFamily: 'inter-semibold', fontSize: 16, marginVertical: 5, }} >
+                            {group[0].appearance} of {group[0].totalTypeOccurrences}
+                        </Text>
+                        :
+                        null}
+
                 </View>
                 <ScrollView style={{}}
                     contentContainerStyle={{ maxHeight: 300, }}>
@@ -246,86 +467,125 @@ const FormDetail = ({ formValue, returnFormDetail }) => {
                 height: Dimensions.get('window').height,
                 
             }}></View> */}
-            <ScrollView style={{ height: 100 }}
-                contentContainerStyle={{ margin: 40, width: 'auto' }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <View style={{ flexDirection: 'column', }}>
-                        <View style={{ flexDirection: 'row' }}>
-                            <Text style={[styles.selectedFormPropertyStyle, { fontFamily: 'inter-semibold' }]}>Form eDVIR</Text>
-                            <Text style={{ color: '#FFFFFF', backgroundColor: formValue.formStatus == 'Passed' ? 'green' : 'red', width: 60, height: 20, textAlign: 'center', borderRadius: 5 }}>{formValue.formStatus}</Text>
+            <TouchableWithoutFeedback onPress={() => {
+                CloseAllDropDowns()
+            }}>
+                <ScrollView style={{ height: 100 }}
+                    contentContainerStyle={{ margin: 40, width: 'auto' }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <View style={{ flexDirection: 'column', }}>
+                            <View style={{}}>
+                                <AppBtn
+                                    title="Back"
+                                    btnStyle={[{
+                                        width: 100,
+                                        height: 40,
+                                        backgroundColor: '#FFFFFF',
+                                        borderRadius: 5,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        shadowOffset: { width: 1, height: 1 },
+                                        shadowOpacity: 0.5,
+                                        shadowRadius: 3,
+                                        elevation: 0,
+                                        shadowColor: '#575757',
+                                        marginRight: 50
+                                    }, { minWidth: 70 }]}
+                                    btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                                    onPress={() => {
+                                        onDashboardGeneralInspection()
+                                        // clearAll()
+                                    }} />
+                            </View>
+                            <View style={{ flexDirection: 'row', marginTop: 20 }}>
+                                <Text style={[styles.selectedFormPropertyStyle, { fontFamily: 'inter-semibold' }]}>Form eDVIR</Text>
+                                <Text style={{ color: '#FFFFFF', backgroundColor: formValue.formStatus == 'Passed' ? 'green' : 'red', width: 60, height: 20, textAlign: 'center', borderRadius: 5 }}>{formValue.formStatus}</Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', }}>
+                                <Text style={[styles.selectedFormPropertyStyle]}>Date Received</Text>
+                                <Text style={[styles.selectedFormKeyStyle]}>{((new Date(formValue.TimeStamp.seconds * 1000)).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }) + " " + (new Date(formValue.TimeStamp.seconds * 1000)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })).toString()}</Text>
+
+                            </View>
+                            <View style={{ flexDirection: 'row', }}>
+                                <Text style={[styles.selectedFormPropertyStyle]}>Date Inspected</Text>
+                                <Text style={[styles.selectedFormKeyStyle]}>{((new Date(formValue.TimeStamp.seconds * 1000)).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }) + " " + (new Date(formValue.TimeStamp.seconds * 1000)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }))}</Text>
+                            </View>
+                            <View style={{ flexDirection: 'row' }}>
+                                <Text style={[styles.selectedFormPropertyStyle]}>Inspection Duration</Text>
+                                <Text style={[styles.selectedFormKeyStyle]}>{moment.duration(formValue.duration).minutes() + ':' + moment.duration(formValue.duration).seconds() + " minutes"}</Text>
+                            </View>
                         </View>
+
                         <View style={{ flexDirection: 'row', }}>
-                            <Text style={[styles.selectedFormPropertyStyle]}>Date Received</Text>
-                            <Text style={[styles.selectedFormKeyStyle]}>{((new Date(formValue.TimeStamp.seconds * 1000)).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }) + " " + (new Date(formValue.TimeStamp.seconds * 1000)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })).toString()}</Text>
+                            <View style={{ flexDirection: 'column', alignItems: 'center', marginRight: 20 }}>
+                                {driverPicture ? <Image style={{ height: 40, width: 40, borderRadius: 20 }} source={{ uri: driverPicture }}></Image> :
+                                    <Image style={{ height: 40, width: 40, borderRadius: 20 }} source={require('../../assets/driver_icon.png')}></Image>}
+                                <Text style={{ fontFamily: 'inter-regular', fontSize: 15, height: 25, marginTop: 5 }}>{peopleState.value.data.filter(d => d.Designation === 'Driver').find(driver => driver["Employee Number"].toString() === formValue.driverEmployeeNumber)?.Name || 'Unknown Driver'}</Text>
+                            </View>
 
-                        </View>
-                        <View style={{ flexDirection: 'row', }}>
-                            <Text style={[styles.selectedFormPropertyStyle]}>Date Inspected</Text>
-                            <Text style={[styles.selectedFormKeyStyle]}>{((new Date(formValue.TimeStamp.seconds * 1000)).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }) + " " + (new Date(formValue.TimeStamp.seconds * 1000)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }))}</Text>
-                        </View>
-                        <View style={{ flexDirection: 'row' }}>
-                            <Text style={[styles.selectedFormPropertyStyle]}>Inspection Duration</Text>
-                            <Text style={[styles.selectedFormKeyStyle]}>{moment.duration(formValue.duration).minutes() + ':' + moment.duration(formValue.duration).seconds() + " minutes"}</Text>
+                            <View style={{ flexDirection: 'column', alignItems: 'center' }}>
+                                <Image style={{ height: 40, width: 40 }} source={require('../../assets/vehicle_icon.png')}></Image>
+                                <Text style={{ fontFamily: 'inter-regular', fontSize: 15, height: 25, marginTop: 5 }}>{assetState.value.data.find(asset => asset["Asset Number"].toString() === formValue.assetNumber)?.['Asset Name'] || 'Unknown Asset'}</Text>
+                            </View>
+
                         </View>
                     </View>
 
-                    <View style={{ flexDirection: 'row', }}>
-                        <View style={{ flexDirection: 'column', alignItems: 'center', marginRight: 20 }}>
-                            {driverPicture ? <Image style={{ height: 40, width: 40, borderRadius: 20 }} source={{ uri: driverPicture }}></Image> :
-                                <Image style={{ height: 40, width: 40, borderRadius: 20 }} source={require('../../assets/driver_icon.png')}></Image>}
-                            <Text style={{ fontFamily: 'inter-regular', fontSize: 15, height: 25, marginTop: 5 }}>{peopleState.value.data.filter(d => d.Designation === 'Driver').find(driver => driver["Employee Number"].toString() === formValue.driverEmployeeNumber)?.Name || 'Unknown Driver'}</Text>
-                        </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={[styles.selectedFormKeyStyle, { width: 300 }]}>Check on </Text>
+                        <TouchableOpacity style={{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E2E2', padding: 5 }} onPress={() => {
 
-                        <View style={{ flexDirection: 'column', alignItems: 'center' }}>
-                            <Image style={{ height: 40, width: 40 }} source={require('../../assets/vehicle_icon.png')}></Image>
-                            <Text style={{ fontFamily: 'inter-regular', fontSize: 15, height: 25, marginTop: 5 }}>{assetState.value.data.find(asset => asset["Asset Number"].toString() === formValue.assetNumber)?.['Asset Name'] || 'Unknown Asset'}</Text>
-                        </View>
+                            const mapsURL = `https://www.google.com/maps?q=${formValue.location._lat},${formValue.location._long}`;
+                            window.open(mapsURL, '_blank');
+                        }}>
+                            <Text>GPS stamp</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity onPress={() => {
+                            setDeleteModal(true)
+                        }}>
+                            <Image style={{ height: 25, width: 25, marginLeft: 20 }} tintColor='red' source={require('../../assets/delete_icon.png')}></Image>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E2E2', padding: 5, marginLeft: 20 }} onPress={async () => {
+                            // const doc = await generatePDFContent(groups);
+                            // pdf.save('Inspection-Report.pdf');
+                            // window.open(pdf.output('filename.pdf'))
+                            const pdfBlob = pdf.output('blob');
+                            const pdfUrl = URL.createObjectURL(pdfBlob);  // Create a URL for the Blob
+                            window.open(pdfUrl, '_blank');  // Open the URL in a new tab
+
+
+                        }}>
+                            <Text >Download PDF</Text>
+                        </TouchableOpacity>
 
                     </View>
-                </View>
 
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text style={[styles.selectedFormKeyStyle, { width: 300 }]}>Check on </Text>
-                    <TouchableOpacity style={{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E2E2', padding: 5 }} onPress={() => {
-
-                        const mapsURL = `https://www.google.com/maps?q=${formValue.location._lat},${formValue.location._long}`;
-                        window.open(mapsURL, '_blank');
-                    }}>
-                        <Text>GPS stamp</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity onPress={() => {
-                        setDeleteModal(true)
-                    }}>
-                        <Image style={{ height: 25, width: 25, marginLeft: 20 }} tintColor='red' source={require('../../assets/delete_icon.png')}></Image>
-                    </TouchableOpacity>
-
-                </View>
-
-                {groups.length != 0
-                    ?
-                    <View style={{ width: 'auto' }}>
-                        <ScrollView
-                            horizontal
-                            contentContainerStyle={{ width: 'auto' }}
-                        >
-                            <FlatList
-                                data={groups}
-                                numColumns={3} // Display three groups per row
-                                keyExtractor={(item, index) => index.toString()}
-                                renderItem={({ item, index }) => <GroupComponent key={index} group={item}
-                                    contentContainerStyle={{ flexDirection: 'row', justifyContent: 'center' }} />}
-                            />
-                        </ScrollView>
-                        <View>
-                            <Text style={{ fontFamily: 'inter-semibold', fontSize: 20, marginVertical: 5, }}>Signatures:</Text>
+                    {groups.length != 0
+                        ?
+                        <View style={{ width: 'auto' }}>
+                            <ScrollView
+                                horizontal
+                                contentContainerStyle={{ width: 'auto' }}
+                            >
+                                <FlatList
+                                    data={groups}
+                                    numColumns={3} // Display three groups per row
+                                    keyExtractor={(item, index) => index.toString()}
+                                    renderItem={({ item, index }) => <GroupComponent key={index} group={item}
+                                        contentContainerStyle={{ flexDirection: 'row', justifyContent: 'center' }} />}
+                                />
+                            </ScrollView>
+                            <View>
+                                <Text style={{ fontFamily: 'inter-semibold', fontSize: 20, marginVertical: 5, }}>Signatures:</Text>
+                            </View>
+                            <View style={{}}>
+                                <Image style={{ height: 400, width: 300, backgroundColor: '#FFFFFF', borderRadius: 4, padding: 15 }} source={{ uri: formValue.signature }}></Image>
+                            </View>
                         </View>
-                        <View style={{}}>
-                            <Image style={{ height: 400, width: 300, backgroundColor: '#FFFFFF', borderRadius: 4, padding: 15 }} source={{ uri: formValue.signature }}></Image>
-                        </View>
-                    </View>
-                    : null}
-            </ScrollView>
+                        : null}
+                </ScrollView>
+            </TouchableWithoutFeedback>
 
             <Modal
                 animationType="fade"

@@ -6,12 +6,22 @@ import { useFonts } from 'expo-font';
 import Notification from "./Notification";
 import { getAuth } from "firebase/auth";
 import { AuthContext } from "../src/store/context/AuthContext";
+import { PriorityOptionContext } from "../src/store/context/PriorityOptionContext";
+import { SeverityOptionContext } from "../src/store/context/SeverityOptionContext";
+import { HeaderOptionContext } from "../src/store/context/HeaderOptionContext";
+import { CloseAllDropDowns } from "./CloseAllDropdown";
 
 const logoutList = ['Profile', 'Logout'];
 
 const Header = (props) => {
 
     const { state: authState, setAuth } = useContext(AuthContext)
+    const {state : priorityOptionState, setPriorityOption} = useContext(PriorityOptionContext)
+    const {state : severityOptionState, setSeverityOption} = useContext(SeverityOptionContext)
+    const {state : headerOptionState, setHeaderOption} = useContext(HeaderOptionContext)
+
+
+    const [dropdownStatus, setDropdownStatus] = useState(true)
 
     const handleValueChange = (value) => {
         // console.log(value)
@@ -32,9 +42,12 @@ const Header = (props) => {
     //     return null;
     // }
 
+
+
     return (
         <TouchableWithoutFeedback onPress={() => {
             // console.log('solve auto close dropdown issue')
+            CloseAllDropDowns()
         }}>
             <View style={{ flexDirection: 'row', paddingLeft: 60, paddingRight: 60, paddingTop: 10, paddingBottom: 10, alignItems: 'center', backgroundColor: '#FFFFFF', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#D2D2D2' }}>
                 <View style={{ flexDirection: 'row' }}>
@@ -57,6 +70,7 @@ const Header = (props) => {
                     {/* <Text style={{ fontSize: 18, fontWeight: '700', color: '#5B5B5B' }}>Ubaid Arshad</Text> */}
                     <View style={{ marginHorizontal: 10, zIndex: 1 }}>
                         <DropDownComponent
+                        info='headerSelection'
                             options={logoutList}
                             onValueChange={handleValueChange}
                             title={authState.value.name ? authState.value.name : ''}
@@ -69,6 +83,8 @@ const Header = (props) => {
                             hoveredOption={styles.dropdownHoveredOption}
                             optionText={styles.dropdownOptionText}
                             hoveredOptionText={styles.dropdownHoveredOptionText}
+                            openDropdown={dropdownStatus}
+                            onMainHandle={()=> setDropdownStatus(!dropdownStatus)}
                         />
                     </View>
                     <TouchableOpacity style={{}}>

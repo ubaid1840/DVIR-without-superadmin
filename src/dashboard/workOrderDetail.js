@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, FlatList, TextInput, Dimensions, ActivityIndicator, Modal } from "react-native"
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, FlatList, TextInput, Dimensions, ActivityIndicator, Modal, TouchableWithoutFeedback } from "react-native"
 import AppBtn from "../../components/Button";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { collection, deleteDoc, doc, getDocs, getFirestore, orderBy, query, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
@@ -14,10 +14,11 @@ import { AssetContext } from "../store/context/AssetContext";
 import AlertModal from "../../components/AlertModal";
 import { subscribeToCollectionWorkOrder } from "./workOrderFirebaseService";
 import { BlurView } from "expo-blur";
+import { CloseAllDropDowns } from "../../components/CloseAllDropdown";
 
 
 
-const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
+const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder }) => {
 
     const db = getFirestore(app)
 
@@ -483,16 +484,31 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
     }
 
     const updateWOStatus = async () => {
-        updateDoc(doc(db, 'WorkOrders', selectedWorkOrder.id.toString()), {
+       await updateDoc(doc(db, 'WorkOrders', selectedWorkOrder.id.toString()), {
             'status': 'Completed',
             'mileage': completionMileage
         })
+
+        if(selectedWorkOrder.defectID == '') {
+        }
+        else{
+            await updateDoc(doc(db, 'Defects', selectedWorkOrder.defectID.toString()), {
+                'status': 'Corrected',
+            })
+        }
     }
 
     const updatePendingWOStatus = async () => {
         updateDoc(doc(db, 'WorkOrders', selectedWorkOrder.id.toString()), {
             'status': 'Pending',
         })
+        if(selectedWorkOrder.defectID == '') {
+        }
+        else{
+            await updateDoc(doc(db, 'Defects', selectedWorkOrder.defectID.toString()), {
+                'status': 'In Progress',
+            })
+        }
     }
 
     const handlePartsTax = async (text) => {
@@ -523,9 +539,35 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
         return (
             <>
                 <View style={{ flex: 1, backgroundColor: '#f6f8f9' }}>
+                    <TouchableWithoutFeedback onPress={()=>{
+                        CloseAllDropDowns()
+                    }}>
                     <ScrollView style={{ height: 100 }}
                         contentContainerStyle={{ paddingHorizontal: 30 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 30, marginBottom: 20 }}>
+                                 <View style={{ marginTop: 30, paddingBottom: 10 }}>
+                            <AppBtn
+                                title="Back"
+                                btnStyle={[{
+                                    width: 100,
+                                    height: 40,
+                                    backgroundColor: '#FFFFFF',
+                                    borderRadius: 5,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    shadowOffset: { width: 1, height: 1 },
+                                    shadowOpacity: 0.5,
+                                    shadowRadius: 3,
+                                    elevation: 0,
+                                    shadowColor: '#575757',
+                                    marginRight: 50
+                                }, { minWidth: 70 }]}
+                                btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                                onPress={() => {
+                                    onDashboardWorkOrder()
+                                    // clearAll()
+                                }} />
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, marginBottom: 20 }}>
                             <Text style={{ fontFamily: 'inter-semibold', fontSize: 30 }}>WO-{selectedWorkOrder.id}</Text>
                             <View>
                                 <AppBtn
@@ -548,6 +590,10 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                                 <View style={styles.subViewStyle}>
                                     <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Work Order ID:</Text>
                                     <Text style={{}}>{selectedWorkOrder.id}</Text>
+                                </View>
+                                <View style={styles.subViewStyle}>
+                                    <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Type:</Text>
+                                    <Text style={{}}>General</Text>
                                 </View>
                                 <View style={styles.subViewStyle}>
                                     <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Status:</Text>
@@ -748,7 +794,7 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                                     </View>
                                     <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginTop: 20 }}>
                                         <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Parts sub total:</Text>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>{partsSubTotal}</Text>
+                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>${partsSubTotal}</Text>
                                     </View>
 
                                     <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginVertical: 10, alignItems: 'center' }}>
@@ -762,19 +808,19 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                                                 placeholderTextColor="#868383DC"
                                             />
                                         </View>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>{(parseFloat(partsSubTotal) || 0) * (parseFloat(selectedWorkOrder.partsTax) || 0) / 100}</Text>
+                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>${(parseFloat(partsSubTotal) || 0) * (parseFloat(selectedWorkOrder.partsTax) || 0) / 100}</Text>
                                     </View>
 
                                     <View style={{ width: '90%', borderBottomWidth: 1, borderBottomColor: '#C6C6C6', marginTop: 10, alignSelf: 'center' }}></View>
 
                                     <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginTop: 20 }}>
                                         <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Labor sub total:</Text>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>{laborSubTotal}</Text>
+                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>${laborSubTotal}</Text>
                                     </View>
 
                                     <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginVertical: 10, alignItems: 'center' }}>
                                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Labor Tax: %+</Text>
+                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Labor Tax: %</Text>
                                             <TextInput style={[styles.input, { width: 100, }]}
                                                 value={laborTax}
                                                 onChangeText={(val) => handleLaborTax(val.replace(/[^0-9]/g, ''))}
@@ -782,7 +828,7 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                                                 placeholderTextColor="#868383DC"
                                             />
                                         </View>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>{(parseFloat(laborSubTotal) || 0) * (parseFloat(selectedWorkOrder.laborTax) || 0) / 100}</Text>
+                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>${(parseFloat(laborSubTotal) || 0) * (parseFloat(selectedWorkOrder.laborTax) || 0) / 100}</Text>
                                     </View>
 
                                     <View style={{ width: '90%', borderBottomWidth: 1, borderBottomColor: '#C6C6C6', marginTop: 10, alignSelf: 'center' }}></View>
@@ -860,6 +906,7 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
 
                         </View>
                     </ScrollView>
+                    </TouchableWithoutFeedback>
                 </View>
 
                 <Modal
@@ -930,7 +977,7 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
 
                             <View style={{ backgroundColor: '#ffffff', width: '100%', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderTopWidth: 1, borderTopColor: '#C9C9C9', flexDirection: 'row', zIndex: 0 }}>
                                 <View>
-                                    <Text style={{ fontFamily: 'inter-medium', color: '#000000', fontSize: 14 }}>{workOrderAddItemVariable.length} items added</Text>
+                                    <Text style={{ fontFamily: 'inter-medium', color: '#000000', fontSize: 14 }}>{workOrderAddItemVariable.length} {workOrderAddItemVariable.length < 2 ? 'item added' : 'items added'}</Text>
                                 </View>
                                 <View style={{ flexDirection: 'row' }}>
                                     <View>

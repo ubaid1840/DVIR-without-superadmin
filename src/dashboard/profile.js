@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, FlatList, Animated, Platform, TextInput, ActivityIndicator } from 'react-native';
 import { useFonts } from 'expo-font';
 import CircularProgressBar from '../../components/CircleProgress'
@@ -14,6 +14,7 @@ import { collection, doc, getDocs, getFirestore, updateDoc } from 'firebase/fire
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import app from '../config/firebase';
 import { getAuth } from 'firebase/auth';
+import { AuthContext } from '../store/context/AuthContext';
 
 const driverOptionList = ['Inspection'];
 const assetOptionList = ['Inspection', 'Defects'];
@@ -46,6 +47,8 @@ const ProfilePage = (props) => {
   const [fileuploading, setFileuploading] = useState(0)
   const [uploadingStatus, setUploadingStatus] = useState(false)
   const [loading, setLoading] = useState(true)
+
+  const {state: authState, setAuth} = useContext(AuthContext)
 
   const fetchData = async () => {
     const querySnapshot = await getDocs(collection(db, 'AllowedUsers'));
@@ -183,6 +186,9 @@ const updateDb = async () => {
   await updateDoc(doc(db, 'AllowedUsers', auth.currentUser.email), {
     Name : name
   })
+
+  setAuth(authState.value.data.number, authState.value.data.name, authState.value.data.designation, authState.value.data.employeeNumber, authState.value.data.dp)
+                               
   setLoading(false)
   props.profileHandle()
 }

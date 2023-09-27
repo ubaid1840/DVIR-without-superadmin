@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext, useRef, useCallback } from 'react';
-import { Text, View, ScrollView, StyleSheet, Image, Animated, Dimensions, ActivityIndicator, TouchableOpacity, FlatList, Modal } from 'react-native';
+import { Text, View, ScrollView, StyleSheet, Image, Animated, Dimensions, ActivityIndicator, TouchableOpacity, FlatList, Modal, TouchableWithoutFeedback } from 'react-native';
 import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -20,11 +20,18 @@ import { AssetContext } from '../store/context/AssetContext';
 import { InHouseWOContext } from '../store/context/InHouseWOContext'
 import DatePicker, { getFormatedDate } from 'react-native-modern-datepicker';
 import AlertModal from '../../components/AlertModal';
+import { DatePickerContext } from '../store/context/DatePickerContext';
+import { MechanicOptionContext } from '../store/context/MechanicOptionContext';
+import { AssetOptionContext } from '../store/context/AssetOptionContext';
+import { CloseAllDropDowns } from '../../components/CloseAllDropdown';
 
 const columns = [
   'id',
+  'status',
   'assetName',
   'defectedItems',
+  'priority',
+  'TimeStamp',
   'dueDate',
   'assignedMechanic',
   'Action',
@@ -55,7 +62,7 @@ const MaintenancePage = (props) => {
   const [inHouseWOArray, setInHouseWOArray] = useState([])
   const [inHouseWOVariable, setInHouseWOVariable] = useState([])
   const [assignedMechanic, setAssignedMechanic] = useState('')
-  const [selectedDate, setSelectedDate] = useState(`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`);
+  const [selectedDate, setSelectedDate] = useState(new Date().getTime());
   const [openCalendar, setOpenCalendar] = useState(false)
   const [addTask, setAddTask] = useState('')
   const [alertIsVisible, setAlertIsVisible] = useState(false)
@@ -63,11 +70,20 @@ const MaintenancePage = (props) => {
   const [options, setOptions] = useState('1')
   const [assignedMechanicId, setAssignedMechanicId] = useState(0)
   const [selectedAssetId, setSelectedAssetId] = useState(0)
+  const [prioritySelectedOption, setPrioritySelectedOption] = useState('Undefined')
+
+  const [workOrderCalendarSelect, setWorkOrderCalendarSelect] = useState('All')
+  const [timeStampSort, setTimeStampSort] = useState(false)
+  const [dueDateSort, setDueDateSort] = useState(false)
 
   const { state: woState, setWO } = useContext(WOContext)
   const { state: assetState, } = useContext(AssetContext)
   const { state: peopleState } = useContext(PeopleContext)
   const { state: inHouseWOState, setInHouseWO } = useContext(InHouseWOContext)
+  const { state: datePickerState, setDatePicker } = useContext(DatePickerContext)
+  const { state: mechanicOptionState, setMechanicOption } = useContext(MechanicOptionContext)
+  const { state: assetOptionState, setAssetOption } = useContext(AssetOptionContext)
+
 
   useEffect(() => {
     fetchData()
@@ -76,7 +92,7 @@ const MaintenancePage = (props) => {
 
 
   const fetchInHouseData = async () => {
-    await getDocs(collection(db, 'InHouseWorkOrders'))
+    await getDocs(query(collection(db, 'InHouseWorkOrders'), orderBy('TimeStamp', 'desc')))
       .then((snapshot) => {
         let temp = []
         snapshot.forEach((docs) => {
@@ -98,7 +114,7 @@ const MaintenancePage = (props) => {
           if (item.status == 'Completed') {
             k++
           }
-          const currentDate = new Date().getTime
+          const currentDate = new Date().getTime()
           const diff = currentDate - item.dueDate
           if (diff < 0) {
             j++
@@ -111,14 +127,12 @@ const MaintenancePage = (props) => {
       })
   }
   const fetchData = async () => {
-    await getDocs(collection(db, 'WorkOrders'))
+    await getDocs(query(collection(db, 'WorkOrders'), orderBy('TimeStamp', 'desc')))
       .then((snapshot) => {
         let temp = []
         snapshot.forEach((docs) => {
           temp.push(docs.data())
         })
-
-        console.log(temp)
 
         // const updatedWorkorders = updateWorkOrdersWithAssetInfo(temp, assetState.value.data);
         // const workOrdersWithNames = replaceMechanicIdsWithNames([...updatedWorkorders], [...peopleState.value.data]);
@@ -138,9 +152,9 @@ const MaintenancePage = (props) => {
           if (item.status == 'Completed') {
             k++
           }
-          const currentDate = new Date().getTime
+          const currentDate = new Date().getTime()
           const diff = currentDate - item.dueDate
-          if (diff < 0) {
+          if (item.dueDate < currentDate && item.status != 'Completed') {
             j++
           }
           setOverDue(j)
@@ -148,6 +162,46 @@ const MaintenancePage = (props) => {
           setCompleted(k)
         })
         setLoading(false)
+      })
+  }
+
+  const fetchDataAndRoute = async () => {
+    await getDocs(query(collection(db, 'WorkOrders'), orderBy('TimeStamp', 'desc')))
+      .then((snapshot) => {
+        let temp = []
+        snapshot.forEach((docs) => {
+          temp.push(docs.data())
+        })
+
+        // const updatedWorkorders = updateWorkOrdersWithAssetInfo(temp, assetState.value.data);
+        // const workOrdersWithNames = replaceMechanicIdsWithNames([...updatedWorkorders], [...peopleState.value.data]);
+
+
+        // console.log(updatedWorkorders)
+
+        setWorkOrderArray([...temp])
+        setWO([...temp])
+        let i = 0
+        let j = 0
+        let k = 0
+        temp.map((item) => {
+          if (item.status == 'Pending') {
+            i++
+          }
+          if (item.status == 'Completed') {
+            k++
+          }
+          const currentDate = new Date().getTime()
+          const diff = currentDate - item.dueDate
+          if (item.dueDate < currentDate && item.status != 'Completed') {
+            j++
+          }
+          setOverDue(j)
+          setPending(i)
+          setCompleted(k)
+        })
+        setLoading(false)
+        props.onDashboardValueChange(temp[0])
       })
   }
 
@@ -285,17 +339,15 @@ const MaintenancePage = (props) => {
           'comments': [],
           'completionDate': 0,
           'severity': 'Undefined',
-          'priority': 'Undefined',
+          'priority': prioritySelectedOption,
           'TimeStamp': serverTimestamp(),
           'partsTax': '',
           'laborTax': ''
         })
 
-
-
-        setAlertStatus('successful')
-        setAlertIsVisible(true)
-        fetchData()
+        // setAlertStatus('successful')
+        // setAlertIsVisible(true)
+        fetchDataAndRoute()
       }
       else {
 
@@ -316,19 +368,19 @@ const MaintenancePage = (props) => {
           'comments': [],
           'completionDate': 0,
           'severity': 'Undefined',
-          'priority': 'Undefined',
+          'priority': prioritySelectedOption,
           'TimeStamp': serverTimestamp(),
           'partsTax': '',
           'laborTax': ''
         })
 
-        setAlertStatus('successful')
-        setAlertIsVisible(true)
-        fetchData()
+        // setAlertStatus('successful')
+        // setAlertIsVisible(true)
+        fetchDataAndRoute()
       }
     } catch (error) {
       setLoading(false)
-      setAlertStatus('failed')
+      setAlertStatus('Failed : ' + error)
       setAlertIsVisible(true)
     }
   }
@@ -351,85 +403,142 @@ const MaintenancePage = (props) => {
     const dateObject = new Date(`${year}-${month}-${day}`);
     const milliseconds = dateObject.getTime();
     setSelectedDate(milliseconds)
-    setOpenCalendar(false)
+    // setOpenCalendar(false)
+    setDatePicker(false)
   };
 
   const closeAlert = () => {
     setAlertIsVisible(false)
   }
 
+  const clearAll = () => {
+    setSelectedAsset('')
+    setSelectedAssetId(0)
+    setAssignedMechanic('')
+    setAssignedMechanicId(0)
+    setAddTask('')
+    setSelectedDate(new Date().getTime())
+
+  }
+
+  const handleTimeStampSorting = () => {
+    let temp = []
+    if(timeStampSort == false){
+      temp = [...workOrderArray.sort((a,b)=> a.TimeStamp.seconds*1000 - b.TimeStamp.seconds*1000)]
+      setWorkOrderArray(temp)
+    }
+    if(timeStampSort == true){
+      temp = [...workOrderArray.sort((a,b)=> b.TimeStamp.seconds*1000 - a.TimeStamp.seconds*1000)]
+      setWorkOrderArray(temp)
+    }
+    setTimeStampSort(!timeStampSort)
+  }
+
+  const handleDueDateSorting = () => {
+    let temp = []
+    if(dueDateSort == false){
+      temp = [...workOrderArray.sort((a,b)=> a.dueDate - b.dueDate)]
+      setWorkOrderArray(temp)
+    }
+    if(dueDateSort == true){
+      temp = [...workOrderArray.sort((a,b)=> b.dueDate - a.dueDate)]
+      setWorkOrderArray(temp)
+    }
+    setDueDateSort(!dueDateSort)
+  }
+
   return (
     <Animated.View style={{ flex: 1, backgroundColor: '#f6f8f9' }}>
-      <ScrollView style={{ height: 100 }}>
-        <View style={{ flexDirection: 'row', marginLeft: 40, marginVertical: 40, marginRight: 40, justifyContent: 'space-between', alignItems: 'center' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <View style={{ backgroundColor: '#23d3d3', borderRadius: 15, }}>
-              <Image style={{ width: 30, height: 30, margin: 7 }}
-                tintColor="#FFFFFF"
-                source={require('../../assets/workorder_icon.png')}></Image>
+      <TouchableWithoutFeedback onPress={() => {
+        CloseAllDropDowns()
+      }}>
+        <ScrollView style={{ height: 100 }}>
+          <View style={{ flexDirection: 'row', marginLeft: 40, marginVertical: 40, marginRight: 40, justifyContent: 'space-between', alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ backgroundColor: '#23d3d3', borderRadius: 15, }}>
+                <Image style={{ width: 30, height: 30, margin: 7 }}
+                  tintColor="#FFFFFF"
+                  source={require('../../assets/workorder_icon.png')}></Image>
+              </View>
+              <Text style={{ fontSize: 30, color: '#335a75', fontFamily: 'inter-extrablack', marginLeft: 10 }}>
+                Work Orders
+              </Text>
             </View>
-            <Text style={{ fontSize: 30, color: '#335a75', fontFamily: 'inter-extrablack', marginLeft: 10 }}>
-              Work Orders
-            </Text>
+            <View style={{ flexDirection: 'row' }}>
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{ color: 'red', fontSize: 20, fontFamily: 'inter-medium' }}>{options == '2' ? inHouseoverDue : overDue}</Text>
+                <Text style={{ color: '#5B5B5B', fontSize: 17 }}>Overdue</Text>
+              </View>
+              <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 25, opacity: 0.5, }}></View>
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{ color: '#5B5B5B', fontSize: 20, fontFamily: 'inter-medium' }}>{options == '2' ? inHousepending : pending}</Text>
+                <Text style={{ color: '#5B5B5B', fontSize: 17 }}>Pending</Text>
+              </View>
+              <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 25, opacity: 0.5 }}></View>
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{ color: '#5B5B5B', fontSize: 20, fontFamily: 'inter-medium' }}>{options == '2' ? inHousecompleted : completed}</Text>
+                <Text style={{ color: '#5B5B5B', fontSize: 17 }}>Completed</Text>
+              </View>
+            </View>
           </View>
-          <View style={{ flexDirection: 'row' }}>
-            <View style={{ alignItems: 'center' }}>
-              <Text style={{ color: 'red', fontSize: 20, fontFamily: 'inter-medium' }}>{options == '2' ? inHouseoverDue : overDue}</Text>
-              <Text style={{ color: '#5B5B5B', fontSize: 17 }}>Overdue</Text>
+
+          <View style={{ justifyContent: 'space-between', alignItems: 'center', flexDirection: 'row', zIndex: 1 }}>
+            <View style={{ flexDirection: 'row', margin: 10 }}>
+              <TouchableOpacity style={{ flexDirection: 'row', marginHorizontal: 15, height: 40, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }} onPress={() => setOptions('1')}>
+                <Text style={{ color: options == '1' ? 'white' : 'grey', fontFamily: 'inter-bold', fontSize: options == '1' ? 16 : 14, padding: 10, backgroundColor: options == '1' ? '#335a75' : null, borderWidth: options == '1' ? 1 : 0, borderColor: '#335a75', borderRadius: 10 }}>General WO</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={{ flexDirection: 'row', marginHorizontal: 15, height: 40, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }} onPress={() => setOptions('2')}>
+                <Text style={{ color: options == '2' ? 'white' : 'grey', fontFamily: 'inter-bold', fontSize: options == '2' ? 16 : 14, padding: 10, backgroundColor: options == '2' ? '#335a75' : null, borderWidth: options == '2' ? 1 : 0, borderColor: '#335a75', borderRadius: 10 }}>In House WO</Text>
+              </TouchableOpacity>
             </View>
-            <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 25, opacity: 0.5, }}></View>
-            <View style={{ alignItems: 'center' }}>
-              <Text style={{ color: '#5B5B5B', fontSize: 20, fontFamily: 'inter-medium' }}>{options == '2' ? inHousepending : pending}</Text>
-              <Text style={{ color: '#5B5B5B', fontSize: 17 }}>Pending</Text>
-            </View>
-            <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 25, opacity: 0.5 }}></View>
-            <View style={{ alignItems: 'center' }}>
-              <Text style={{ color: '#5B5B5B', fontSize: 20, fontFamily: 'inter-medium' }}>{options == '2' ? inHousecompleted : completed}</Text>
-              <Text style={{ color: '#5B5B5B', fontSize: 17 }}>Completed</Text>
-            </View>
-          </View>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 40, paddingRight: 40, zIndex: 1, }}>
-          <View style={{ flexDirection: 'row' }}>
-            <View style={{ marginRight: 10 }}>
-              <TextInput
-                style={[styles.input, { marginTop: 0 }, searchTextInputBorderColor && styles.withBorderInputContainer]}
-                placeholder="Type to search"
-                placeholderTextColor="#868383DC"
-                value={search}
-                onChangeText={(val) => { setSearch(val) }}
-                onFocus={() => { setSearchTextInputBorderColor(true) }}
-                onBlur={() => { setSearchTextInputBorderColor(false) }}
-              />
-            </View>
-            <View style={{ marginRight: 10 }}>
-              <DropDownComponent
-                options={['Select', 'Asset', 'Mechanic']}
-                onValueChange={handleSearchWorkOrderValueChange}
-                // title="Ubaid Arshad"
-                selectedValue={searchWorkOrderSelectedOption}
-                imageSource={require('../../assets/up_arrow_icon.png')}
-                container={styles.dropdownContainer}
-                dropdownButton={styles.dropdownButton}
-                selectedValueStyle={styles.dropdownSelectedValueStyle}
-                optionsContainer={styles.dropdownOptionsContainer}
-                option={styles.dropdownOption}
-                hoveredOption={styles.dropdownHoveredOption}
-                optionText={styles.dropdownOptionText}
-                hoveredOptionText={styles.dropdownHoveredOptionText}
-                dropdownButtonSelect={styles.dropdownButtonSelect}
-                dropdownStyle={styles.dropdown}
-              />
-            </View>
-            <View >
-              <AppBtn
-                title="Create Work Order"
-                imgSource={require('../../assets/add_plus_btn_icon.png')}
-                btnStyle={[styles.btn, { marginHorizontal: 10 }]}
-                btnTextStyle={[styles.btnText, { marginLeft: 0, marginRight: 10 }]}
-                onPress={() => { setOpenCustomWO(true) }} />
-            </View>
-            {/* <View style={{ marginRight: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 40, zIndex: 1, }}>
+              <View style={{ flexDirection: 'row' }}>
+                <View style={{ marginRight: 10 }}>
+                  <TextInput
+                    style={[styles.input, { marginTop: 0 }, searchTextInputBorderColor && styles.withBorderInputContainer]}
+                    placeholder="Type to search"
+                    placeholderTextColor="#868383DC"
+                    value={search}
+                    onChangeText={(val) => { setSearch(val) }}
+                    onFocus={() => { setSearchTextInputBorderColor(true) }}
+                    onBlur={() => { setSearchTextInputBorderColor(false) }}
+                  />
+                </View>
+                <View style={{ marginRight: 10 }}>
+                  <DropDownComponent
+                    options={['Select', 'Asset', 'Mechanic']}
+                    onValueChange={handleSearchWorkOrderValueChange}
+                    // title="Ubaid Arshad"
+                    info="searchSelection"
+                    selectedValue={searchWorkOrderSelectedOption}
+                    imageSource={require('../../assets/up_arrow_icon.png')}
+                    container={styles.dropdownContainer}
+                    dropdownButton={styles.dropdownButton}
+                    selectedValueStyle={styles.dropdownSelectedValueStyle}
+                    optionsContainer={styles.dropdownOptionsContainer}
+                    option={styles.dropdownOption}
+                    hoveredOption={styles.dropdownHoveredOption}
+                    optionText={styles.dropdownOptionText}
+                    hoveredOptionText={styles.dropdownHoveredOptionText}
+                    dropdownButtonSelect={styles.dropdownButtonSelect}
+                    dropdownStyle={styles.dropdown}
+                  />
+                </View>
+                <View >
+                  <AppBtn
+                    title="Create Work Order"
+                    imgSource={require('../../assets/add_plus_btn_icon.png')}
+                    btnStyle={[styles.btn, { marginHorizontal: 10 }]}
+                    btnTextStyle={[styles.btnText, { marginLeft: 0, marginRight: 10 }]}
+                    onPress={() => {
+                      clearAll()
+                      setAssetOption(false)
+                      setMechanicOption(false)
+                      setDatePicker(false)
+                      setOpenCustomWO(true)
+                    }} />
+                </View>
+                {/* <View style={{ marginRight: 10 }}>
                                     <TouchableOpacity
                                         onMouseEnter={() => setSearchBtnHover(true)}
                                         onMouseLeave={() => setSearchBtnHover(false)}
@@ -443,181 +552,235 @@ const MaintenancePage = (props) => {
                                             source={require('../../assets/search_icon.png')}></Image>
                                     </TouchableOpacity>
                                 </View> */}
-            {/* <CSVLink style={{ textDecorationLine: 'none' }} data={[]} headers={[]} filename={"defects_report.csv"}>
+                {/* <CSVLink style={{ textDecorationLine: 'none' }} data={[]} headers={[]} filename={"defects_report.csv"}>
                     <AppBtn
                         title="Download Report"
                         btnStyle={styles.btn}
                         btnTextStyle={styles.btnText}
                         onPress={handleDownloadReportBtn} />
                 </CSVLink> */}
+              </View>
+
+            </View>
           </View>
 
-        </View>
-        <View style={{ flexDirection: 'row', margin: 10 }}>
-          <TouchableOpacity style={{ flexDirection: 'row', marginHorizontal: 15, height: 40, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }} onPress={() => setOptions('1')}>
-            <Text style={{ color: options == '1' ? '#335a75' : 'grey', fontFamily: 'inter-bold', fontSize: options == '1' ? 16 : 14 }}>General WO</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={{ flexDirection: 'row', marginHorizontal: 15, height: 40, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }} onPress={() => setOptions('2')}>
-            <Text style={{ color: options == '2' ? '#335a75' : 'grey', fontFamily: 'inter-bold', fontSize: options == '2' ? 16 : 14 }}>In House WO</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.contentCardStyle}>
-          {options == '1'
-            ?
-            <Form
-              columns={columns}
-              entriesData={searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
-              ) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray}
-              // entriesData={workOrderArray}
-              titleForm="Work Order"
-              onValueChange={handleWorkOrderFormValueChange}
-              row={styles.formRowStyle}
-              cell={styles.formCellStyle}
-              entryText={styles.formEntryTextStyle}
-              columnHeaderRow={styles.formColumnHeaderRowStyle}
-              columnHeaderCell={styles.formColumnHeaderCellStyle}
-              columnHeaderText={styles.formColumnHeaderTextStyle}
-            />
-            :
-            <Form
-              columns={columns}
-              entriesData={searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter((item) => item.assetName.toLowerCase().includes(search.toLowerCase())) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter((item) => item.assignedMechanic.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray}
-              // entriesData={workOrderArray}
-              titleForm="Work Order"
-              onValueChange={handleInHouseWOFormValueChange}
-              row={styles.formRowStyle}
-              cell={styles.formCellStyle}
-              entryText={styles.formEntryTextStyle}
-              columnHeaderRow={styles.formColumnHeaderRowStyle}
-              columnHeaderCell={styles.formColumnHeaderCellStyle}
-              columnHeaderText={styles.formColumnHeaderTextStyle}
-            />}
-        </View>
-      </ScrollView>
+          <View style={{ flexDirection: 'row', marginLeft: 40, alignItems: 'center', marginTop: 20 }}>
+            <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setWorkOrderCalendarSelect("All")}>
+              <Text style={[styles.newCalenderSortText, workOrderCalendarSelect == "All" && styles.newCalenderSortSelectedText]}>
+                All
+              </Text>
+            </TouchableOpacity >
+            <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setWorkOrderCalendarSelect("Over Due")}>
+              <Text style={[styles.newCalenderSortText, workOrderCalendarSelect == "Over Due" && styles.newCalenderSortSelectedText]}>
+                Over Due
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setWorkOrderCalendarSelect("Pending")}>
+              <Text style={[styles.newCalenderSortText, workOrderCalendarSelect == "Pending" && styles.newCalenderSortSelectedText]}>
+                Pending
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setWorkOrderCalendarSelect("Completed")}>
+              <Text style={[styles.newCalenderSortText, workOrderCalendarSelect == "Completed" && styles.newCalenderSortSelectedText]}>
+                Completed
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View style={[styles.contentCardStyle, { marginTop: 10 }]}>
+            {options == '1'
+              ?
+              workOrderCalendarSelect == 'All'
+                ?
+                <Form
+                  columns={columns}
+                  entriesData={searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+                  ) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray}
+                  // entriesData={workOrderArray}
+                  titleForm="Work Order"
+                  onValueChange={handleWorkOrderFormValueChange}
+                  onFormSortDateCreated={(val) => handleTimeStampSorting()}
+                  onFormSortDueDate={()=> handleDueDateSorting()}
+                  row={styles.formRowStyle}
+                  cell={styles.formCellStyle}
+                  entryText={styles.formEntryTextStyle}
+                  columnHeaderRow={styles.formColumnHeaderRowStyle}
+                  columnHeaderCell={styles.formColumnHeaderCellStyle}
+                  columnHeaderText={styles.formColumnHeaderTextStyle}
+                />
+                :
+                workOrderCalendarSelect == 'Over Due'
+                  ?
+                  <Form
+                    columns={columns}
+                    entriesData={searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime()).filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime()).filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray.filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime())}
+                    // entriesData={workOrderArray}
+                    titleForm="Work Order"
+                    onValueChange={handleWorkOrderFormValueChange}
+                    onFormSortDateCreated={(val) => handleTimeStampSorting()}
+                    onFormSortDueDate={()=> handleDueDateSorting()}
+                    row={styles.formRowStyle}
+                    cell={styles.formCellStyle}
+                    entryText={styles.formEntryTextStyle}
+                    columnHeaderRow={styles.formColumnHeaderRowStyle}
+                    columnHeaderCell={styles.formColumnHeaderCellStyle}
+                    columnHeaderText={styles.formColumnHeaderTextStyle}
+                  />
+                  :
+                  workOrderCalendarSelect == 'Pending'
+                    ?
+                    <Form
+                      columns={columns}
+                      entriesData={searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => item.status === 'Pending').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+                      ) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => item.status === 'Pending').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray.filter(item => item.status === 'Pending')}
+                      // entriesData={workOrderArray}
+                      titleForm="Work Order"
+                      onValueChange={handleWorkOrderFormValueChange}
+                      onFormSortDateCreated={(val) => handleTimeStampSorting()}
+                      onFormSortDueDate={()=> handleDueDateSorting()}
+                      row={styles.formRowStyle}
+                      cell={styles.formCellStyle}
+                      entryText={styles.formEntryTextStyle}
+                      columnHeaderRow={styles.formColumnHeaderRowStyle}
+                      columnHeaderCell={styles.formColumnHeaderCellStyle}
+                      columnHeaderText={styles.formColumnHeaderTextStyle}
+                    />
+                    :
+                    workOrderCalendarSelect == 'Completed'
+                      ?
+                      <Form
+                        columns={columns}
+                        entriesData={searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => item.status === 'Completed').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+                        ) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => item.status === 'Completed').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray.filter(item => item.status === 'Completed')}
+                        // entriesData={workOrderArray}
+                        titleForm="Work Order"
+                        onValueChange={handleWorkOrderFormValueChange}
+                        onFormSortDateCreated={(val) => handleTimeStampSorting()}
+                        onFormSortDueDate={()=> handleDueDateSorting()}
+                        row={styles.formRowStyle}
+                        cell={styles.formCellStyle}
+                        entryText={styles.formEntryTextStyle}
+                        columnHeaderRow={styles.formColumnHeaderRowStyle}
+                        columnHeaderCell={styles.formColumnHeaderCellStyle}
+                        columnHeaderText={styles.formColumnHeaderTextStyle}
+                      />
+                      : null
+              :
+              workOrderCalendarSelect == 'All'
+                ?
+                <Form
+                  columns={columns}
+                  entriesData={searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+                  ) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray}
+                  // entriesData={workOrderArray}
+                  titleForm="Work Order"
+                  onValueChange={handleInHouseWOFormValueChange}
+                  onFormSortDateCreated={(val) => handleTimeStampSorting()}
+                  onFormSortDueDate={()=> handleDueDateSorting()}
+                  row={styles.formRowStyle}
+                  cell={styles.formCellStyle}
+                  entryText={styles.formEntryTextStyle}
+                  columnHeaderRow={styles.formColumnHeaderRowStyle}
+                  columnHeaderCell={styles.formColumnHeaderCellStyle}
+                  columnHeaderText={styles.formColumnHeaderTextStyle}
+                />
+                :
+                workOrderCalendarSelect == 'Over Due'
+                ?
+                <Form
+                  columns={columns}
+                  entriesData={searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => item.status != 'Completed').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => item.status == 'Pending').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray.filter(item => item.status == 'Pending')}
+                  // entriesData={workOrderArray}
+                  titleForm="Work Order"
+                  onValueChange={handleInHouseWOFormValueChange}
+                  onFormSortDateCreated={(val) => handleTimeStampSorting()}
+                  onFormSortDueDate={()=> handleDueDateSorting()}
+                  row={styles.formRowStyle}
+                  cell={styles.formCellStyle}
+                  entryText={styles.formEntryTextStyle}
+                  columnHeaderRow={styles.formColumnHeaderRowStyle}
+                  columnHeaderCell={styles.formColumnHeaderCellStyle}
+                  columnHeaderText={styles.formColumnHeaderTextStyle}
+                />
+                :
+                workOrderCalendarSelect == 'Pending'
+                  ?
+                  <Form
+                    columns={columns}
+                    entriesData={searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => item.status == 'Pending').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => item.status == 'Pending').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray.filter(item => item.status == 'Pending')}
+                    // entriesData={workOrderArray}
+                    titleForm="Work Order"
+                    onValueChange={handleInHouseWOFormValueChange}
+                    onFormSortDateCreated={(val) => handleTimeStampSorting()}
+                    onFormSortDueDate={()=> handleDueDateSorting()}
+                    row={styles.formRowStyle}
+                    cell={styles.formCellStyle}
+                    entryText={styles.formEntryTextStyle}
+                    columnHeaderRow={styles.formColumnHeaderRowStyle}
+                    columnHeaderCell={styles.formColumnHeaderCellStyle}
+                    columnHeaderText={styles.formColumnHeaderTextStyle}
+                  />
+                  :
+                  workOrderCalendarSelect == 'Completed'
+                    ?
+                    <Form
+                      columns={columns}
+                      entriesData={searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => item.status == 'Completed').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => item.status == 'Completed').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray.filter(item => item.status == 'Completed')}
+                      // entriesData={workOrderArray}
+                      titleForm="Work Order"
+                      onValueChange={handleInHouseWOFormValueChange}
+                      onFormSortDateCreated={(val) => handleTimeStampSorting()}
+                      onFormSortDueDate={()=> handleDueDateSorting()}
+                      row={styles.formRowStyle}
+                      cell={styles.formCellStyle}
+                      entryText={styles.formEntryTextStyle}
+                      columnHeaderRow={styles.formColumnHeaderRowStyle}
+                      columnHeaderCell={styles.formColumnHeaderCellStyle}
+                      columnHeaderText={styles.formColumnHeaderTextStyle}
+                    />
+                    :
+                    null}
+          </View>
+        </ScrollView>
+      </TouchableWithoutFeedback>
 
       <Modal
         animationType="fade"
         visible={openCustomWO}
         transparent={true}>
+        <TouchableWithoutFeedback onPress={() => {
+          CloseAllDropDowns()
+        }}>
+          <ScrollView style={{ height: 100, width: '100%', backgroundColor: '#555555A0' }}
+            contentContainerStyle={{ justifyContent: 'center', alignItems: 'center', marginTop: 15, marginBottom: 30 }}>
+            {/* <Blu intensity={40} tint="dark" style={StyleSheet.absoluteFill} /> */}
+            <View style={{ width: '60%', backgroundColor: '#ffffff' }}>
 
-        <ScrollView style={{ height: 100, width: '100%', backgroundColor: '#555555A0' }}
-          contentContainerStyle={{ justifyContent: 'center', alignItems: 'center', marginTop: 15, marginBottom: 30 }}>
-          {/* <Blu intensity={40} tint="dark" style={StyleSheet.absoluteFill} /> */}
-          <View style={{ width: '60%', backgroundColor: '#ffffff' }}>
-
-            <View style={{ backgroundColor: 'white', width: '100%', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderBottomWidth: 1, borderBottomColor: '#C9C9C9', flexDirection: 'row' }}>
-              <View>
-                <Text style={{ fontFamily: 'inter-bold', color: 'grey', fontSize: 18 }}>Add Items</Text>
-              </View>
-              <TouchableOpacity onPress={() => setOpenCustomWO(false)}>
-                <Image style={{ height: 25, width: 25 }} source={require('../../assets/cross_icon.png')}></Image>
-              </TouchableOpacity>
-            </View>
-
-            <View style={{ width: '100%', paddingHorizontal: 20, paddingBottom: 20, zIndex: 1 }}>
-              <View style={{ marginVertical: 15, width: '40%', zIndex: 2 }}>
-                <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>Assets</Text>
-                <View style={{ marginTop: 10, }}>
-                  <DropDownComponent
-                    options={assetState.value.data.map(item => item)}
-                    onValueChange={(val) => {
-                      setSelectedAsset(val)
-                    }}
-                    // title="Ubaid Arshad"
-                    info='assetSelection'
-                    selectedValue={selectedAsset}
-                    imageSource={require('../../assets/up_arrow_icon.png')}
-                    container={styles.dropdownContainer}
-                    dropdownButton={styles.dropdownButton}
-                    selectedValueStyle={styles.dropdownSelectedValueStyle}
-                    optionsContainer={styles.dropdownOptionsContainer}
-                    option={styles.dropdownOption}
-                    hoveredOption={styles.dropdownHoveredOption}
-                    optionText={styles.dropdownOptionText}
-                    hoveredOptionText={styles.dropdownHoveredOptionText}
-                    dropdownButtonSelect={styles.dropdownButtonSelect}
-                    dropdownStyle={styles.dropdown}
-                    onAssetSelection={(val) => {
-                      setSelectedAsset(val['Asset Name'])
-                      setSelectedAssetId(val['Asset Number'])
-                    }}
-
-                  />
+              <View style={{ backgroundColor: 'white', width: '100%', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderBottomWidth: 1, borderBottomColor: '#C9C9C9', flexDirection: 'row' }}>
+                <View>
+                  <Text style={{ fontFamily: 'inter-bold', color: 'grey', fontSize: 18 }}>Add Items</Text>
                 </View>
+                <TouchableOpacity onPress={() => {
+                  setWorkOrderVariable([])
+                  setOpenCustomWO(false)
+                }}>
+                  <Image style={{ height: 25, width: 25 }} source={require('../../assets/cross_icon.png')}></Image>
+                </TouchableOpacity>
               </View>
 
-              {selectedAsset != ''
-                ?
-                <>
-                  <Text style={{ fontFamily: 'inter-regular', fontSize: 14, marginBottom: 10 }}>Items</Text>
-                  <View style={{ flexDirection: 'row', width: '100%' }}>
-                    <View style={{ height: 40, width: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 10, borderRightWidth: 0, borderTopRightRadius: 0, borderBottomRightRadius: 0, borderColor: '#cccccc', }}>
-                      <Image style={{ height: 20, width: 20 }} source={require('../../assets/add_plus_btn_icon.png')} tintColor='#cccccc'></Image>
-                    </View>
-                    <TextInput
-                      style={[styles.input, { borderLeftWidth: 0, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }]}
-                      placeholderTextColor="#868383DC"
-                      placeholder="Add or Create Service Task"
-                      value={addTask}
-                      onChangeText={setAddTask}
-                      onSubmitEditing={handleSave}
-                    />
-                  </View>
-                  <View style={{ marginTop: 15, width: '100%', borderColor: '#6B6B6B' }}>
-                    {workOrderVariable.map((item, index) => {
-                      return (
-                        <WorkOrderVariableTable
-                          key={index.toString()}
-                          item={item}
-                          index={index} />
-                      )
-                    })}
-                  </View>
-                  <View style={{ marginTop: 40, width: '100%', borderWidth: 1, borderColor: '#cccccc', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 15, }}>
-                    <View style={{ marginVertical: 15, width: '40%' }}>
-                      <Text style={{ fontFamily: 'inter-regular', fontSize: 14 }}>Due Date</Text>
-                      <TouchableOpacity style={{ padding: 10, borderWidth: 1, borderColor: '#cccccc', marginTop: 10, borderRadius: 5, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }} onPress={() => setOpenCalendar(true)}>
-                        <Text style={{ fontFamily: 'inter-regular', fontSize: 14 }}>{!selectedDate ? '' : new Date(selectedDate).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }).toString()}</Text>
-                        <Image style={{ height: 25, width: 24 }} tintColor='#cccccc' source={require('../../assets/calendar_icon.png')} ></Image>
-                      </TouchableOpacity>
-                      {openCalendar
-                        ?
-                        <View style={{ height: 300, width: 300, position: 'absolute', bottom: 80 }}>
-                          <DatePicker
-                            options={{
-                              backgroundColor: '#FFFFFF',
-                              textHeaderColor: '#539097',
-                              textDefaultColor: '#000000',
-                              selectedTextColor: '#fff',
-                              mainColor: '#539097',
-                              textSecondaryColor: '#000000',
-                              borderColor: 'rgba(122, 146, 165, 0.1)',
-                            }}
-                            current={`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`}
-                            selected={`${new Date(selectedDate).getFullYear()}-${String(new Date(selectedDate).getMonth() + 1).padStart(2, '0')}-${String(new Date(selectedDate).getDate()).padStart(2, '0')}`}
-                            mode="calendar"
-                            minuteInterval={30}
-                            style={{ borderRadius: 10 }}
-                            onDateChange={handleDateChange}
-                            minimumDate={getFormatedDate(new Date(), 'YYYY/MM/DD')}
-                          />
-                        </View>
-                        :
-                        null}
-
-                    </View>
-
-                    <View style={{ marginVertical: 15, width: '40%', }}>
-                      <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>Assignee</Text>
+              <View style={{ width: '100%', paddingHorizontal: 20, paddingBottom: 20, zIndex: 1 }}>
+                <View style={{ marginVertical: 15, width: '100%', zIndex: datePickerState.value.data == true ? 2 : 3 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View>
+                      <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>Assets</Text>
                       <View style={{ marginTop: 10, }}>
                         <DropDownComponent
-                          options={peopleState.value.data.filter(item => item.Designation.includes('Mechanic')).map(item => item)}
+                          options={assetState.value.data.map(item => item)}
                           onValueChange={(val) => {
-                            setAssignedMechanic(val)
+                            setSelectedAsset(val)
                           }}
                           // title="Ubaid Arshad"
-                          info='mechanicSelection'
-                          selectedValue={assignedMechanic}
+                          info='assetSelection'
+                          selectedValue={selectedAsset}
                           imageSource={require('../../assets/up_arrow_icon.png')}
                           container={styles.dropdownContainer}
                           dropdownButton={styles.dropdownButton}
@@ -628,86 +791,215 @@ const MaintenancePage = (props) => {
                           optionText={styles.dropdownOptionText}
                           hoveredOptionText={styles.dropdownHoveredOptionText}
                           dropdownButtonSelect={styles.dropdownButtonSelect}
-                          dropdownStyle={styles.dropdown}
-                          onMechanicSelection={(val) => {
-                            setAssignedMechanic(val.Name)
-                            setAssignedMechanicId(val['Employee Number'])
+                          dropdownStyle={[styles.dropdown, {minWidth:350}]}
+                          onAssetSelection={(val) => {
+                            setSelectedAsset(val['Asset Name'])
+                            setSelectedAssetId(val['Asset Number'])
                           }}
+
                         />
                       </View>
-
-
                     </View>
-                  </View>
-                </>
-                :
-                null}
-            </View>
-            <View style={{ backgroundColor: '#ffffff', width: '100%', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderTopWidth: 1, borderTopColor: '#C9C9C9', flexDirection: 'row', zIndex: 0 }}>
-              <View>
-                <Text style={{ fontFamily: 'inter-medium', color: '#000000', fontSize: 14 }}>This Work will contain {workOrderVariable.length} {workOrderVariable.length < 10 ? "item" : 'items'}</Text>
-              </View>
-              <View style={{ flexDirection: 'row' }}>
-                <View>
-                  <AppBtn
-                    title="Close"
-                    btnStyle={[{
-                      width: '100%',
-                      height: 30,
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: 5,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      shadowOffset: { width: 1, height: 1 },
-                      shadowOpacity: 0.6,
-                      shadowRadius: 3,
-                      elevation: 0,
-                      shadowColor: '#575757',
-
-                    }, { minWidth: 70 }]}
-                    btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
-                    onPress={() => {
-                      setOpenCustomWO(false)
-                      // clearAll()
-                    }} />
-                </View>
-                {selectedAsset != '' ?
-                  assignedMechanic != ''
+                    {selectedAsset != ''
                     ?
-                    <View style={{ marginLeft: 20 }}>
-                      <AppBtn
-                        title="Save"
-                        btnStyle={[{
-                          width: '100%',
-                          height: 30,
-                          backgroundColor: '#FFFFFF',
-                          borderRadius: 5,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          shadowOffset: { width: 1, height: 1 },
-                          shadowOpacity: 0.6,
-                          shadowRadius: 3,
-                          elevation: 0,
-                          shadowColor: '#575757',
-
-                        }, { minWidth: 70 }]}
-                        btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
-                        onPress={() => {
-                          setLoading(true)
-                          setOpenCustomWO(false)
-                          handleSaveWorkOrder()
-                        }} />
+                    <View>
+                      <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>Priority</Text>
+                      <View style={{ marginTop: 10, }}>
+                        <DropDownComponent
+                          options={["High", "Medium", "Low", "Undefined"]}
+                          onValueChange={(val) => {
+                            setPrioritySelectedOption(val)
+                          }}
+                          // title="Ubaid Arshad"
+                          info='prioritySelection'
+                          selectedValue={prioritySelectedOption}
+                          imageSource={require('../../assets/up_arrow_icon.png')}
+                          container={styles.dropdownContainer}
+                          dropdownButton={styles.dropdownButton}
+                          selectedValueStyle={styles.dropdownSelectedValueStyle}
+                          optionsContainer={styles.dropdownOptionsContainer}
+                          option={styles.dropdownOption}
+                          hoveredOption={styles.dropdownHoveredOption}
+                          optionText={styles.dropdownOptionText}
+                          hoveredOptionText={styles.dropdownHoveredOptionText}
+                          dropdownButtonSelect={styles.dropdownButtonSelect}
+                          dropdownStyle={[styles.dropdown, {minWidth:350}]}
+                        />
+                      </View>
                     </View>
+                       :
+                       null}
+                  </View>
+
+                </View>
+
+                {selectedAsset != ''
+                  ?
+                  <>
+                    <Text style={{ fontFamily: 'inter-regular', fontSize: 14, marginBottom: 10 }}>Items</Text>
+                    <View style={{ flexDirection: 'row', width: '100%' }}>
+                      <View style={{ height: 40, width: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 10, borderRightWidth: 0, borderTopRightRadius: 0, borderBottomRightRadius: 0, borderColor: '#cccccc', }}>
+                        <Image style={{ height: 20, width: 20 }} source={require('../../assets/add_plus_btn_icon.png')} tintColor='#cccccc'></Image>
+                      </View>
+                      <TextInput
+                        style={[styles.input, { borderLeftWidth: 0, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }]}
+                        placeholderTextColor="#868383DC"
+                        placeholder="Add or Create Service Task"
+                        value={addTask}
+                        onChangeText={setAddTask}
+                        onSubmitEditing={handleSave}
+                      />
+                    </View>
+                    <View style={{ marginTop: 15, width: '100%', borderColor: '#6B6B6B' }}>
+                      {workOrderVariable.map((item, index) => {
+                        return (
+                          <WorkOrderVariableTable
+                            key={index.toString()}
+                            item={item}
+                            index={index} />
+                        )
+                      })}
+                    </View>
+                    <View style={{ marginTop: 40, width: '100%', borderWidth: 1, borderColor: '#cccccc', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 15, zIndex: 2 }}>
+                      <View style={{ marginVertical: 15, width: '40%' }}>
+                        <Text style={{ fontFamily: 'inter-regular', fontSize: 14 }}>Due Date</Text>
+                        <TouchableOpacity style={{ padding: 10, borderWidth: 1, borderColor: '#cccccc', marginTop: 10, borderRadius: 5, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }} onPress={() => {
+                          CloseAllDropDowns()
+                          setDatePicker(!datePickerState.value.data)
+                        }}>
+                          <Text style={{ fontFamily: 'inter-regular', fontSize: 14 }}>{!selectedDate ? '' : new Date(selectedDate).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }).toString()}</Text>
+                          <Image style={{ height: 25, width: 24 }} tintColor='#cccccc' source={require('../../assets/calendar_icon.png')} ></Image>
+                        </TouchableOpacity>
+                        {datePickerState.value.data
+                          ?
+                          <View style={{ height: 300, width: 300, position: 'absolute', bottom: 80, zIndex: 3 }}>
+                            <DatePicker
+                              options={{
+                                backgroundColor: '#FFFFFF',
+                                textHeaderColor: '#539097',
+                                textDefaultColor: '#000000',
+                                selectedTextColor: '#fff',
+                                mainColor: '#539097',
+                                textSecondaryColor: '#000000',
+                                borderColor: 'rgba(122, 146, 165, 0.1)',
+                              }}
+                              current={`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`}
+                              selected={`${new Date(selectedDate).getFullYear()}-${String(new Date(selectedDate).getMonth() + 1).padStart(2, '0')}-${String(new Date(selectedDate).getDate()).padStart(2, '0')}`}
+                              mode="calendar"
+                              minuteInterval={30}
+                              style={{ borderRadius: 10 }}
+                              onDateChange={handleDateChange}
+                              minimumDate={getFormatedDate(new Date(), 'YYYY/MM/DD')}
+                            />
+                          </View>
+                          :
+                          null}
+
+                      </View>
+
+                      <View style={{ marginVertical: 15, width: '40%', }}>
+                        <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>Assignee</Text>
+                        <View style={{ marginTop: 10, }}>
+                          <DropDownComponent
+                            options={peopleState.value.data.filter(item => item.Designation.includes('Mechanic')).map(item => item)}
+                            onValueChange={(val) => {
+                              setAssignedMechanic(val)
+                            }}
+                            // title="Ubaid Arshad"
+                            info='mechanicSelection'
+                            selectedValue={assignedMechanic}
+                            imageSource={require('../../assets/up_arrow_icon.png')}
+                            container={styles.dropdownContainer}
+                            dropdownButton={styles.dropdownButton}
+                            selectedValueStyle={styles.dropdownSelectedValueStyle}
+                            optionsContainer={styles.dropdownOptionsContainer}
+                            option={styles.dropdownOption}
+                            hoveredOption={styles.dropdownHoveredOption}
+                            optionText={styles.dropdownOptionText}
+                            hoveredOptionText={styles.dropdownHoveredOptionText}
+                            dropdownButtonSelect={styles.dropdownButtonSelect}
+                            dropdownStyle={styles.dropdown}
+                            onMechanicSelection={(val) => {
+                              setAssignedMechanic(val.Name)
+                              setAssignedMechanicId(val['Employee Number'])
+                            }}
+                          />
+                        </View>
+
+
+                      </View>
+                    </View>
+                  </>
+                  :
+                  null}
+              </View>
+              <View style={{ backgroundColor: '#ffffff', width: '100%', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderTopWidth: 1, borderTopColor: '#C9C9C9', flexDirection: 'row', zIndex: 0 }}>
+                <View>
+                  <Text style={{ fontFamily: 'inter-medium', color: '#000000', fontSize: 14 }}>This Work will contain {workOrderVariable.length} {workOrderVariable.length < 2 ? "item" : 'items'}</Text>
+                </View>
+                <View style={{ flexDirection: 'row' }}>
+                  <View>
+                    <AppBtn
+                      title="Close"
+                      btnStyle={[{
+                        width: '100%',
+                        height: 30,
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: 5,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        shadowOffset: { width: 1, height: 1 },
+                        shadowOpacity: 0.6,
+                        shadowRadius: 3,
+                        elevation: 0,
+                        shadowColor: '#575757',
+
+                      }, { minWidth: 70 }]}
+                      btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                      onPress={() => {
+                        setWorkOrderVariable([])
+                        setOpenCustomWO(false)
+                        // clearAll()
+                      }} />
+                  </View>
+                  {selectedAsset != '' ?
+                    assignedMechanic != ''
+                      ?
+                      <View style={{ marginLeft: 20 }}>
+                        <AppBtn
+                          title="Save"
+                          btnStyle={[{
+                            width: '100%',
+                            height: 30,
+                            backgroundColor: '#FFFFFF',
+                            borderRadius: 5,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            shadowOffset: { width: 1, height: 1 },
+                            shadowOpacity: 0.6,
+                            shadowRadius: 3,
+                            elevation: 0,
+                            shadowColor: '#575757',
+
+                          }, { minWidth: 70 }]}
+                          btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                          onPress={() => {
+                            setLoading(true)
+                            setOpenCustomWO(false)
+                            handleSaveWorkOrder()
+                          }} />
+                      </View>
+                      :
+                      null
                     :
                     null
-                  :
-                  null
-                }
+                  }
 
+                </View>
               </View>
             </View>
-          </View>
-        </ScrollView>
+          </ScrollView>
+        </TouchableWithoutFeedback>
 
       </Modal>
 
@@ -726,7 +1018,7 @@ const MaintenancePage = (props) => {
 
         </AlertModal>
         :
-        alertStatus == 'failed'
+        alertStatus.includes('failed')
           ?
           <AlertModal
             centeredViewStyle={styles.centeredView}
@@ -734,7 +1026,7 @@ const MaintenancePage = (props) => {
             isVisible={alertIsVisible}
             onClose={closeAlert}
             img={require('../../assets/failed_icon.png')}
-            txt='Failed'
+            txt={alertStatus}
             txtStyle={{ fontFamily: 'futura', fontSize: 20, marginLeft: 10 }}
             tintColor='red'>
           </AlertModal>
@@ -762,6 +1054,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     // backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  newCalenderSortSelectedText: {
+    color: '#000000',
+    borderBottomWidth: 4,
+    borderBottomColor: '#67E9DA',
+    paddingBottom: 10
   },
   modalView: {
     backgroundColor: 'white',
@@ -797,12 +1095,9 @@ const styles = StyleSheet.create({
     outlineStyle: 'none'
   },
   withBorderInputContainer: {
-    borderColor: '#558BC1',
-    shadowColor: '#558BC1',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 10,
-    elevation: 0,
+
+    // borderColor: '#23d3d3'
+
   },
   title: {
     fontSize: 48,
@@ -903,10 +1198,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center'
   },
-  calenderSortText: {
-    fontSize: 17,
-    fontWeight: '400',
-    color: '#5B5B5B',
+  newCalenderSortText: {
+    fontSize: 14,
+    fontFamily: 'inter-semibold',
+    color: '#A8A8A8',
   },
   calenderSortSelectedText: {
     color: '#000000',
@@ -977,6 +1272,7 @@ const styles = StyleSheet.create({
     width: 'auto',
     justifyContent: 'space-between'
   },
+
   formCellStyle: {
     justifyContent: 'center',
     flex: 1,
@@ -1087,13 +1383,8 @@ const styles = StyleSheet.create({
     }),
   },
   dropdownButtonSelect: {
-    borderColor: '#558BC1',
-    shadowColor: '#558BC1',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 10,
-    elevation: 0,
 
+    // borderColor: '#23d3d3',
     backgroundColor: '#FFFFFF'
   },
 });

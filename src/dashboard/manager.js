@@ -14,6 +14,7 @@ import app from '../config/firebase';
 import { countrycodelist } from '../../components/codelist';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { PeopleContext } from '../store/context/PeopleContext';
+import { CloseAllDropDowns } from '../../components/CloseAllDropdown';
 
 
 const columns = [
@@ -64,11 +65,22 @@ const ManagerPage = () => {
     const [dbReference, setDbReference] = useState(null)
     const [fetchLoading, setFetchLoading] = useState(true)
 
+    const [roleBorder, setRoleBorder] = useState('#cccccc')
+    const [firstNameBorder, setFirstNameBorder] = useState('#cccccc')
+    const [lastNameBorder, setLastNameBorder] = useState('#cccccc')
+    const [numberCodeBorder, setNumberCodeBorder] = useState('#cccccc')
+    const [numberBorder, setNumberBorder] = useState('#cccccc')
+    const [emailBorder, setEmailBorder] = useState('#cccccc')
+
     const {state : peopleState, setPeopleData} = useContext(PeopleContext)
 
     useEffect(() => {
         setIsEmailValid(email.includes('.com') && email.includes('@') ? true : false)
     }, [email])
+
+    useEffect(()=>{
+CloseAllDropDowns()
+    },[createNewManagerIsVisible])
 
     useEffect(() => {
 
@@ -250,15 +262,37 @@ const ManagerPage = () => {
 
         if (i != 0) {
             console.log('email already exists')
-            setAlertStatus('failed')
+            setAlertStatus('Failed : User already exists with same email')
             setAlertIsVisible(true)
             setloading(false)
         }
         else {
-            if (fileUri) {
-                const dpUrl = await uploadImage(fileUri)
-                if (dpUrl) {
-
+            try {
+                if (fileUri) {
+                    const dpUrl = await uploadImage(fileUri)
+                    if (dpUrl) {
+    
+                        await setDoc(doc(db, `AllowedUsers`, email), {
+                            Name: `${firstName} ${lastName}`,
+                            Company: 'netsol',
+                            Email: email,
+                            Number: numberCode + number,
+                            Designation: role,
+                            TimeStamp: serverTimestamp(),
+                            'Employee Number': employeeNumber,
+                            dp: dpUrl
+                        });
+    
+                        setFetchLoading(!fetchLoading)
+                        clearAll()
+                        setCreateNewManagerIsVisible(false)
+                        setAlertStatus('successful')
+                        setAlertIsVisible(true)
+                        console.log('added')
+    
+                    }
+                }
+                else {
                     await setDoc(doc(db, `AllowedUsers`, email), {
                         Name: `${firstName} ${lastName}`,
                         Company: 'netsol',
@@ -267,37 +301,23 @@ const ManagerPage = () => {
                         Designation: role,
                         TimeStamp: serverTimestamp(),
                         'Employee Number': employeeNumber,
-                        dp: dpUrl
+                        dp: ''
                     });
-
+    
                     setFetchLoading(!fetchLoading)
                     clearAll()
                     setCreateNewManagerIsVisible(false)
                     setAlertStatus('successful')
                     setAlertIsVisible(true)
                     console.log('added')
-
                 }
-            }
-            else {
-                await setDoc(doc(db, `AllowedUsers`, email), {
-                    Name: `${firstName} ${lastName}`,
-                    Company: 'netsol',
-                    Email: email,
-                    Number: numberCode + number,
-                    Designation: role,
-                    TimeStamp: serverTimestamp(),
-                    'Employee Number': employeeNumber,
-                    dp: ''
-                });
-
-                setFetchLoading(!fetchLoading)
-                clearAll()
-                setCreateNewManagerIsVisible(false)
-                setAlertStatus('successful')
+                
+            } catch (error) {
+                setAlertStatus(`Failed : ${error}`)
                 setAlertIsVisible(true)
-                console.log('added')
+                setloading(false)
             }
+          
 
         }
     }
@@ -322,6 +342,14 @@ const ManagerPage = () => {
         setDobMonth('')
         setDobYear('')
         setNumberCode('Select')
+        setFirstNameBorder('#cccccc')
+        setFirstNameBorder('#cccccc')
+        setEmailBorder('#cccccc')
+        setNumberCodeBorder('#cccccc')
+        setNumberBorder('#cccccc')
+        setRoleBorder('#cccccc')
+        setFileUri(null)
+
     }
 
     const closeMobileModal = () => {
@@ -341,9 +369,11 @@ const ManagerPage = () => {
 
             {createNewManagerIsVisible
                 ?
-                <Animated.View style={{ flex: 1, backgroundColor: '#f6f8f9'}}>
+                <TouchableWithoutFeedback style={{ flex: 1, backgroundColor: '#f6f8f9'}} onPress={()=>{
+                    CloseAllDropDowns()
+                }}>
 
-                
+                <View style={{flex:1}}>
                     <ScrollView style={{ height: 100 }}
                     contentContainerStyle={{flex:1}}>
                         <View style={{ flexDirection: 'row', marginHorizontal: 40, marginTop: 40, alignItems: 'center', justifyContent: 'space-between' }}>
@@ -378,6 +408,7 @@ const ManagerPage = () => {
                                             <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
                                                 <Text style={{ fontSize: 16, fontWeight: '500' }}>Role*</Text>
                                                 <DropDownComponent
+                                                info = 'searchSelection'
                                                     options={['Manager', 'Admin', 'Mechanic (limited access)', 'Mechanic (full access)']}
                                                     onValueChange={handleRoleValueChange}
                                                     // title="Ubaid Arshad"
@@ -392,31 +423,30 @@ const ManagerPage = () => {
                                                     optionText={styles.dropdownOptionText}
                                                     hoveredOptionText={styles.dropdownHoveredOptionText}
                                                     dropdownButtonSelect={styles.dropdownButtonSelect}
-                                                    dropdownStyle={styles.dropdown}
+                                                    dropdownStyle={[styles.dropdown, {borderColor:roleBorder}]}
                                                 />
                                             </View>
 
                                             <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
                                                 <Text style={{ fontSize: 16, fontWeight: '500' }}>First Name*</Text>
                                                 <TextInput
-                                                    style={[styles.input, textInputBorderColor == 'First Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    style={[styles.input, {borderColor:firstNameBorder}]}
                                                     placeholderTextColor="#868383DC"
                                                     value={firstName}
                                                     onChangeText={(val) => { setFirstName(val) }}
-                                                    onFocus={() => { setTextInputBorderColor('First Name') }}
-                                                    onBlur={() => { setTextInputBorderColor('') }}
+                                                    onFocus={()=> setFirstNameBorder('#cccccc')}
+                                                    
                                                 />
                                             </View>
 
                                             <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
                                                 <Text style={{ fontSize: 16, fontWeight: '500' }}>Last Name*</Text>
                                                 <TextInput
-                                                    style={[styles.input, textInputBorderColor == 'Last Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    style={[styles.input, {borderColor:lastNameBorder}]}
                                                     placeholderTextColor="#868383DC"
                                                     value={lastName}
                                                     onChangeText={(val) => { setLastName(val) }}
-                                                    onFocus={() => { setTextInputBorderColor('Last Name') }}
-                                                    onBlur={() => { setTextInputBorderColor('') }}
+                                                    onFocus={()=> setLastNameBorder('#cccccc')}
                                                 />
                                             </View>
 
@@ -451,12 +481,11 @@ const ManagerPage = () => {
                                                 <Text style={{ fontSize: 16, fontWeight: '500' }}>Email*</Text>
                                                 <View>
                                                     <TextInput
-                                                        style={[styles.input, textInputBorderColor == 'Email' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                        style={[styles.input, {borderColor:emailBorder}]}
                                                         placeholderTextColor="#868383DC"
                                                         value={email}
                                                         onChangeText={(val) => { setEmail(val) }}
-                                                        onFocus={() => { setTextInputBorderColor('Email') }}
-                                                        onBlur={() => { setTextInputBorderColor('') }}
+                                                        onFocus={()=> setEmailBorder('#cccccc')}
                                                     />
                                                     {!isEmailValid ? <Text style={{ color: 'red', paddingTop: 5, marginLeft: 15, fontSize: 10, alignSelf: 'flex-start' }}>Enter Valid Email</Text> : null}
                                                 </View>
@@ -465,18 +494,19 @@ const ManagerPage = () => {
                                             <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
                                                 <Text style={{ fontSize: 16, fontWeight: '500' }}>Mobile Phone*</Text>
                                                 <View style={{ marginLeft: 10 }}>
-                                                    <TouchableOpacity style={[styles.input, { width: 80, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 0 }]} onPress={() => setMobileModalVisible(true)}>
+                                                    <TouchableOpacity style={[styles.input,{borderColor:numberCodeBorder}, { width: 80, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 0 }]} onPress={() => {
+                                                        setNumberCodeBorder('#cccccc')
+                                                        setMobileModalVisible(true)}}>
                                                         <Text>{numberCode}</Text>
                                                     </TouchableOpacity>
                                                 </View>
                                                 <TextInput
-                                                    style={[styles.input, { width: 150 }, textInputBorderColor == 'Mobile Phone' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                    style={[styles.input, { width: 150 },  {borderColor:numberBorder}]}
                                                     placeholderTextColor="#868383DC"
                                                     keyboardType='numeric'
                                                     value={number}
                                                     onChangeText={(val) => { setNumber(val.replace(/[^0-9]/g, '')) }}
-                                                    onFocus={() => { setTextInputBorderColor('Mobile Phone') }}
-                                                    onBlur={() => { setTextInputBorderColor('') }}
+                                                    onFocus={()=> setNumberBorder('#cccccc')}
                                                 />
                                             </View>
 
@@ -530,6 +560,24 @@ const ManagerPage = () => {
                                 }, { minWidth: 70 }]}
                                 btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
                                 onPress={() => {
+                                    if(firstName == ''){
+                                        setFirstNameBorder('red')
+                                    }
+                                    if(lastName == ''){
+                                        setLastNameBorder('red')
+                                    }
+                                    if(role == ''){
+                                        setRoleBorder('red')
+                                    }
+                                    if(email == ''){
+                                        setEmailBorder('red')
+                                    }
+                                    if(numberCode == 'Select'){
+                                        setNumberCodeBorder('red')
+                                    }
+                                    if(number == ''){
+                                        setNumberBorder('red')
+                                    }
                                     if (firstName == '' || lastName == '' || role == '' || number == '' || numberCode == 'Select') { }
                                     else {
                                         if (isEmailValid) {
@@ -541,10 +589,13 @@ const ManagerPage = () => {
                                 }} />
                         </View>
                     </View>
+                    </View>
 
-                </Animated.View>
+                </TouchableWithoutFeedback>
                 :
-                <Animated.View style={{ flex: 1, backgroundColor: '#f6f8f9'}}>
+                <TouchableWithoutFeedback style={{ flex: 1, backgroundColor: '#f6f8f9'}} onPress={()=>{
+                    CloseAllDropDowns()
+                }}>
                     <ScrollView style={{ height: 100 }}>
                         <View style={{ flexDirection: 'row', margin: 40, justifyContent: 'space-between', alignItems: 'center' }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -588,7 +639,7 @@ const ManagerPage = () => {
                             />
                         </View>
                     </ScrollView>
-                </Animated.View>}
+                </TouchableWithoutFeedback>}
 
             {alertStatus == 'successful'
                 ?
@@ -605,7 +656,7 @@ const ManagerPage = () => {
 
                 </AlertModal>
                 :
-                alertStatus == 'failed'
+                alertStatus.includes('Failed')
                     ?
                     <AlertModal
                         centeredViewStyle={styles.centeredView}
@@ -613,7 +664,7 @@ const ManagerPage = () => {
                         isVisible={alertIsVisible}
                         onClose={closeAlert}
                         img={require('../../assets/failed_icon.png')}
-                        txt='Failed'
+                        txt={alertStatus}
                         txtStyle={{ fontFamily: 'futura', fontSize: 20, marginLeft: 10 }}
                         tintColor='red'>
                     </AlertModal>
@@ -635,8 +686,6 @@ const ManagerPage = () => {
                                     value={searchNumber}
                                     onChangeText={(val) => {
                                         setSearchNumber(val.replace(/ /g, ''))
-
-
                                     }}
                                 />
                                 <ScrollView style={{ height: 200, paddingRight: 10 }}>

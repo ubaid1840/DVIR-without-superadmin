@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated, Dimensions, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated, Dimensions, ActivityIndicator, Modal, TouchableWithoutFeedback } from 'react-native';
 import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -15,6 +15,10 @@ import AlertModal from '../../components/AlertModal';
 import { AssetContext } from '../store/context/AssetContext';
 import { InHouseWOContext } from '../store/context/InHouseWOContext';
 import { subscribeToCollectionInHouseWorkOrder } from './inHouseWorkOrderFirebaseService';
+import { DatePickerContext } from '../store/context/DatePickerContext';
+import {MechanicOptionContext} from '../store/context/MechanicOptionContext'
+import { HeaderOptionContext } from '../store/context/HeaderOptionContext';
+import { CloseAllDropDowns } from '../../components/CloseAllDropdown';
 
 
 const columns = [
@@ -108,7 +112,7 @@ const DueDaysInspectionPage = (props) => {
     const [selectedAsset, setSelectedAsset] = useState('')
     const [workOrderVariable, setWorkOrderVariable] = useState([]);
     const [assignedMechanic, setAssignedMechanic] = useState('')
-    const [selectedDate, setSelectedDate] = useState(`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`);
+    const [selectedDate, setSelectedDate] = useState(new Date().getTime());
     const [openCalendar, setOpenCalendar] = useState(false)
     const [addTask, setAddTask] = useState('')
     const [alertIsVisible, setAlertIsVisible] = useState(false)
@@ -118,6 +122,10 @@ const DueDaysInspectionPage = (props) => {
     const { state: peopleState } = useContext(PeopleContext)
     const { state: assetState, setAssetData } = useContext(AssetContext)
     const { state: inHouseWOState, setInHouseWO } = useContext(InHouseWOContext)
+    const { state: datePickerState, setDatePicker } = useContext(DatePickerContext)
+    const {state: mechanicOptionState, setMechanicOption} = useContext(MechanicOptionContext)
+    const {state: headerOptionState, setHeaderOption} = useContext(HeaderOptionContext)
+
 
 
 
@@ -230,10 +238,8 @@ const DueDaysInspectionPage = (props) => {
 
     const handleInHouseFormValue = (value) => {
 
-        // console.log(value)
-
-        const myWO = inHouseWOState.value.data.filter((item) => item.assetNumber == value['Asset Number'])
-        // console.log(myWO)
+       
+        const myWO = inHouseWOState.value.data.filter((item) => item.assetNumber == value['Asset Number']) 
         props.onDashboardInHouseValueChange(myWO[0])
 
     }
@@ -242,86 +248,12 @@ const DueDaysInspectionPage = (props) => {
     const handleFormValue = async (value) => {
 
         setSelectedAsset(value)
+        setMechanicOption(false)
+        setDatePicker(false)
+        setAssignedMechanic('')
+        setAssignedMechanicId(0)
+        setSelectedDate(new Date().getTime())
         setOpenCustomWO(true)
-        // try {
-
-        //     let temp = []
-        //     await getDocs(query(collection(db, 'InHouseWorkOrders'), orderBy('TimeStamp', 'desc')))
-        //       .then((snapshot) => {
-        //         snapshot.forEach((docs) => {
-        //           temp.push(docs.data())
-        //         })
-        //       })
-        //     if (temp.length == 0) {
-
-        //       setDoc(doc(db, 'InHouseWorkOrders', '1'), {
-        //         id: 1,
-        //         'assetName': value['Asset Name'],
-        //         'assetNumber': value['Asset Number'].toString(),
-        //         'driverEmployeeNumber': '',
-        //         'driverName': '',
-        //         'defectID': '',
-        //         'defectedItems': [],
-        //         'assignedMechanic': assignedMechanic,
-        //         'dueDate': selectedDate,
-        //         'status': 'Pending',
-        //         'assetMake': value.Make,
-        //         'assetModel': value.Model,
-        //         'assetYear': value.Year,
-        //         'mileage': '',
-        //         'comments': [],
-        //         'completionDate': 0,
-        //         'severity': 'Undefined',
-        //         'priority': 'Undefined',
-        //         'TimeStamp': serverTimestamp()
-        //       })
-
-        //       setLoading(false)
-        //       setAlertStatus('successful')
-        //       setAlertIsVisible(true)
-        //     }
-        //     else {
-
-        //       setDoc(doc(db, 'WorkOrders', (temp[0].id + 1).toString()), {
-        //         id: (temp[0].id + 1),
-        //         'assetName': myAsset[0]['Asset Name'],
-        //         'assetNumber': myAsset[0]['Asset Number'].toString(),
-        //         'driverEmployeeNumber': '',
-        //         'driverName': '',
-        //         'defectID': '',
-        //         'defectedItems': [...workOrderVariable.map(item => ({
-        //           'title': item.title,
-        //           'TimeStamp': item.timeStamp,
-        //         }))],
-        //         'assignedMechanic': assignedMechanic,
-        //         'dueDate': selectedDate,
-        //         'status': 'Pending',
-        //         'assetMake': myAsset[0].Make,
-        //         'assetModel': myAsset[0].Model,
-        //         'assetYear': myAsset[0].Year,
-        //         'mileage': '',
-        //         'comments': [],
-        //         'completionDate': 0,
-        //         'severity': 'Undefined',
-        //         'priority': 'Undefined',
-        //         'TimeStamp': serverTimestamp()
-        //       })
-
-        //       setLoading(false)
-        //       setAlertStatus('successful')
-        //       setAlertIsVisible(true)
-        //     }
-
-        //     await updateDoc(doc(db, 'Assets', value['Asset Number'].toString()), {
-        //         'inhouseInspection' : 'issued'
-        //     })
-
-
-
-        //     fetchData()
-        // } catch (error) {
-        //     console.log(error)
-        // }
     }
 
     const inHouseValueChange = () => {
@@ -363,7 +295,8 @@ const DueDaysInspectionPage = (props) => {
         const dateObject = new Date(`${year}-${month}-${day}`);
         const milliseconds = dateObject.getTime();
         setSelectedDate(milliseconds)
-        setOpenCalendar(false)
+        // setOpenCalendar(false)
+        setDatePicker(false)
     };
 
     const closeAlert = () => {
@@ -449,6 +382,9 @@ const DueDaysInspectionPage = (props) => {
 
         <View style={{ flex: 1, backgroundColor: '#f6f8f9' }}>
             {/* <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} /> */}
+            <TouchableWithoutFeedback onPress={()=>{
+                CloseAllDropDowns()
+            }}>
             <ScrollView style={{ height: 100 }}>
                 <View style={{ flexDirection: 'row', marginLeft: 40, marginTop: 40, marginRight: 40, justifyContent: 'space-between' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -501,133 +437,113 @@ const DueDaysInspectionPage = (props) => {
 
                 </View>
             </ScrollView>
+            </TouchableWithoutFeedback>
 
             <Modal
                 animationType="fade"
                 visible={openCustomWO}
                 transparent={true}>
+                <TouchableWithoutFeedback onPress={()=> {
+                    setMechanicOption(false)
+                    setDatePicker(false)}}>
+                    <ScrollView style={{ backgroundColor: '#555555A0' }}
+                        contentContainerStyle={{ alignItems: 'center', justifyContent: 'center', flex: 1, width: '100%' }}>
+                        {/* <Blu intensity={40} tint="dark" style={StyleSheet.absoluteFill} /> */}
+                        <View style={{ width: '60%', backgroundColor: '#ffffff' }}>
 
-                <ScrollView style={{ backgroundColor: '#555555A0' }}
-                    contentContainerStyle={{ alignItems: 'center', justifyContent: 'center', flex: 1, width: '100%' }}>
-                    {/* <Blu intensity={40} tint="dark" style={StyleSheet.absoluteFill} /> */}
-                    <View style={{ width: '60%', backgroundColor: '#ffffff' }}>
-
-                        <View style={{ backgroundColor: 'white', width: '100%', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderBottomWidth: 1, borderBottomColor: '#C9C9C9', flexDirection: 'row' }}>
-                            <View>
-                                <Text style={{ fontFamily: 'inter-bold', color: 'grey', fontSize: 18 }}>Work Order</Text>
+                            <View style={{ backgroundColor: 'white', width: '100%', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderBottomWidth: 1, borderBottomColor: '#C9C9C9', flexDirection: 'row' }}>
+                                <View>
+                                    <Text style={{ fontFamily: 'inter-bold', color: 'grey', fontSize: 18 }}>Work Order</Text>
+                                </View>
+                                <TouchableOpacity onPress={() => setOpenCustomWO(false)}>
+                                    <Image style={{ height: 25, width: 25 }} source={require('../../assets/cross_icon.png')}></Image>
+                                </TouchableOpacity>
                             </View>
-                            <TouchableOpacity onPress={() => setOpenCustomWO(false)}>
-                                <Image style={{ height: 25, width: 25 }} source={require('../../assets/cross_icon.png')}></Image>
-                            </TouchableOpacity>
-                        </View>
 
-                        <View style={{ width: '100%', paddingHorizontal: 20, paddingBottom: 20, zIndex: 1 }}>
+                            <View style={{ width: '100%', paddingHorizontal: 20, paddingBottom: 20, zIndex: 1 }}>
 
 
-                            {selectedAsset != ''
-                                ?
-                                <>
-                                    <View style={{ marginTop: 40, width: '100%', borderWidth: 1, borderColor: '#cccccc', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 15, }}>
-                                        <View style={{ marginVertical: 15, width: '40%' }}>
-                                            <Text style={{ fontFamily: 'inter-regular', fontSize: 14 }}>Due Date</Text>
-                                            <TouchableOpacity style={{ padding: 10, borderWidth: 1, borderColor: '#cccccc', marginTop: 10, borderRadius: 5, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }} onPress={() => setOpenCalendar(true)}>
-                                                <Text style={{ fontFamily: 'inter-regular', fontSize: 14 }}>{!selectedDate ? '' : new Date(selectedDate).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }).toString()}</Text>
-                                                <Image style={{ height: 25, width: 24 }} tintColor='#cccccc' source={require('../../assets/calendar_icon.png')} ></Image>
-                                            </TouchableOpacity>
-                                            {openCalendar
-                                                ?
-                                                <View style={{ height: 300, width: 300, position: 'absolute', bottom: 80 }}>
-                                                    <DatePicker
-                                                        options={{
-                                                            backgroundColor: '#FFFFFF',
-                                                            textHeaderColor: '#539097',
-                                                            textDefaultColor: '#000000',
-                                                            selectedTextColor: '#fff',
-                                                            mainColor: '#539097',
-                                                            textSecondaryColor: '#000000',
-                                                            borderColor: 'rgba(122, 146, 165, 0.1)',
+                                {selectedAsset != ''
+                                    ?
+                                    <>
+                                        <View style={{ marginTop: 40, width: '100%', borderWidth: 1, borderColor: '#cccccc', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 15, }}>
+                                            <View style={{ marginVertical: 15, width: '40%' }}>
+                                                <Text style={{ fontFamily: 'inter-regular', fontSize: 14 }}>Due Date</Text>
+                                                <TouchableOpacity style={{ padding: 10, borderWidth: 1, borderColor: '#cccccc', marginTop: 10, borderRadius: 5, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }} onPress={() => {
+                                                    CloseAllDropDowns()
+                                                    setDatePicker(!datePickerState.value.data)}}>
+                                                    <Text style={{ fontFamily: 'inter-regular', fontSize: 14 }}>{!selectedDate ? '' : new Date(selectedDate).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }).toString()}</Text>
+                                                    <Image style={{ height: 25, width: 24 }} tintColor='#cccccc' source={require('../../assets/calendar_icon.png')} ></Image>
+                                                </TouchableOpacity>
+                                                {datePickerState.value.data
+                                                    ?
+                                                    <View style={{ height: 300, width: 300, position: 'absolute', bottom: 80 }}>
+                                                        <DatePicker
+                                                            options={{
+                                                                backgroundColor: '#FFFFFF',
+                                                                textHeaderColor: '#539097',
+                                                                textDefaultColor: '#000000',
+                                                                selectedTextColor: '#fff',
+                                                                mainColor: '#539097',
+                                                                textSecondaryColor: '#000000',
+                                                                borderColor: 'rgba(122, 146, 165, 0.1)',
+                                                            }}
+                                                            current={`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`}
+                                                            selected={`${new Date(selectedDate).getFullYear()}-${String(new Date(selectedDate).getMonth() + 1).padStart(2, '0')}-${String(new Date(selectedDate).getDate()).padStart(2, '0')}`}
+                                                            mode="calendar"
+                                                            minuteInterval={30}
+                                                            style={{ borderRadius: 10 }}
+                                                            onDateChange={handleDateChange}
+                                                            minimumDate={getFormatedDate(new Date(), 'YYYY/MM/DD')}
+                                                        />
+                                                    </View>
+                                                    :
+                                                    null}
+
+                                            </View>
+
+                                            <View style={{ marginVertical: 15, width: '40%', }}>
+                                                <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>Assignee</Text>
+                                                <View style={{ marginTop: 10, }}>
+                                                    <DropDownComponent
+                                                        options={peopleState.value.data.filter(item => item.Designation.includes('Mechanic')).map(item => item)}
+                                                        onValueChange={(val) => {
+                                                            setAssignedMechanic(val)
                                                         }}
-                                                        current={`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`}
-                                                        selected={`${new Date(selectedDate).getFullYear()}-${String(new Date(selectedDate).getMonth() + 1).padStart(2, '0')}-${String(new Date(selectedDate).getDate()).padStart(2, '0')}`}
-                                                        mode="calendar"
-                                                        minuteInterval={30}
-                                                        style={{ borderRadius: 10 }}
-                                                        onDateChange={handleDateChange}
-                                                        minimumDate={getFormatedDate(new Date(), 'YYYY/MM/DD')}
-                                                    />
-                                                </View>
-                                                :
-                                                null}
-
-                                        </View>
-
-                                        <View style={{ marginVertical: 15, width: '40%', }}>
-                                            <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>Assignee</Text>
-                                            <View style={{ marginTop: 10, }}>
-                                                <DropDownComponent
-                                                    options={peopleState.value.data .filter(item => item.Designation.includes('Mechanic')).map(item => item)}
-                                                    onValueChange={(val) => {
-                                                        setAssignedMechanic(val)
-                                                    }}
-                                                    // title="Ubaid Arshad"
-                                                    info = 'mechanicSelection'
-                                                    selectedValue={assignedMechanic}
-                                                    imageSource={require('../../assets/up_arrow_icon.png')}
-                                                    container={styles.dropdownContainer}
-                                                    dropdownButton={styles.dropdownButton}
-                                                    selectedValueStyle={styles.dropdownSelectedValueStyle}
-                                                    optionsContainer={styles.dropdownOptionsContainer}
-                                                    option={styles.dropdownOption}
-                                                    hoveredOption={styles.dropdownHoveredOption}
-                                                    optionText={styles.dropdownOptionText}
-                                                    hoveredOptionText={styles.dropdownHoveredOptionText}
-                                                    dropdownButtonSelect={styles.dropdownButtonSelect}
-                                                    dropdownStyle={styles.dropdown}
-                                                    onMechanicSelection={(val)=>{
+                                                        // title="Ubaid Arshad"
+                                                        info='mechanicSelection'
+                                                        selectedValue={assignedMechanic}
+                                                        imageSource={require('../../assets/up_arrow_icon.png')}
+                                                        container={styles.dropdownContainer}
+                                                        dropdownButton={styles.dropdownButton}
+                                                        selectedValueStyle={styles.dropdownSelectedValueStyle}
+                                                        optionsContainer={styles.dropdownOptionsContainer}
+                                                        option={styles.dropdownOption}
+                                                        hoveredOption={styles.dropdownHoveredOption}
+                                                        optionText={styles.dropdownOptionText}
+                                                        hoveredOptionText={styles.dropdownHoveredOptionText}
+                                                        dropdownButtonSelect={styles.dropdownButtonSelect}
+                                                        dropdownStyle={styles.dropdown}
+                                                        onMechanicSelection={(val) => {
                                                             setAssignedMechanic(val.Name)
                                                             setAssignedMechanicId(val['Employee Number'])
-                                                    }}
-                                                />
+                                                        }}
+                                                    />
+                                                </View>
                                             </View>
                                         </View>
-                                    </View>
-                                </>
-                                :
-                                null}
-                        </View>
-                        <View style={{ backgroundColor: '#ffffff', width: '100%', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderTopWidth: 1, borderTopColor: '#C9C9C9', flexDirection: 'row', zIndex: 0 }}>
-                            <View>
-                                <Text style={{ fontFamily: 'inter-medium', color: '#000000', fontSize: 14 }}>In House Inspection Work Order</Text>
+                                    </>
+                                    :
+                                    null}
                             </View>
-                            <View style={{ flexDirection: 'row' }}>
+                            <View style={{ backgroundColor: '#ffffff', width: '100%', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderTopWidth: 1, borderTopColor: '#C9C9C9', flexDirection: 'row', zIndex: 0 }}>
                                 <View>
-                                    <AppBtn
-                                        title="Close"
-                                        btnStyle={[{
-                                            width: '100%',
-                                            height: 30,
-                                            backgroundColor: '#FFFFFF',
-                                            borderRadius: 5,
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            shadowOffset: { width: 1, height: 1 },
-                                            shadowOpacity: 0.6,
-                                            shadowRadius: 3,
-                                            elevation: 0,
-                                            shadowColor: '#575757',
-
-                                        }, { minWidth: 70 }]}
-                                        btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
-                                        onPress={() => {
-                                            setOpenCustomWO(false)
-                                            // clearAll()
-                                        }} />
+                                    <Text style={{ fontFamily: 'inter-medium', color: '#000000', fontSize: 14 }}>In House Inspection Work Order</Text>
                                 </View>
-                                {assignedMechanic != ''
-                                    ?
-                                    <View style={{ marginLeft: 20 }}>
+                                <View style={{ flexDirection: 'row' }}>
+                                    <View>
                                         <AppBtn
-                                            title="Issue"
+                                            title="Close"
                                             btnStyle={[{
                                                 width: '100%',
                                                 height: 30,
@@ -644,18 +560,44 @@ const DueDaysInspectionPage = (props) => {
                                             }, { minWidth: 70 }]}
                                             btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
                                             onPress={() => {
-                                                setLoading(true)
                                                 setOpenCustomWO(false)
-                                                handleSaveWorkOrder()
+                                                // clearAll()
                                             }} />
                                     </View>
-                                    :
-                                    null}
+                                    {assignedMechanic != ''
+                                        ?
+                                        <View style={{ marginLeft: 20 }}>
+                                            <AppBtn
+                                                title="Issue"
+                                                btnStyle={[{
+                                                    width: '100%',
+                                                    height: 30,
+                                                    backgroundColor: '#FFFFFF',
+                                                    borderRadius: 5,
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    shadowOffset: { width: 1, height: 1 },
+                                                    shadowOpacity: 0.6,
+                                                    shadowRadius: 3,
+                                                    elevation: 0,
+                                                    shadowColor: '#575757',
 
+                                                }, { minWidth: 70 }]}
+                                                btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                                                onPress={() => {
+                                                    setLoading(true)
+                                                    setOpenCustomWO(false)
+                                                    handleSaveWorkOrder()
+                                                }} />
+                                        </View>
+                                        :
+                                        null}
+
+                                </View>
                             </View>
                         </View>
-                    </View>
-                </ScrollView>
+                    </ScrollView>
+                </TouchableWithoutFeedback>
 
             </Modal>
 

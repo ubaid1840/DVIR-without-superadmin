@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, FlatList, TextInput, Dimensions, ActivityIndicator, Modal } from "react-native"
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, FlatList, TextInput, Dimensions, ActivityIndicator, Modal, TouchableWithoutFeedback } from "react-native"
 import AppBtn from "../../components/Button";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { collection, doc, getDocs, getFirestore, orderBy, query, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
@@ -13,8 +13,13 @@ import { PeopleContext } from "../store/context/PeopleContext";
 import { AssetContext } from "../store/context/AssetContext";
 import AlertModal from "../../components/AlertModal";
 import { WOContext } from "../store/context/WOContext";
+import { DatePickerContext } from '../store/context/DatePickerContext'
+import { MechanicOptionContext } from "../store/context/MechanicOptionContext";
+import { PriorityOptionContext } from "../store/context/PriorityOptionContext";
+import { SeverityOptionContext } from "../store/context/SeverityOptionContext";
+import { CloseAllDropDowns } from "../../components/CloseAllDropdown";
 
-const DefectDetail = ({ value, onDashboardOpenWO }) => {
+const DefectDetail = ({ value, onDashboardOpenWO, onDashboardDefect }) => {
     const today = new Date()
     const startData = getFormatedDate(today.setDate(today.getDate() + 1), 'YYYY/MM/DD')
     const db = getFirestore(app)
@@ -28,7 +33,12 @@ const DefectDetail = ({ value, onDashboardOpenWO }) => {
     const { state: defectState, setDefect } = useContext(DefectContext)
     const { state: peopleState, setPeople } = useContext(PeopleContext)
     const { state: assetState, setAssetData } = useContext(AssetContext)
-    const {state : woState, setWO } = useContext(WOContext)
+    const { state: woState, setWO } = useContext(WOContext)
+    const { state: datePickerState, setDatePicker } = useContext(DatePickerContext)
+    const { state: mechanicOptionState, setMechanicOption } = useContext(MechanicOptionContext)
+    const { state: priorityOptionState, setPriorityOption } = useContext(PriorityOptionContext)
+    const { state: severityOptionState, setSeverityOption } = useContext(SeverityOptionContext)
+
 
     const [selectedDefect, setSelectedDefect] = useState(value)
     const [loading, setLoading] = useState(false)
@@ -40,7 +50,7 @@ const DefectDetail = ({ value, onDashboardOpenWO }) => {
     const [openCreateWOModal, setOpenCreateWOModal] = useState(false)
     const [workOrderVariable, setWorkOrderVariable] = useState([value]);
     const [addTask, setAddTask] = useState('')
-    const [selectedDate, setSelectedDate] = useState(`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`);
+    const [selectedDate, setSelectedDate] = useState(new Date().getTime());
     const [openCalendar, setOpenCalendar] = useState(false)
     const [assignedMechanic, setAssignedMechanic] = useState(null)
     const [mileage, setMileage] = useState(null)
@@ -55,7 +65,8 @@ const DefectDetail = ({ value, onDashboardOpenWO }) => {
         const dateObject = new Date(`${year}-${month}-${day}`);
         const milliseconds = dateObject.getTime();
         setSelectedDate(milliseconds)
-        setOpenCalendar(false)
+        // setOpenCalendar(false)
+        setDatePicker(false)
     };
 
     useEffect(() => {
@@ -94,20 +105,20 @@ const DefectDetail = ({ value, onDashboardOpenWO }) => {
 
     const updateWorkOrdersWithAssetInfo = (workorders, assets) => {
         return workorders.map(order => {
-          const asset = assets.find(asset => asset['Asset Number'].toString() === order.assetNumber);
-          if (asset) {
-            return {
-              ...order,
-              assetName: asset['Asset Name'],
-              assetMake: asset.Make,
-              assetModel: asset.Model,
-              assetYear: asset.Year
-            };
-          } else {
-            return order; // Asset not found for this work order
-          }
+            const asset = assets.find(asset => asset['Asset Number'].toString() === order.assetNumber);
+            if (asset) {
+                return {
+                    ...order,
+                    assetName: asset['Asset Name'],
+                    assetMake: asset.Make,
+                    assetModel: asset.Model,
+                    assetYear: asset.Year
+                };
+            } else {
+                return order; // Asset not found for this work order
+            }
         });
-      };
+    };
 
     useEffect(() => {
         if (selectedDefect) {
@@ -254,14 +265,15 @@ const DefectDetail = ({ value, onDashboardOpenWO }) => {
                     'severity': severitySelectedOption,
                     'priority': prioritySelectedOption,
                     'TimeStamp': serverTimestamp(),
-                    'partsTax' : '',
-                    'laborTax' : ''
+                    'partsTax': '',
+                    'laborTax': ''
                 })
 
 
                 await updateDoc(doc(db, 'Defects', selectedDefect.id.toString()), {
                     'workOrder': 1,
-                    'assignedMechanic': assignedMechanicId.toString()
+                    'assignedMechanic': assignedMechanicId.toString(),
+                    'status': 'In Progress',
                 })
 
                 await updateWorkOrders()
@@ -289,17 +301,17 @@ const DefectDetail = ({ value, onDashboardOpenWO }) => {
                     'severity': severitySelectedOption,
                     'priority': prioritySelectedOption,
                     'TimeStamp': serverTimestamp(),
-                    'partsTax' : '',
-                    'laborTax' : ''
+                    'partsTax': '',
+                    'laborTax': ''
                 })
 
                 await updateDoc(doc(db, 'Defects', selectedDefect.id.toString()), {
                     'workOrder': (temp[0].id + 1),
-                    'assignedMechanic': assignedMechanicId.toString()
-                }) 
+                    'assignedMechanic': assignedMechanicId.toString(),
+                    'status': 'In Progress',
+                })
 
                 await updateWorkOrders()
-                
                 setAlertStatus('successful')
                 setAlertIsVisible(true)
             }
@@ -312,15 +324,15 @@ const DefectDetail = ({ value, onDashboardOpenWO }) => {
 
     const updateWorkOrders = async () => {
         await getDocs(query(collection(db, 'WorkOrders'), orderBy('TimeStamp', 'desc')))
-        .then((snapshot) => {
-            let temp = []
-            snapshot.forEach((docs) => {
-                temp.push(docs.data())
+            .then((snapshot) => {
+                let temp = []
+                snapshot.forEach((docs) => {
+                    temp.push(docs.data())
+                })
+                setWO(temp)
             })
-            setWO(temp)
-        })
         setLoading(false)
-        
+
     }
 
     const closeAlert = () => {
@@ -330,10 +342,36 @@ const DefectDetail = ({ value, onDashboardOpenWO }) => {
     if (selectedDefect.length != 0) {
         return (
             <>
-                <View style={{ flex: 1, backgroundColor: '#f6f8f9' }}>
+                <TouchableWithoutFeedback style={{ flex: 1, backgroundColor: '#f6f8f9' }}
+                    onPress={() => {
+                        CloseAllDropDowns()
+                    }}>
 
                     <ScrollView style={{ height: 100 }}>
-                        <View style={{ flexDirection: 'row', padding: 40, justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
+                        <View style={{ marginTop: 30, marginLeft: 40, paddingBottom: 10 }}>
+                            <AppBtn
+                                title="Back"
+                                btnStyle={[{
+                                    width: 100,
+                                    height: 40,
+                                    backgroundColor: '#FFFFFF',
+                                    borderRadius: 5,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    shadowOffset: { width: 1, height: 1 },
+                                    shadowOpacity: 0.5,
+                                    shadowRadius: 3,
+                                    elevation: 0,
+                                    shadowColor: '#575757',
+                                    marginRight: 50
+                                }, { minWidth: 70 }]}
+                                btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                                onPress={() => {
+                                    onDashboardDefect()
+                                    // clearAll()
+                                }} />
+                        </View>
+                        <View style={{ flexDirection: 'row', padding: 40, paddingTop: 10, justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', width: '50%' }}>
                                 <Text style={{ fontSize: 30, color: '#335a75', fontFamily: 'inter-extrablack', marginLeft: 10 }}>
                                     {selectedDefect.title}
@@ -402,6 +440,7 @@ const DefectDetail = ({ value, onDashboardOpenWO }) => {
                                                 handleSeverityValueChange(val)
                                             }}
                                             // title="Ubaid Arshad"
+                                            info='severitySelection'
                                             selectedValue={severitySelectedOption}
                                             imageSource={require('../../assets/up_arrow_icon.png')}
                                             container={styles.dropdownContainer}
@@ -426,6 +465,7 @@ const DefectDetail = ({ value, onDashboardOpenWO }) => {
                                                 handlePriorityValueChange(val)
                                             }}
                                             // title="Ubaid Arshad"
+                                            info='prioritySelection'
                                             selectedValue={prioritySelectedOption}
                                             imageSource={require('../../assets/up_arrow_icon.png')}
                                             container={styles.dropdownContainer}
@@ -454,11 +494,17 @@ const DefectDetail = ({ value, onDashboardOpenWO }) => {
                                                 title="Create WO"
                                                 btnStyle={[styles.btn, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#8C8C8C', height: 40 }]}
                                                 btnTextStyle={[styles.btnText, { color: '#000000', fontFamily: 'inter-regular', fontSize: 13 }]}
-                                                onPress={() => { setOpenCreateWOModal(true) }} />
+                                                onPress={() => {
+                                                    setAssignedMechanic('')
+                                                    setAssignedMechanicId(0)
+                                                    setMechanicOption(false)
+                                                    setDatePicker(false)
+                                                    setOpenCreateWOModal(true)
+                                                }} />
                                         </View>
                                         :
-                                        <TouchableOpacity onPress={()=>{openWorkOrder(selectedDefect)}}>
-                                            <Text style={{ fontFamily: 'inter-regular', fontSize: 15, color:'#67E9DA' }}>WO-{selectedDefect.workOrder}</Text>
+                                        <TouchableOpacity onPress={() => { openWorkOrder(selectedDefect) }}>
+                                            <Text style={{ fontFamily: 'inter-regular', fontSize: 15, color: '#67E9DA' }}>WO-{selectedDefect.workOrder}</Text>
                                         </TouchableOpacity>
                                     }
 
@@ -586,11 +632,16 @@ const DefectDetail = ({ value, onDashboardOpenWO }) => {
 
                     </ScrollView>
 
-                    <Modal
-                        animationType="fade"
-                        visible={openCreateWOModal}
-                        transparent={true}>
+                </TouchableWithoutFeedback>
 
+                <Modal
+                    animationType="fade"
+                    visible={openCreateWOModal}
+                    transparent={true}>
+                    <TouchableWithoutFeedback onPress={() => {
+                        setMechanicOption(false)
+                        setDatePicker(false)
+                    }}>
                         <ScrollView style={{ height: 100, width: '100%', backgroundColor: '#555555A0' }}
                             contentContainerStyle={{ justifyContent: 'center', alignItems: 'center', marginTop: 15, marginBottom: 30 }}>
                             {/* <Blu intensity={40} tint="dark" style={StyleSheet.absoluteFill} /> */}
@@ -642,11 +693,11 @@ const DefectDetail = ({ value, onDashboardOpenWO }) => {
                                     <View style={{ marginTop: 40, width: '100%', borderWidth: 1, borderColor: '#cccccc', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 15, }}>
                                         <View style={{ marginVertical: 15, width: '40%' }}>
                                             <Text style={{ fontFamily: 'inter-regular', fontSize: 14 }}>Due Date</Text>
-                                            <TouchableOpacity style={{ padding: 10, borderWidth: 1, borderColor: '#cccccc', marginTop: 10, borderRadius: 5, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }} onPress={() => setOpenCalendar(true)}>
+                                            <TouchableOpacity style={{ padding: 10, borderWidth: 1, borderColor: '#cccccc', marginTop: 10, borderRadius: 5, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }} onPress={() => setDatePicker(!datePickerState.value.data)}>
                                                 <Text style={{ fontFamily: 'inter-regular', fontSize: 14 }}>{!selectedDate ? '' : new Date(selectedDate).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }).toString()}</Text>
                                                 <Image style={{ height: 25, width: 24 }} tintColor='#cccccc' source={require('../../assets/calendar_icon.png')} ></Image>
                                             </TouchableOpacity>
-                                            {openCalendar
+                                            {datePickerState.value.data
                                                 ?
                                                 <View style={{ height: 300, width: 300, position: 'absolute', bottom: 80 }}>
                                                     <DatePicker
@@ -666,6 +717,7 @@ const DefectDetail = ({ value, onDashboardOpenWO }) => {
                                                         style={{ borderRadius: 10 }}
                                                         onDateChange={handleDateChange}
                                                         minimumDate={getFormatedDate(new Date(), 'YYYY/MM/DD')}
+
                                                     />
                                                 </View>
                                                 :
@@ -677,12 +729,12 @@ const DefectDetail = ({ value, onDashboardOpenWO }) => {
                                             <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>Assignee</Text>
                                             <View style={{ marginTop: 10, }}>
                                                 <DropDownComponent
-                                                    options={peopleState.value.data .filter(item => item.Designation.includes('Mechanic')).map(item => item)}
+                                                    options={peopleState.value.data.filter(item => item.Designation.includes('Mechanic')).map(item => item)}
                                                     onValueChange={(val) => {
                                                         setAssignedMechanic(val)
                                                     }}
                                                     // title="Ubaid Arshad"
-                                                    info = 'mechanicSelection'
+                                                    info='mechanicSelection'
                                                     selectedValue={assignedMechanic}
                                                     imageSource={require('../../assets/up_arrow_icon.png')}
                                                     container={styles.dropdownContainer}
@@ -695,10 +747,10 @@ const DefectDetail = ({ value, onDashboardOpenWO }) => {
                                                     hoveredOptionText={styles.dropdownHoveredOptionText}
                                                     dropdownButtonSelect={styles.dropdownButtonSelect}
                                                     dropdownStyle={styles.dropdown}
-                                                    onMechanicSelection={(val)=>{
+                                                    onMechanicSelection={(val) => {
                                                         setAssignedMechanic(val.Name)
                                                         setAssignedMechanicId(val['Employee Number'])
-                                                }}
+                                                    }}
                                                 />
                                             </View>
 
@@ -736,7 +788,7 @@ const DefectDetail = ({ value, onDashboardOpenWO }) => {
                                                     // clearAll()
                                                 }} />
                                         </View>
-                                        {assignedMechanic
+                                        {assignedMechanic != ''
                                             ?
                                             <View style={{ marginLeft: 20 }}>
                                                 <AppBtn
@@ -769,10 +821,9 @@ const DefectDetail = ({ value, onDashboardOpenWO }) => {
                                 </View>
                             </View>
                         </ScrollView>
+                    </TouchableWithoutFeedback>
 
-                    </Modal>
-
-                </View>
+                </Modal>
 
                 {alertStatus == 'successful'
                     ?

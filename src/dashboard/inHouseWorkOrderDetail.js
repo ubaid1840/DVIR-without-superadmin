@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, FlatList, TextInput, Dimensions, ActivityIndicator, Modal } from "react-native"
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, FlatList, TextInput, Dimensions, ActivityIndicator, Modal, TouchableWithoutFeedback } from "react-native"
 import AppBtn from "../../components/Button";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { collection, deleteDoc, doc, getDocs, getFirestore, orderBy, query, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
@@ -14,10 +14,12 @@ import { AssetContext } from "../store/context/AssetContext";
 import AlertModal from "../../components/AlertModal";
 import { subscribeToCollectionInHouseWorkOrder } from "./inHouseWorkOrderFirebaseService";
 import { BlurView } from "expo-blur";
+import { HeaderOptionContext } from "../store/context/HeaderOptionContext";
+import { CloseAllDropDowns } from "../../components/CloseAllDropdown";
 
 
 
-const InHouseWorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
+const InHouseWorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardDueDaysInspection }) => {
 
     const db = getFirestore(app)
 
@@ -46,6 +48,7 @@ const InHouseWorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
     const { state: assetState } = useContext(AssetContext)
     const { state: authState, setAuth } = useContext(AuthContext)
     const {state : peopleState} = useContext(PeopleContext)
+    const {state : headerOptionState, setHeaderOption} = useContext(HeaderOptionContext)
 
     let debounceTimeout;
 
@@ -539,9 +542,35 @@ const InHouseWorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
         return (
             <>
                 <View style={{ flex: 1, backgroundColor: '#f6f8f9' }}>
+                    <TouchableWithoutFeedback onPress={()=>{
+                        CloseAllDropDowns()
+                    }}>
                     <ScrollView style={{ height: 100 }}
                         contentContainerStyle={{ paddingHorizontal: 30 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 30, marginBottom: 20 }}>
+                            <View style={{ marginTop:30}}>
+                                <AppBtn
+                                    title="Back"
+                                    btnStyle={[{
+                                        width: 100,
+                                        height: 40,
+                                        backgroundColor: '#FFFFFF',
+                                        borderRadius: 5,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        shadowOffset: { width: 1, height: 1 },
+                                        shadowOpacity: 0.5,
+                                        shadowRadius: 3,
+                                        elevation: 0,
+                                        shadowColor: '#575757',
+                                        marginRight: 50
+                                    }, { minWidth: 70 }]}
+                                    btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                                    onPress={() => {
+                                        onDashboardDueDaysInspection()
+                                        // clearAll()
+                                    }} />
+                            </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 20, marginBottom: 20 }}>
                             <Text style={{ fontFamily: 'inter-semibold', fontSize: 30 }}>WO-{selectedWorkOrder.id}</Text>
                             <View>
                                 <AppBtn
@@ -564,6 +593,10 @@ const InHouseWorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                                 <View style={styles.subViewStyle}>
                                     <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Work Order ID:</Text>
                                     <Text style={{}}>{selectedWorkOrder.id}</Text>
+                                </View>
+                                <View style={styles.subViewStyle}>
+                                    <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Type:</Text>
+                                    <Text style={{}}>In House</Text>
                                 </View>
                                 <View style={styles.subViewStyle}>
                                     <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Status:</Text>
@@ -763,7 +796,7 @@ const InHouseWorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                                     </View>
                                     <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginTop: 20 }}>
                                         <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Parts sub total:</Text>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>{partsSubTotal}</Text>
+                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>%{partsSubTotal}</Text>
                                     </View>
 
                                     <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginVertical: 10, alignItems: 'center' }}>
@@ -777,14 +810,14 @@ const InHouseWorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                                                 placeholderTextColor="#868383DC"
                                             />
                                         </View>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>{(parseFloat(partsSubTotal) || 0) * (parseFloat(selectedWorkOrder.partsTax) || 0) / 100}</Text>
+                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>%{(parseFloat(partsSubTotal) || 0) * (parseFloat(selectedWorkOrder.partsTax) || 0) / 100}</Text>
                                     </View>
 
                                     <View style={{ width: '90%', borderBottomWidth: 1, borderBottomColor: '#C6C6C6', marginTop: 10, alignSelf: 'center' }}></View>
 
                                     <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginTop: 20 }}>
                                         <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Labor sub total:</Text>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>{laborSubTotal}</Text>
+                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>%{laborSubTotal}</Text>
                                     </View>
 
                                     <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginVertical: 10, alignItems: 'center' }}>
@@ -797,7 +830,7 @@ const InHouseWorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
                                                 placeholderTextColor="#868383DC"
                                             />
                                         </View>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>{(parseFloat(laborSubTotal) || 0) * (parseFloat(selectedWorkOrder.laborTax) || 0) / 100}</Text>
+                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>%{(parseFloat(laborSubTotal) || 0) * (parseFloat(selectedWorkOrder.laborTax) || 0) / 100}</Text>
                                     </View>
 
                                     <View style={{ width: '90%', borderBottomWidth: 1, borderBottomColor: '#C6C6C6', marginTop: 10, alignSelf: 'center' }}></View>
@@ -875,6 +908,7 @@ const InHouseWorkOrderDetail = ({ value, returnWorkOrderDetail }) => {
 
                         </View>
                     </ScrollView>
+                    </TouchableWithoutFeedback>
                 </View>
 
                 <Modal

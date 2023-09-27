@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, FlatList, Animated, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, FlatList, Animated, Platform, ActivityIndicator, TouchableWithoutFeedback } from 'react-native';
 import { useFonts } from 'expo-font';
 import CircularProgressBar from '../../components/CircleProgress'
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,6 +13,7 @@ import { DataContext } from '../store/context/DataContext';
 import moment from 'moment'
 import { collection, getDocs, getFirestore, query, where } from 'firebase/firestore';
 import app from '../config/firebase';
+import { HeaderOptionContext } from '../store/context/HeaderOptionContext';
 
 const driverOptionList = ['Inspection'];
 const assetOptionList = ['Inspection', 'Defects'];
@@ -22,6 +23,8 @@ const MainDashboard = (props) => {
   const db = getFirestore(app)
 
   const { state: dataState, setData } = useContext(DataContext)
+  const {state : headerOptionState, setHeaderOption} = useContext(HeaderOptionContext)
+
   const [selectedPage, setSelectedPage] = useState('Inspection');
   const [dashboardHovered, setDashboardHovered] = useState(false)
   const [inspectiondHovered, setInspectionHovered] = useState(false)
@@ -559,7 +562,10 @@ const MainDashboard = (props) => {
 
   return (
     <>
-      <Animated.View style={{ flex: 1, backgroundColor: '#f6f8f9'}}>
+      <TouchableWithoutFeedback style={{ flex: 1, backgroundColor: '#f6f8f9'}}
+      onPress={()=>{
+        setHeaderOption(false)
+      }}>
         <ScrollView style={{ height: 100 }}>
           <View style={{ flexDirection: 'row', marginLeft: 40, marginTop: 40, alignItems: 'center' }}>
             <View style={{ backgroundColor: '#23d3d3', borderRadius: 15, }}>
@@ -865,7 +871,7 @@ const MainDashboard = (props) => {
 
           </View>
         </ScrollView>
-      </Animated.View>
+      </TouchableWithoutFeedback>
 
       {loading ?
         <View style={styles.activityIndicatorStyle}>

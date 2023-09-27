@@ -11,8 +11,10 @@ import { Firestore, deleteDoc, doc, getFirestore, updateDoc } from 'firebase/fir
 import app from '../src/config/firebase';
 import { AssetContext } from '../src/store/context/AssetContext';
 import { PeopleContext } from '../src/store/context/PeopleContext';
+import { AuthContext } from '../src/store/context/AuthContext';
+import { getAuth } from 'firebase/auth';
 
-const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, columnHeaderCell, columnHeaderText, titleForm, onValueChange, onOpenWorkOrder, inHouseValueChange, onHandleAssetStatus }) => {
+const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, columnHeaderCell, columnHeaderText, titleForm, onValueChange, onOpenWorkOrder, inHouseValueChange, onHandleAssetStatus, onFormSortDateCreated, onFormSortDueDate }) => {
 
     const priorityOptionList = ['High', 'Medium', 'Low', 'Undefined'];
     const severityOptionList = ['Non critical', 'Critical', 'Undefined'];
@@ -53,6 +55,10 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
     const { state: assetState } = useContext(AssetContext)
 
     const { state: peopleState } = useContext(PeopleContext)
+    const { state: authState } = useContext(AuthContext)
+
+    const [tooltipVisible, setTooltipVisible] = useState({});
+    const [tooltipText, setTooltipText] = useState('');
 
     // const [receivedPriorityData, setReceivedPriorityData] = useState('');
     // const [receivedSeverityData, setReceivedSeverityData] = useState('');
@@ -669,6 +675,7 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
 
     else if (titleForm == "Assets") {
 
+
         const columnsCSV = columns.filter((column) => column !== 'Action');
 
         const entriesDataCSV = entriesData.map((entry) => {
@@ -681,7 +688,7 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
         const renderRow = ({ item, index }) => {
 
             return (
-                <Animated.View style={[row,]}>
+                <View style={[row, { zIndex: 3 }]}>
                     {columns.map((column) => {
                         return (
 
@@ -739,12 +746,29 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                                         :
                                                         column === 'Status'
                                                             ?
-                                                            <View style={[styles.cell]}>
-                                                                <Switch
-                                                                    style={{ marginLeft: 20 }}
-                                                                    value={item.active}
-                                                                    onValueChange={()=>handleAssetStatus(item)} />
+
+                                                            <View style={[styles.cell,]}>
+                                                                <View
+                                                                    onMouseEnter={() => {
+                                                                        setTooltipVisible({ [index]: true })
+                                                                    }}
+                                                                    onMouseLeave={() => {
+                                                                        setTooltipVisible({ [index]: false })
+                                                                    }}
+                                                                >
+                                                                    <Switch
+                                                                        style={{ marginLeft: 20 }}
+                                                                        value={item.active}
+                                                                        onValueChange={() => handleAssetStatus(item)} />
+                                                                </View>
+                                                                {tooltipVisible[index] && (
+                                                                    <View style={[styles.tooltip]}>
+                                                                        <Text style={styles.tooltipText}>{item.active == true ? 'Activated' : 'Deactivated'}</Text>
+                                                                    </View>
+                                                                )}
                                                             </View>
+
+
                                                             :
                                                             null
 
@@ -756,7 +780,7 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                             </View>
                         )
                     })}
-                </Animated.View>
+                </View>
 
             );
         };
@@ -766,8 +790,8 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                     contentContainerStyle={{ flexGrow: 1 }}
                 >
 
-                    <View style={{ width: '100%' }}>
-                        <View style={{ flexDirection: 'row', zIndex: 1, marginBottom: 20 }}>
+                    <View style={{ width: '100%', }}>
+                        <View style={{ flexDirection: 'row', marginBottom: 20 }}>
                             <CSVLink style={{ textDecorationLine: 'none' }} data={entriesDataCSV} headers={columnsCSV} filename={"assets_report.csv"}>
                                 <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 }}>
                                     <Text style={{ fontSize: 18, fontWeight: '700', color: '#5B5B5B' }}>Export</Text>
@@ -775,13 +799,13 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                 </TouchableOpacity>
                             </CSVLink>
                         </View>
-                        <Animated.View style={[columnHeaderRow,]}>
+                        <View style={[columnHeaderRow, { zIndex: 0 }]}>
                             {columns.map((column) => (
                                 <View key={column} style={[columnHeaderCell,]}>
                                     <Text style={columnHeaderText}>{column}</Text>
                                 </View>
                             ))}
-                        </Animated.View>
+                        </View>
                         <FlatList
                             data={entriesData}
                             keyExtractor={(item, index) => index.toString()}
@@ -829,22 +853,26 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                 style={[cell,]}
                             >
                                 {column === "Action" ?
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            handleValueChange(item)
-                                        }}
-                                        key={column}
-                                        style={[cell, { paddingHorizontal: 20 }]}
-                                        onMouseEnter={() => handleMouseEnter(index)}
-                                        onMouseLeave={() => handleMouseLeave(index)}
-                                    >
-                                        <Image
-                                            style={[styles.btn, { transform: [{ rotate: titleForm == 'Driver' ? '90deg' : '0deg' }] }]}
-                                            resizeMode='contain'
-                                            source={titleForm == 'Driver' ? require('../assets/up_arrow_action_icon.png') : require('../assets/delete_icon.png')}
-                                            tintColor={titleForm == 'Driver' ? imageHovered[index] ? '#67E9DA' : '#1E3D5C' : imageHovered[index] ? '#67E9DA' : 'red'}
-                                        />
-                                    </TouchableOpacity>
+                                    getAuth().currentUser.email == item.Email ?
+                                        null
+                                        :
+
+                                        <TouchableOpacity
+                                            onPress={() => {
+                                                handleValueChange(item)
+                                            }}
+                                            key={column}
+                                            style={[cell, { paddingHorizontal: 20 }]}
+                                            onMouseEnter={() => handleMouseEnter(index)}
+                                            onMouseLeave={() => handleMouseLeave(index)}
+                                        >
+                                            <Image
+                                                style={[styles.btn, { transform: [{ rotate: titleForm == 'Driver' ? '90deg' : '0deg' }] }]}
+                                                resizeMode='contain'
+                                                source={titleForm == 'Driver' ? require('../assets/up_arrow_action_icon.png') : require('../assets/delete_icon.png')}
+                                                tintColor={titleForm == 'Driver' ? imageHovered[index] ? '#67E9DA' : '#1E3D5C' : imageHovered[index] ? '#67E9DA' : 'red'}
+                                            />
+                                        </TouchableOpacity>
                                     :
                                     <Text style={entryText}>{item[column]}</Text>
                                 }
@@ -987,7 +1015,7 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                                             :
                                                             column == 'title'
                                                                 ?
-                                                                <Text style={[entryText, {}, rowHovered[index] && { color: '#FFFFFF' }, {}]}>{item[column].length > 35 ? item[column].slice(0,30) + "..." : item[column]}</Text>
+                                                                <Text style={[entryText, {}, rowHovered[index] && { color: '#FFFFFF' }, {}]}>{item[column].length > 35 ? item[column].slice(0, 30) + "..." : item[column]}</Text>
                                                                 :
                                                                 column == 'Work Order'
                                                                     ?
@@ -1075,7 +1103,7 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
 
     else if (titleForm == "Work Order") {
 
-        entriesData.sort((a, b) => b.TimeStamp - a.TimeStamp)
+        // entriesData.sort((a, b) => b.TimeStamp - a.TimeStamp)
 
         const totalPages = Math.ceil(entriesData.length / entriesPerPage);
 
@@ -1119,6 +1147,13 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                         ?
                                         <Text style={[entryText, {},]}>WO-{item['id']}</Text>
                                         :
+                                        column == 'status'
+                                        ?
+                                        <View style={{flexDirection:'row', alignItems:'center'}}>
+                                            <Image style={{height:20, width:20}} source={item.status == 'Completed' ? require('../assets/completed_icon.png') : require('../assets/pending_icon.png')} tintColor={item.status == 'Completed' ? 'green' : 'red'} resizeMode='contain'/>
+                                        <Text style={[entryText,]}>{item.status}</Text>
+                                        </View>
+                                        :
                                         column == 'assetName'
                                             ?
                                             <Text style={[entryText, {},]}>{assetState.value.data.find(asset => asset["Asset Number"].toString() === item.assetNumber)?.['Asset Name'] || 'Unknown Asset'}</Text>
@@ -1137,26 +1172,34 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                                         ?
                                                         <Text style={[entryText, {},]}>{peopleState.value.data.find(mechanic => mechanic["Employee Number"].toString() === item.assignedMechanic)?.Name || 'Unknown Mechanic'}</Text>
                                                         :
-                                                        column == 'Action'
+                                                        column == 'TimeStamp'
                                                             ?
-                                                            <TouchableOpacity
-                                                                onPress={() => {
-                                                                    handleValueChange(item)
-                                                                }}
-                                                                key={column}
-                                                                style={[cell, { paddingHorizontal: 20 }]}
-                                                                onMouseEnter={() => handleMouseEnter(index)}
-                                                                onMouseLeave={() => handleMouseLeave(index)}
-                                                            >
-                                                                <Image
-                                                                    style={[styles.btn, { transform: [{ rotate: '90deg' }] }]}
-                                                                    resizeMode='contain'
-                                                                    source={require('../assets/up_arrow_action_icon.png')}
-                                                                    tintColor={imageHovered[index] ? '#67E9DA' : '#1E3D5C'}
-                                                                />
-                                                            </TouchableOpacity>
+                                                            <Text style={[entryText, {},]}>{new Date(item[column].seconds * 1000).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' })}</Text>
                                                             :
-                                                            null
+                                                            column == 'priority'
+                                                            ?
+                                                            <Text style={[entryText, {},]}>{item.priority}</Text>
+                                                            :
+                                                            column == 'Action'
+                                                                ?
+                                                                <TouchableOpacity
+                                                                    onPress={() => {
+                                                                        handleValueChange(item)
+                                                                    }}
+                                                                    key={column}
+                                                                    style={[cell, { paddingHorizontal: 20 }]}
+                                                                    onMouseEnter={() => handleMouseEnter(index)}
+                                                                    onMouseLeave={() => handleMouseLeave(index)}
+                                                                >
+                                                                    <Image
+                                                                        style={[styles.btn, { transform: [{ rotate: '90deg' }] }]}
+                                                                        resizeMode='contain'
+                                                                        source={require('../assets/up_arrow_action_icon.png')}
+                                                                        tintColor={imageHovered[index] ? '#67E9DA' : '#1E3D5C'}
+                                                                    />
+                                                                </TouchableOpacity>
+                                                                :
+                                                                null
                                 }
 
                             </View>
@@ -1176,8 +1219,24 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                         <View style={columnHeaderRow}>
                             {columns.map((column) => (
 
-                                <View key={column} style={[columnHeaderCell, { zIndex: 2 }]}>
-                                    <Text style={columnHeaderText}>{column == 'id' ? 'Work Order' : column == 'assetName' ? 'Asset Name' : column == 'defectedItems' ? 'Items' : column == 'dueDate' ? 'Due Date' : column == 'assignedMechanic' ? 'Assignee' : column}</Text>
+                                <View key={column} style={[columnHeaderCell, { zIndex: 2, flexDirection: 'row', alignItems: 'center' }]}>
+                                    <Text style={columnHeaderText}>{column == 'id' ? 'Work Order' : column == 'assetName' ? 'Asset Name' : column == 'defectedItems' ? 'Items' : column == 'dueDate' ? 'Due Date' : column == 'assignedMechanic' ? 'Assignee' : column == 'TimeStamp' ? 'Date Created' : column == 'priority' ? 'Priority' : column == 'status' ? 'Status' : column}</Text>
+                                    {column == 'TimeStamp' ?
+                                        <TouchableOpacity onPress={()=>{
+                                            onFormSortDateCreated()
+                                        }}>
+                                            <Image style={{ height: 18, width: 18, marginBottom: 5 }} tintColor='#000000' source={require('../assets/sort_icon.png')} />
+                                        </TouchableOpacity>
+                                        :
+                                        null}
+                                         {column == 'dueDate' ?
+                                        <TouchableOpacity onPress={()=>{
+                                            onFormSortDueDate()
+                                        }}>
+                                            <Image style={{ height: 18, width: 18, marginBottom: 5 }} tintColor='#000000' source={require('../assets/sort_icon.png')} />
+                                        </TouchableOpacity>
+                                        :
+                                        null}
                                 </View>
                             ))}
                             {/* <Text style={styles.columnHeaderText}>Action</Text> */}
@@ -1330,6 +1389,23 @@ const styles = StyleSheet.create({
         height: 25,
         // marginLeft: 15,
 
+    },
+    hoverContent: {
+        backgroundColor: '#e0e0e0',
+        padding: 10,
+        borderRadius: 5,
+        marginBottom: 10,
+    },
+    tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        padding: 10,
+        borderRadius: 5,
+        position: 'absolute',
+        left: 70,
+        top: -20
+    },
+    tooltipText: {
+        color: '#fff',
     },
     activityIndicatorStyle: {
         flex: 1,

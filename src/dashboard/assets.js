@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated, Platform, TextInput, Dimensions, Modal, ActivityIndicator, Switch } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated, Platform, TextInput, Dimensions, Modal, ActivityIndicator, Switch, Alert, TouchableWithoutFeedback, TouchableHighlight } from 'react-native';
 import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -11,12 +11,19 @@ import * as DocumentPicker from 'expo-document-picker';
 import { collection, deleteDoc, doc, getDocs, getFirestore, orderBy, query, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import app from '../config/firebase';
-import { TouchableWithoutFeedback } from 'react-native-gesture-handler';
 import { DataContext } from '../store/context/DataContext';
 import { DefectContext } from '../store/context/DefectContext';
 import { WOContext } from '../store/context/WOContext'
 import { AssetContext } from '../store/context/AssetContext';
 import { AssetDetailContext } from '../store/context/AssetDetailContext';
+import { CloseAllDropDowns } from '../../components/CloseAllDropdown';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
+import { IconButton, Tooltip } from 'react-native-paper';
+
+
+
+
+
 
 const columns = [
     'Asset Name',
@@ -34,6 +41,7 @@ const AssetsPage = (props) => {
 
     const auth = getAuth()
     const db = getFirestore(app)
+    const storage = getStorage(app)
 
     const [selectedPage, setSelectedPage] = useState('Dashboard');
     const [fadeAnim] = useState(new Animated.Value(0));
@@ -82,18 +90,19 @@ const AssetsPage = (props) => {
     const [switchValue, setSwitchValue] = useState(false)
     const [editAsset, setEditAsset] = useState(false)
 
-    const [nameBorder, setNameBorder] = useState(null)
-    const [plateNumberBorder, setPlateNumberBorder] = useState(null)
-    const [makeBorder, setMakeBorder] = useState(null)
-    const [modelBorder, setModelBorder] = useState(null)
-    const [yearBorder, setYearBorder] = useState(null)
+    const [nameBorder, setNameBorder] = useState('#cccccc')
+    const [plateNumberBorder, setPlateNumberBorder] = useState('#cccccc')
+    const [makeBorder, setMakeBorder] = useState('#cccccc')
+    const [modelBorder, setModelBorder] = useState('#cccccc')
+    const [yearBorder, setYearBorder] = useState('#cccccc')
     const [colorBorder, setColorBorder] = useState(null)
-    const [engineTypeBorder, setEngineTypeBorder] = useState(null)
-    const [ADABorder, setADABorder] = useState(null)
-    const [airBrakesBorder, setAirBrakesBorder] = useState(null)
-    const [assetTypeBorder, setAssetTypeBorder] = useState(null)
-    const [mileageBorder, setMileageBorder] = useState(null)
+    const [engineTypeBorder, setEngineTypeBorder] = useState('#cccccc')
+    const [ADABorder, setADABorder] = useState('#cccccc')
+    const [airBrakesBorder, setAirBrakesBorder] = useState('#cccccc')
+    const [assetTypeBorder, setAssetTypeBorder] = useState('#cccccc')
+    const [mileageBorder, setMileageBorder] = useState('#cccccc')
     const [notesBorder, setNotesBorder] = useState(null)
+
 
 
     const { state: dataState, setData } = useContext(DataContext)
@@ -102,9 +111,22 @@ const AssetsPage = (props) => {
     const { state: assetState, setAssetData } = useContext(AssetContext)
     const { state: assetDetailState, setAssetDetail } = useContext(AssetDetailContext)
 
+    const [tooltipVisible, setTooltipVisible] = useState(false);
+    const [tooltipText, setTooltipText] = useState('');
+
+    const handleMouseEnter = (text) => {
+        setTooltipText(text);
+        setTooltipVisible(true);
+    };
+
+    const handleMouseLeave = () => {
+        setTooltipVisible(false);
+    };
+
 
     const fetchData = async () => {
 
+        CloseAllDropDowns()
         let assetRef = []
         try {
             const querySnapshot = await getDocs(query(collection(db, "Assets"), orderBy("TimeStamp", 'desc')));
@@ -174,7 +196,7 @@ const AssetsPage = (props) => {
                 type: 'image/*', // Change the MIME type to specify the type of files you want to allow
             });
 
-            if (result.type === 'success') {
+            if (result.assets[0].uri) {
                 setFileUri(result.assets[0].uri);
 
             }
@@ -192,78 +214,82 @@ const AssetsPage = (props) => {
     };
 
     useEffect(() => {
+        CloseAllDropDowns()
+    }, [assetDetailState.value.data, createNewAssetModalVisible, options, editAsset])
 
-        if (assetName.length > 0) {
-            setNameBorder('#cccccc')
-        }
-        else {
-            setNameBorder('red')
-        }
+    // useEffect(() => {
 
-        if(plateNumber.length > 0) {
-            setPlateNumberBorder('#cccccc')
-        }
-        else {
-            setPlateNumberBorder('red')
-        }
+    //     if (assetName.length > 0) {
+    //         setNameBorder('#cccccc')
+    //     }
+    //     else {
+    //         setNameBorder('red')
+    //     }
 
-        if(make.length > 0) {
-            setMakeBorder('#cccccc')
-        }
-        else {
-            setMakeBorder('red')
-        }
+    //     if (plateNumber.length > 0) {
+    //         setPlateNumberBorder('#cccccc')
+    //     }
+    //     else {
+    //         setPlateNumberBorder('red')
+    //     }
 
-        if(year.length > 0){
-            setYearBorder('#cccccc')
-        }
-        else {
-            setYearBorder('red')
-        }
+    //     if (make.length > 0) {
+    //         setMakeBorder('#cccccc')
+    //     }
+    //     else {
+    //         setMakeBorder('red')
+    //     }
 
-        if(model.length > 0){
-            setModelBorder('#cccccc')
-        }
-        else {
-            setModelBorder('red')
-        }
+    //     if (year.length > 0) {
+    //         setYearBorder('#cccccc')
+    //     }
+    //     else {
+    //         setYearBorder('red')
+    //     }
 
-        if(engineType != 'Select'){
-            setEngineTypeBorder('#cccccc')
-        }
-        else {
-            setEngineTypeBorder('red')
-        }
+    //     if (model.length > 0) {
+    //         setModelBorder('#cccccc')
+    //     }
+    //     else {
+    //         setModelBorder('red')
+    //     }
 
-        if(ADA != 'Select'){
-            setADABorder('#cccccc')
-        }
-        else {
-            setADABorder('red')
-        }
+    //     if (engineType != 'Select') {
+    //         setEngineTypeBorder('#cccccc')
+    //     }
+    //     else {
+    //         setEngineTypeBorder('red')
+    //     }
 
-        if(airBrakes != 'Select'){
-            setAirBrakesBorder('#cccccc')
-        }
-        else {
-            setAirBrakesBorder('red')
-        }
+    //     if (ADA != 'Select') {
+    //         setADABorder('#cccccc')
+    //     }
+    //     else {
+    //         setADABorder('red')
+    //     }
 
-        if(assetType != 'Select'){
-            setAssetTypeBorder('#cccccc')
-        }
-        else {
-            setAssetTypeBorder('red')
-        }
+    //     if (airBrakes != 'Select') {
+    //         setAirBrakesBorder('#cccccc')
+    //     }
+    //     else {
+    //         setAirBrakesBorder('red')
+    //     }
 
-        if(mileage.length > 0){
-            setMileageBorder('#cccccc')
-        }
-        else {
-            setMileageBorder('red')
-        }
+    //     if (assetType != 'Select') {
+    //         setAssetTypeBorder('#cccccc')
+    //     }
+    //     else {
+    //         setAssetTypeBorder('red')
+    //     }
 
-    }, [assetName, plateNumber, make, model, year, engineType, ADA, airBrakes, assetType, mileage])
+    //     if (mileage.length > 0) {
+    //         setMileageBorder('#cccccc')
+    //     }
+    //     else {
+    //         setMileageBorder('red')
+    //     }
+
+    // }, [assetName, plateNumber, make, model, year, engineType, ADA, airBrakes, assetType, mileage])
 
     useEffect(() => {
 
@@ -290,11 +316,7 @@ const AssetsPage = (props) => {
 
     const handleFormValue = (value) => {
 
-        //    setMake(value.Make)
-        //    setYear(value.Year)
-        //    setModel(value.Model)
-        //    setColor(value.Color)
-
+        setEditAsset(false)
         setSelectedAsset(value)
         setMake(value.Make)
         setYear(value.Year)
@@ -356,7 +378,92 @@ const AssetsPage = (props) => {
 
     }
 
-    const handleAddNewAsset = async () => {
+    const uploadImage = async (resultimage) => {
+        // convert image to blob image
+        const blobImage = await new Promise((resole, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.onload = function () {
+                resole(xhr.response);
+            };
+            xhr.onerror = function () {
+                reject(new TypeError("Network request failed"));
+            };
+            xhr.responseType = "blob";
+            xhr.open("GET", resultimage, true);
+            xhr.send(null);
+        });
+
+        // Create the file metadata
+        /** @type {any} */
+        const metadata = {
+            contentType: 'image/jpeg'
+        };
+
+        //upload image to firestore
+        // Upload file and metadata to the object 'images/mountains.jpg'
+        const storageRef = ref(storage, 'AssetImages/' + assetNumber + '.image');
+        const uploadTask = uploadBytesResumable(storageRef, blobImage, metadata);
+
+        uploadTask.on('state_changed',
+            (snapshot) => {
+
+                // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                // setFileuploading(Math.round(progress))
+
+
+                switch (snapshot.state) {
+                    case 'paused':
+                        console.log('Upload is paused');
+                        break;
+                    case 'running':
+                        console.log('Upload is running');
+                        break;
+                }
+            },
+            (error) => {
+                setloading(false)
+                Alert.alert('Error', 'Error uploading image')
+                // A full list of error codes is available at
+                // https://firebase.google.com/docs/storage/web/handle-errors
+                switch (error.code) {
+                    case 'storage/unauthorized':
+                        // User doesn't have permission to access the object
+                        break;
+                    case 'storage/canceled':
+                        // User canceled the upload
+                        break;
+
+                    // ...
+
+                    case 'storage/unknown':
+                        // Unknown error occurred, inspect error.serverResponse
+                        break;
+                }
+            },
+            () => {
+                // Upload completed successfully, now we can get the download URL
+                getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                    // console.log('File available at', downloadURL)
+                    if (downloadURL) {
+                        handleAddNewAsset(downloadURL)
+                    }
+
+                });
+            }
+        );
+    }
+
+    const addNewAsset = () => {
+        if (fileUri) {
+            uploadImage(fileUri)
+        }
+        else {
+            handleAddNewAsset('')
+        }
+    }
+
+    const handleAddNewAsset = async (imageURL) => {
 
         await setDoc(doc(db, "Assets", assetNumber.toString()), {
             'Asset Number': assetNumber,
@@ -379,7 +486,8 @@ const AssetsPage = (props) => {
             'inhouseInspection': 'not issued',
             'DefectStatus': false,
             TimeStamp: serverTimestamp(),
-            'active': true
+            'active': true,
+            'image': imageURL
         });
 
 
@@ -404,6 +512,16 @@ const AssetsPage = (props) => {
         setMileage('')
         setNotes('')
         setAssetName('')
+        setNameBorder('#cccccc')
+        setPlateNumberBorder('#cccccc')
+        setMakeBorder('#cccccc')
+        setYearBorder('#cccccc')
+        setModelBorder('#cccccc')
+        setEngineTypeBorder('#cccccc')
+        setADABorder('#cccccc')
+        setAirBrakesBorder('#cccccc')
+        setAssetTypeBorder('#cccccc')
+        setMileageBorder('#cccccc')
     }
     const closeAlert = () => {
         setAlertIsVisible(false)
@@ -438,576 +556,585 @@ const AssetsPage = (props) => {
     return (
         <>
             {assetDetailState.value.data ?
-                <View style={{ flex: 1, backgroundColor: '#f6f8f9' }}>
-                    <ScrollView style={{ height: 100 }}>
-                        {/* <TouchableOpacity onPress={() => {
+                <TouchableWithoutFeedback style={{ flex: 1, backgroundColor: '#f6f8f9' }}
+                    onPress={() => {
+                        CloseAllDropDowns()
+                    }}>
+                    <View style={{ flex: 1 }}>
+                        <ScrollView style={{ height: 100 }}>
+                            {/* <TouchableOpacity onPress={() => {
                             setOpenDetail(false)
                         }}>
                             <Image style={{ width: 25, height: 25, margin:20, transform: [{ rotate: '180deg' }] }} source={require('../../assets/arrow_right_icon.png')}></Image>
                         </TouchableOpacity> */}
-                        <View style={{ flexDirection: 'row', marginHorizontal: 40, marginVertical: 40, justifyContent: 'space-between', alignItems: 'center' }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <View style={{ backgroundColor: '#23d3d3', borderRadius: 15, }}>
-                                    <Image style={{ width: 30, height: 30, margin: 7 }}
-                                        tintColor='#FFFFFF'
-                                        source={require('../../assets/vehicle_icon.png')}></Image>
+                            <View style={{ flexDirection: 'row', marginHorizontal: 40, marginVertical: 40, justifyContent: 'space-between', alignItems: 'center' }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <View style={{ backgroundColor: '#23d3d3', borderRadius: 15, }}>
+                                        <Image style={{ width: 30, height: 30, margin: 7 }}
+                                            tintColor='#FFFFFF'
+                                            source={require('../../assets/vehicle_icon.png')}></Image>
+                                    </View>
+                                    <Text style={{ fontSize: 30, color: '#335a75', fontFamily: 'inter-extrablack', marginLeft: 10 }}>
+                                        Assets
+                                    </Text>
                                 </View>
-                                <Text style={{ fontSize: 30, color: '#335a75', fontFamily: 'inter-extrablack', marginLeft: 10 }}>
-                                    Assets
-                                </Text>
+
+                                <View style={{ alignItems: 'center' }}>
+                                    <AppBtn
+                                        title="Back"
+                                        btnStyle={[{
+                                            width: 100,
+                                            height: 40,
+                                            backgroundColor: '#FFFFFF',
+                                            borderRadius: 5,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            shadowOffset: { width: 1, height: 1 },
+                                            shadowOpacity: 0.5,
+                                            shadowRadius: 3,
+                                            elevation: 0,
+                                            shadowColor: '#575757',
+                                            marginRight: 50
+                                        }, { minWidth: 70 }]}
+                                        btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                                        onPress={() => {
+                                            setAssetDetail(false)
+                                            setOptions('1')
+                                            // clearAll()
+                                        }} />
+                                </View>
+
                             </View>
 
-                            <View style={{ alignItems: 'center' }}>
-                                <AppBtn
-                                    title="Back"
-                                    btnStyle={[{
-                                        width: '100%',
-                                        height: 40,
-                                        backgroundColor: '#FFFFFF',
-                                        borderRadius: 5,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        shadowOffset: { width: 1, height: 1 },
-                                        shadowOpacity: 0.5,
-                                        shadowRadius: 3,
-                                        elevation: 0,
-                                        shadowColor: '#575757',
-                                        marginRight: 50
-                                    }, { minWidth: 70 }]}
-                                    btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
-                                    onPress={() => {
-                                        setAssetDetail(false)
-                                        setOptions('1')
-                                        // clearAll()
-                                    }} />
+                            <View style={{ flexDirection: 'row', margin: 10 }}>
+                                <TouchableOpacity style={{ flexDirection: 'row', marginHorizontal: 15, height: 40, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }} onPress={() => {
+                                    setMake(selectedAsset.Make)
+                                    setYear(selectedAsset.Year)
+                                    setModel(selectedAsset.Model)
+                                    setColor(selectedAsset.Color)
+                                    setAssetType(selectedAsset['Asset Type'])
+                                    setMileage(selectedAsset.Mileage)
+                                    setNotes(selectedAsset.Notes)
+                                    setAssetName(selectedAsset['Asset Name'])
+                                    setOptions('1')
+                                }}>
+                                    <Text style={{ color: options == '1' ? '#335a75' : 'grey', fontFamily: 'inter-bold', fontSize: options == '1' ? 16 : 14 }}>Details</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={{ flexDirection: 'row', marginHorizontal: 15, height: 40, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }} onPress={() => {
+                                    setEditAsset(false)
+                                    setOptions('2')
+                                }}>
+                                    <Text style={{ color: options == '2' ? '#335a75' : 'grey', fontFamily: 'inter-bold', fontSize: options == '2' ? 16 : 14 }}>Inspections</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={{ flexDirection: 'row', marginHorizontal: 15, height: 40, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }} onPress={() => {
+                                    setEditAsset(false)
+                                    setOptions('3')
+                                }}>
+                                    <Text style={{ color: options == '3' ? '#335a75' : 'grey', fontFamily: 'inter-bold', fontSize: options == '3' ? 16 : 14 }}>Defects</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={{ flexDirection: 'row', marginHorizontal: 15, height: 40, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }} onPress={() => {
+                                    setEditAsset(false)
+                                    setOptions('4')
+                                }}>
+                                    <Text style={{ color: options == '4' ? '#335a75' : 'grey', fontFamily: 'inter-bold', fontSize: options == '4' ? 16 : 14 }}>Work Orders</Text>
+                                </TouchableOpacity>
                             </View>
 
-                        </View>
 
-                        <View style={{ flexDirection: 'row', margin: 10 }}>
-                            <TouchableOpacity style={{ flexDirection: 'row', marginHorizontal: 15, height: 40, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }} onPress={() => {
-                                setMake(selectedAsset.Make)
-                                setYear(selectedAsset.Year)
-                                setModel(selectedAsset.Model)
-                                setColor(selectedAsset.Color)
-                                setAssetType(selectedAsset['Asset Type'])
-                                setMileage(selectedAsset.Mileage)
-                                setNotes(selectedAsset.Notes)
-                                setAssetName(selectedAsset['Asset Name'])
-                                setOptions('1')
-                            }}>
-                                <Text style={{ color: options == '1' ? '#335a75' : 'grey', fontFamily: 'inter-bold', fontSize: options == '1' ? 16 : 14 }}>Details</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={{ flexDirection: 'row', marginHorizontal: 15, height: 40, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }} onPress={() => {
-                                setEditAsset(false)
-                                setOptions('2')
-                            }}>
-                                <Text style={{ color: options == '2' ? '#335a75' : 'grey', fontFamily: 'inter-bold', fontSize: options == '2' ? 16 : 14 }}>Inspections</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={{ flexDirection: 'row', marginHorizontal: 15, height: 40, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }} onPress={() => {
-                                setEditAsset(false)
-                                setOptions('3')
-                            }}>
-                                <Text style={{ color: options == '3' ? '#335a75' : 'grey', fontFamily: 'inter-bold', fontSize: options == '3' ? 16 : 14 }}>Defects</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={{ flexDirection: 'row', marginHorizontal: 15, height: 40, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }} onPress={() => {
-                                setEditAsset(false)
-                                setOptions('4')
-                            }}>
-                                <Text style={{ color: options == '4' ? '#335a75' : 'grey', fontFamily: 'inter-bold', fontSize: options == '4' ? 16 : 14 }}>Work Orders</Text>
-                            </TouchableOpacity>
-                        </View>
-
-
-                        {assetDetailState.value.data
-                            ?
-                            options == '1'
+                            {assetDetailState.value.data
                                 ?
-                                editAsset
+                                options == '1'
                                     ?
-                                    <>
-                                        <View style={[styles.contentCardStyle, { height: 'auto' }]}>
+                                    editAsset
+                                        ?
+                                        <>
+                                            <View style={[styles.contentCardStyle, { height: 'auto' }]}>
 
-                                            <ScrollView horizontal style={{ paddingBottom: 10, }} >
-                                                <View style={{ flexDirection: 'column' }}>
-                                                    <View style={{ flexDirection: 'row', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <View style={{ flexDirection: 'row', alignItems: 'center', }}>
-                                                            <Text style={{ fontSize: 16, fontWeight: '500' }}>Asset Name</Text>
-                                                            <TextInput
-                                                                style={[styles.input, { marginLeft: 25 },]}
-                                                                placeholderTextColor="#868383DC"
-                                                                value={assetName}
-                                                                onChangeText={setAssetName}
-
-                                                            />
-                                                        </View>
-
-                                                        <AppBtn
-                                                            title="Edit"
-                                                            btnStyle={[{
-                                                                width: 70,
-                                                                height: 40,
-                                                                backgroundColor: '#FFFFFF',
-                                                                borderRadius: 5,
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                shadowOffset: { width: 1, height: 1 },
-                                                                shadowOpacity: 0.5,
-                                                                shadowRadius: 3,
-                                                                elevation: 0,
-                                                                shadowColor: '#575757',
-                                                            }, { minWidth: 70 }]}
-                                                            btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
-                                                            onPress={() => {
-                                                                if (editAsset == false) {
-                                                                    setMake(selectedAsset.Make)
-                                                                    setYear(selectedAsset.Year)
-                                                                    setModel(selectedAsset.Model)
-                                                                    setColor(selectedAsset.Color)
-                                                                    setAssetType(selectedAsset['Asset Type'])
-                                                                    setMileage(selectedAsset.Mileage)
-                                                                    setNotes(selectedAsset.Notes)
-                                                                    setAssetName(selectedAsset['Asset Name'])
-                                                                }
-                                                                setEditAsset(!editAsset)
-                                                                // clearAll()
-                                                            }} />
-                                                    </View>
-                                                    <View style={{ flexDirection: 'row', }}>
-                                                        <View style={{ flexDirection: 'column' }}>
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Asset Number</Text>
+                                                <ScrollView horizontal style={{ paddingBottom: 10, }} >
+                                                    <View style={{ flexDirection: 'column' }}>
+                                                        <View style={{ flexDirection: 'row', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                            <View style={{ flexDirection: 'row', alignItems: 'center', }}>
+                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Asset Name</Text>
                                                                 <TextInput
-                                                                    style={[styles.input, { backgroundColor: '#E2E2E2' },]}
+                                                                    style={[styles.input, { marginLeft: 25 },]}
+                                                                    placeholderTextColor="#868383DC"
+                                                                    value={assetName}
+                                                                    onChangeText={setAssetName}
+
+                                                                />
+                                                            </View>
+                                                            {!editAsset
+                                                                ?
+                                                                <AppBtn
+                                                                    title="Edit"
+                                                                    btnStyle={[{
+                                                                        width: 70,
+                                                                        height: 40,
+                                                                        backgroundColor: '#FFFFFF',
+                                                                        borderRadius: 5,
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        shadowOffset: { width: 1, height: 1 },
+                                                                        shadowOpacity: 0.5,
+                                                                        shadowRadius: 3,
+                                                                        elevation: 0,
+                                                                        shadowColor: '#575757',
+                                                                    }, { minWidth: 70 }]}
+                                                                    btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                                                                    onPress={() => {
+                                                                        if (editAsset == false) {
+                                                                            setMake(selectedAsset.Make)
+                                                                            setYear(selectedAsset.Year)
+                                                                            setModel(selectedAsset.Model)
+                                                                            setColor(selectedAsset.Color)
+                                                                            setAssetType(selectedAsset['Asset Type'])
+                                                                            setMileage(selectedAsset.Mileage)
+                                                                            setNotes(selectedAsset.Notes)
+                                                                            setAssetName(selectedAsset['Asset Name'])
+                                                                        }
+                                                                        setEditAsset(!editAsset)
+                                                                        // clearAll()
+                                                                    }} />
+                                                                :
+                                                                <AppBtn
+                                                                    title="Revert"
+                                                                    btnStyle={[{
+                                                                        width: 70,
+                                                                        height: 40,
+                                                                        backgroundColor: '#FFFFFF',
+                                                                        borderRadius: 5,
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        shadowOffset: { width: 1, height: 1 },
+                                                                        shadowOpacity: 0.5,
+                                                                        shadowRadius: 3,
+                                                                        elevation: 0,
+                                                                        shadowColor: '#575757',
+                                                                    }, { minWidth: 70 }]}
+                                                                    btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                                                                    onPress={() => {
+                                                                        if (editAsset == false) {
+                                                                            setMake(selectedAsset.Make)
+                                                                            setYear(selectedAsset.Year)
+                                                                            setModel(selectedAsset.Model)
+                                                                            setColor(selectedAsset.Color)
+                                                                            setAssetType(selectedAsset['Asset Type'])
+                                                                            setMileage(selectedAsset.Mileage)
+                                                                            setNotes(selectedAsset.Notes)
+                                                                            setAssetName(selectedAsset['Asset Name'])
+                                                                        }
+                                                                        setEditAsset(!editAsset)
+                                                                        // clearAll()
+                                                                    }} />
+                                                            }
+
+                                                        </View>
+                                                        <View style={{ flexDirection: 'row', }}>
+                                                            <View style={{ flexDirection: 'column' }}>
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Asset Number</Text>
+                                                                    <TextInput
+                                                                        style={[styles.input, { backgroundColor: '#E2E2E2' },]}
+                                                                        editable={false}
+                                                                        placeholderTextColor="#868383DC"
+                                                                        value={selectedAsset['Asset Number']}
+                                                                    // onChangeText={(val)=>setEmployeeNumber(val)}
+
+                                                                    />
+                                                                </View>
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Plate Number</Text>
+                                                                    <TextInput
+                                                                        style={[styles.input, { backgroundColor: '#E2E2E2' },]}
+                                                                        editable={false}
+                                                                        placeholderTextColor="#868383DC"
+                                                                        value={selectedAsset['Plate Number']}
+                                                                    // onChangeText={(val) => { setPlateNumber(val) }}
+
+                                                                    />
+                                                                </View>
+
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Make</Text>
+                                                                    <TextInput
+                                                                        style={[styles.input, textInputBorderColor == 'Make' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                        placeholderTextColor="#868383DC"
+                                                                        value={make}
+                                                                        onChangeText={setMake}
+                                                                    />
+                                                                </View>
+
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Year</Text>
+                                                                    <View>
+                                                                        <TextInput
+                                                                            style={[styles.input, textInputBorderColor == 'Year' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                            placeholderTextColor="#868383DC"
+                                                                            value={year}
+                                                                            onChangeText={setYear}
+
+                                                                        />
+                                                                    </View>
+                                                                </View>
+
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Model</Text>
+                                                                    <View>
+                                                                        <TextInput
+                                                                            style={[styles.input, textInputBorderColor == 'Model' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                            placeholderTextColor="#868383DC"
+                                                                            value={model}
+                                                                            onChangeText={setModel}
+
+                                                                        />
+                                                                    </View>
+                                                                </View>
+
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Color</Text>
+                                                                    <View>
+                                                                        <TextInput
+                                                                            style={[styles.input, textInputBorderColor == 'Color' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                            placeholderTextColor="#868383DC"
+                                                                            value={color}
+                                                                            onChangeText={(val) => { setColor(val) }}
+
+                                                                        />
+                                                                    </View>
+                                                                </View>
+
+                                                            </View>
+                                                            <View style={{ flexDirection: 'column', marginLeft: 80 }}>
+
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 4 }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Engine Type</Text>
+                                                                    <View>
+                                                                        <TextInput
+                                                                            style={[styles.input, { backgroundColor: '#E2E2E2' },]}
+                                                                            editable={false}
+                                                                            placeholderTextColor="#868383DC"
+                                                                            value={selectedAsset['Engine Type']}
+                                                                        // onChangeText={(val) => { setColor(val) }}
+
+                                                                        />
+                                                                    </View>
+                                                                </View>
+
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 3 }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>ADA Wheelchair</Text>
+                                                                    <View>
+                                                                        <TextInput
+                                                                            style={[styles.input, { backgroundColor: '#E2E2E2' },]}
+                                                                            editable={false}
+                                                                            placeholderTextColor="#868383DC"
+                                                                            value={selectedAsset.ADA}
+                                                                        // onChangeText={(val) => { setColor(val) }}
+
+                                                                        />
+                                                                    </View>
+                                                                </View>
+
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 2 }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Air Brakes</Text>
+                                                                    <View>
+                                                                        <TextInput
+                                                                            style={[styles.input, { backgroundColor: '#E2E2E2' },]}
+                                                                            editable={false}
+                                                                            placeholderTextColor="#868383DC"
+                                                                            value={selectedAsset['Air Brakes']}
+                                                                        // onChangeText={(val) => { setColor(val) }}
+
+                                                                        />
+                                                                    </View>
+                                                                </View>
+
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Asset Type</Text>
+                                                                    <View>
+                                                                        <TextInput
+                                                                            style={[styles.input, { backgroundColor: '#E2E2E2' },]}
+                                                                            value={selectedAsset['Asset Type']}
+                                                                            // onChangeText={(val) => { setAssetType(val) }}
+                                                                            editable={false}
+
+                                                                        />
+                                                                    </View>
+                                                                </View>
+
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Mileage</Text>
+                                                                    <TextInput
+                                                                        style={[styles.input, textInputBorderColor == 'Mileage' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                        placeholderTextColor="#868383DC"
+                                                                        value={mileage}
+                                                                        onChangeText={(val) => { setMileage(val) }}
+
+                                                                    />
+                                                                </View>
+
+
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Notes</Text>
+                                                                    <TextInput
+                                                                        style={[styles.input, textInputBorderColor == 'Notes' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                        placeholderTextColor="#868383DC"
+                                                                        value={notes}
+                                                                        multiline={true}
+                                                                        onChangeText={(val) => { setNotes(val) }}
+
+                                                                    />
+                                                                </View>
+                                                            </View>
+                                                        </View>
+                                                    </View>
+
+                                                </ScrollView>
+
+                                            </View>
+                                        </>
+                                        :
+                                        <>
+                                            <View style={[styles.contentCardStyle, { height: 'auto' }]}>
+                                                <ScrollView horizontal style={{ paddingBottom: 10 }}
+                                                >
+                                                    <View style={{ flexDirection: 'column' }}>
+                                                        <View style={{ flexDirection: 'row', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                            <View style={{ flexDirection: 'row', alignItems: 'center', }}>
+                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Asset Name</Text>
+                                                                <TextInput
+                                                                    style={[styles.input, { marginLeft: 25 }, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                                     editable={false}
                                                                     placeholderTextColor="#868383DC"
-                                                                    value={selectedAsset['Asset Number']}
-                                                                // onChangeText={(val)=>setEmployeeNumber(val)}
-
-                                                                />
-                                                            </View>
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Plate Number</Text>
-                                                                <TextInput
-                                                                    style={[styles.input, { backgroundColor: '#E2E2E2' },]}
-                                                                    editable={false}
-                                                                    placeholderTextColor="#868383DC"
-                                                                    value={selectedAsset['Plate Number']}
-                                                                // onChangeText={(val) => { setPlateNumber(val) }}
+                                                                    value={selectedAsset['Asset Name']}
+                                                                // onChangeText={setAssetName}
 
                                                                 />
                                                             </View>
 
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Make</Text>
-                                                                <TextInput
-                                                                    style={[styles.input, textInputBorderColor == 'Make' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                                    placeholderTextColor="#868383DC"
-                                                                    value={make}
-                                                                    onChangeText={setMake}
-                                                                />
-                                                            </View>
-
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Year</Text>
-                                                                <View>
-                                                                    <TextInput
-                                                                        style={[styles.input, textInputBorderColor == 'Year' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                                        placeholderTextColor="#868383DC"
-                                                                        value={year}
-                                                                        onChangeText={setYear}
-
-                                                                    />
-                                                                </View>
-                                                            </View>
-
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Model</Text>
-                                                                <View>
-                                                                    <TextInput
-                                                                        style={[styles.input, textInputBorderColor == 'Model' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                                        placeholderTextColor="#868383DC"
-                                                                        value={model}
-                                                                        onChangeText={setModel}
-
-                                                                    />
-                                                                </View>
-                                                            </View>
-
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Color</Text>
-                                                                <View>
-                                                                    <TextInput
-                                                                        style={[styles.input, textInputBorderColor == 'Color' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                                        placeholderTextColor="#868383DC"
-                                                                        value={color}
-                                                                        onChangeText={(val) => { setColor(val) }}
-
-                                                                    />
-                                                                </View>
-                                                            </View>
-
+                                                            <AppBtn
+                                                                title="Edit"
+                                                                btnStyle={[{
+                                                                    width: 70,
+                                                                    height: 40,
+                                                                    backgroundColor: '#FFFFFF',
+                                                                    borderRadius: 5,
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    shadowOffset: { width: 1, height: 1 },
+                                                                    shadowOpacity: 0.5,
+                                                                    shadowRadius: 3,
+                                                                    elevation: 0,
+                                                                    shadowColor: '#575757',
+                                                                }, { minWidth: 70 }]}
+                                                                btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                                                                onPress={() => {
+                                                                    if (editAsset == false) {
+                                                                        setMake(selectedAsset.Make)
+                                                                        setYear(selectedAsset.Year)
+                                                                        setModel(selectedAsset.Model)
+                                                                        setColor(selectedAsset.Color)
+                                                                        setAssetType(selectedAsset['Asset Type'])
+                                                                        setMileage(selectedAsset.Mileage)
+                                                                        setNotes(selectedAsset.Notes)
+                                                                        setAssetName(selectedAsset['Asset Name'])
+                                                                    }
+                                                                    setEditAsset(!editAsset)
+                                                                    // clearAll()
+                                                                }} />
                                                         </View>
-                                                        <View style={{ flexDirection: 'column', marginLeft: 80 }}>
-
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 4 }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Engine Type</Text>
-                                                                <View>
+                                                        <View style={{ flexDirection: 'row', }}>
+                                                            <View style={{ flexDirection: 'column' }}>
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Asset Number</Text>
                                                                     <TextInput
-                                                                        style={[styles.input, { backgroundColor: '#E2E2E2' },]}
+                                                                        style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                                         editable={false}
                                                                         placeholderTextColor="#868383DC"
-                                                                        value={selectedAsset['Engine Type']}
-                                                                    // onChangeText={(val) => { setColor(val) }}
+                                                                        value={selectedAsset['Asset Number']}
+                                                                    // onChangeText={(val)=>setEmployeeNumber(val)}
+
 
                                                                     />
                                                                 </View>
-                                                            </View>
-
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 3 }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>ADA Wheelchair</Text>
-                                                                <View>
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Plate Number</Text>
                                                                     <TextInput
-                                                                        style={[styles.input, { backgroundColor: '#E2E2E2' },]}
+                                                                        style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                                         editable={false}
                                                                         placeholderTextColor="#868383DC"
-                                                                        value={selectedAsset.ADA}
-                                                                    // onChangeText={(val) => { setColor(val) }}
+                                                                        value={selectedAsset['Plate Number']}
+                                                                    // onChangeText={(val) => { setPlateNumber(val) }}
 
                                                                     />
                                                                 </View>
-                                                            </View>
 
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 2 }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Air Brakes</Text>
-                                                                <View>
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Make</Text>
                                                                     <TextInput
-                                                                        style={[styles.input, { backgroundColor: '#E2E2E2' },]}
+                                                                        style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                                         editable={false}
                                                                         placeholderTextColor="#868383DC"
-                                                                        value={selectedAsset['Air Brakes']}
-                                                                    // onChangeText={(val) => { setColor(val) }}
+                                                                        value={selectedAsset.Make}
+                                                                    // onChangeText={(val) => { setMake(val) }}
 
                                                                     />
                                                                 </View>
-                                                            </View>
 
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Asset Type</Text>
-                                                                <View>
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Year</Text>
+                                                                    <View>
+                                                                        <TextInput
+                                                                            style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                            editable={false}
+                                                                            placeholderTextColor="#868383DC"
+                                                                            value={selectedAsset.Year}
+                                                                        // onChangeText={(val) => { setYear(val) }}
+
+                                                                        />
+                                                                    </View>
+                                                                </View>
+
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Model</Text>
+                                                                    <View>
+                                                                        <TextInput
+                                                                            style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                            editable={false}
+                                                                            placeholderTextColor="#868383DC"
+                                                                            value={selectedAsset.Model}
+                                                                        // onChangeText={(val) => { setModel(val) }}
+
+                                                                        />
+                                                                    </View>
+                                                                </View>
+
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Color</Text>
+                                                                    <View>
+                                                                        <TextInput
+                                                                            style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                            editable={false}
+                                                                            placeholderTextColor="#868383DC"
+                                                                            value={selectedAsset.Color}
+                                                                        // onChangeText={(val) => { setColor(val) }}
+
+                                                                        />
+                                                                    </View>
+                                                                </View>
+
+                                                            </View>
+                                                            <View style={{ flexDirection: 'column', marginLeft: 80 }}>
+
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 4 }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Engine Type</Text>
+                                                                    <View>
+                                                                        <TextInput
+                                                                            style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                            editable={false}
+                                                                            placeholderTextColor="#868383DC"
+                                                                            value={selectedAsset['Engine Type']}
+                                                                        // onChangeText={(val) => { setColor(val) }}
+
+                                                                        />
+                                                                    </View>
+                                                                </View>
+
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 3 }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>ADA Wheelchair</Text>
+                                                                    <View>
+                                                                        <TextInput
+                                                                            style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                            editable={false}
+                                                                            placeholderTextColor="#868383DC"
+                                                                            value={selectedAsset.ADA}
+                                                                        // onChangeText={(val) => { setColor(val) }}
+
+                                                                        />
+                                                                    </View>
+                                                                </View>
+
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 2 }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Air Brakes</Text>
+                                                                    <View>
+                                                                        <TextInput
+                                                                            style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                            editable={false}
+                                                                            placeholderTextColor="#868383DC"
+                                                                            value={selectedAsset['Air Brakes']}
+                                                                        // onChangeText={(val) => { setColor(val) }}
+
+                                                                        />
+                                                                    </View>
+                                                                </View>
+
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Asset Type</Text>
+                                                                    <View>
+                                                                        <TextInput
+                                                                            style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                            editable={false}
+                                                                            placeholderTextColor="#868383DC"
+                                                                            value={selectedAsset['Asset Type']}
+                                                                        // onChangeText={(val) => { setColor(val) }}
+
+                                                                        />
+                                                                    </View>
+                                                                </View>
+
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Mileage</Text>
                                                                     <TextInput
-                                                                        style={[styles.input, { backgroundColor: '#E2E2E2' },]}
-                                                                        value={selectedAsset['Asset Type']}
-                                                                        // onChangeText={(val) => { setAssetType(val) }}
+                                                                        style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                                         editable={false}
+                                                                        placeholderTextColor="#868383DC"
+                                                                        value={selectedAsset.Mileage}
+                                                                    // onChangeText={(val) => { setMileage(val) }}
 
                                                                     />
                                                                 </View>
-                                                            </View>
-
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Mileage</Text>
-                                                                <TextInput
-                                                                    style={[styles.input, textInputBorderColor == 'Mileage' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                                    placeholderTextColor="#868383DC"
-                                                                    value={mileage}
-                                                                    onChangeText={(val) => { setMileage(val) }}
-
-                                                                />
-                                                            </View>
 
 
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Notes</Text>
-                                                                <TextInput
-                                                                    style={[styles.input, textInputBorderColor == 'Notes' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                                    placeholderTextColor="#868383DC"
-                                                                    value={notes}
-                                                                    multiline={true}
-                                                                    onChangeText={(val) => { setNotes(val) }}
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Notes</Text>
+                                                                    <TextInput
+                                                                        style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                        editable={false}
+                                                                        placeholderTextColor="#868383DC"
+                                                                        value={selectedAsset.Notes}
+                                                                        multiline={true}
+                                                                    // onChangeText={(val) => { setNotes(val) }}
 
-                                                                />
+                                                                    />
+                                                                </View>
                                                             </View>
                                                         </View>
                                                     </View>
-                                                </View>
 
-                                            </ScrollView>
+                                                </ScrollView>
 
-                                        </View>
-                                    </>
+                                            </View>
+
+
+
+                                        </>
                                     :
-                                    <>
-                                        <View style={[styles.contentCardStyle, { height: 'auto' }]}>
-                                            <ScrollView horizontal style={{ paddingBottom: 10 }}
-                                            >
-                                                <View style={{ flexDirection: 'column' }}>
-                                                    <View style={{ flexDirection: 'row', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <View style={{ flexDirection: 'row', alignItems: 'center', }}>
-                                                            <Text style={{ fontSize: 16, fontWeight: '500' }}>Asset Name</Text>
-                                                            <TextInput
-                                                                style={[styles.input, { marginLeft: 25 }, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                                editable={false}
-                                                                placeholderTextColor="#868383DC"
-                                                                value={selectedAsset['Asset Name']}
-                                                            // onChangeText={setAssetName}
-
-                                                            />
-                                                        </View>
-
-                                                        <AppBtn
-                                                            title="Edit"
-                                                            btnStyle={[{
-                                                                width: 70,
-                                                                height: 40,
-                                                                backgroundColor: '#FFFFFF',
-                                                                borderRadius: 5,
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                shadowOffset: { width: 1, height: 1 },
-                                                                shadowOpacity: 0.5,
-                                                                shadowRadius: 3,
-                                                                elevation: 0,
-                                                                shadowColor: '#575757',
-                                                            }, { minWidth: 70 }]}
-                                                            btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
-                                                            onPress={() => {
-                                                                if (editAsset == false) {
-                                                                    setMake(selectedAsset.Make)
-                                                                    setYear(selectedAsset.Year)
-                                                                    setModel(selectedAsset.Model)
-                                                                    setColor(selectedAsset.Color)
-                                                                    setAssetType(selectedAsset['Asset Type'])
-                                                                    setMileage(selectedAsset.Mileage)
-                                                                    setNotes(selectedAsset.Notes)
-                                                                    setAssetName(selectedAsset['Asset Name'])
-                                                                }
-                                                                setEditAsset(!editAsset)
-                                                                // clearAll()
-                                                            }} />
-                                                    </View>
-                                                    <View style={{ flexDirection: 'row', }}>
-                                                        <View style={{ flexDirection: 'column' }}>
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Asset Number</Text>
-                                                                <TextInput
-                                                                    style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                                    editable={false}
-                                                                    placeholderTextColor="#868383DC"
-                                                                    value={selectedAsset['Asset Number']}
-                                                                // onChangeText={(val)=>setEmployeeNumber(val)}
-
-
-                                                                />
-                                                            </View>
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Plate Number</Text>
-                                                                <TextInput
-                                                                    style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                                    editable={false}
-                                                                    placeholderTextColor="#868383DC"
-                                                                    value={selectedAsset['Plate Number']}
-                                                                // onChangeText={(val) => { setPlateNumber(val) }}
-
-                                                                />
-                                                            </View>
-
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Make</Text>
-                                                                <TextInput
-                                                                    style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                                    editable={false}
-                                                                    placeholderTextColor="#868383DC"
-                                                                    value={selectedAsset.Make}
-                                                                // onChangeText={(val) => { setMake(val) }}
-
-                                                                />
-                                                            </View>
-
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Year</Text>
-                                                                <View>
-                                                                    <TextInput
-                                                                        style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                                        editable={false}
-                                                                        placeholderTextColor="#868383DC"
-                                                                        value={selectedAsset.Year}
-                                                                    // onChangeText={(val) => { setYear(val) }}
-
-                                                                    />
-                                                                </View>
-                                                            </View>
-
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Model</Text>
-                                                                <View>
-                                                                    <TextInput
-                                                                        style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                                        editable={false}
-                                                                        placeholderTextColor="#868383DC"
-                                                                        value={selectedAsset.Model}
-                                                                    // onChangeText={(val) => { setModel(val) }}
-
-                                                                    />
-                                                                </View>
-                                                            </View>
-
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Color</Text>
-                                                                <View>
-                                                                    <TextInput
-                                                                        style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                                        editable={false}
-                                                                        placeholderTextColor="#868383DC"
-                                                                        value={selectedAsset.Color}
-                                                                    // onChangeText={(val) => { setColor(val) }}
-
-                                                                    />
-                                                                </View>
-                                                            </View>
-
-                                                        </View>
-                                                        <View style={{ flexDirection: 'column', marginLeft: 80 }}>
-
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 4 }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Engine Type</Text>
-                                                                <View>
-                                                                    <TextInput
-                                                                        style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                                        editable={false}
-                                                                        placeholderTextColor="#868383DC"
-                                                                        value={selectedAsset['Engine Type']}
-                                                                    // onChangeText={(val) => { setColor(val) }}
-
-                                                                    />
-                                                                </View>
-                                                            </View>
-
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 3 }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>ADA Wheelchair</Text>
-                                                                <View>
-                                                                    <TextInput
-                                                                        style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                                        editable={false}
-                                                                        placeholderTextColor="#868383DC"
-                                                                        value={selectedAsset.ADA}
-                                                                    // onChangeText={(val) => { setColor(val) }}
-
-                                                                    />
-                                                                </View>
-                                                            </View>
-
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 2 }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Air Brakes</Text>
-                                                                <View>
-                                                                    <TextInput
-                                                                        style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                                        editable={false}
-                                                                        placeholderTextColor="#868383DC"
-                                                                        value={selectedAsset['Air Brakes']}
-                                                                    // onChangeText={(val) => { setColor(val) }}
-
-                                                                    />
-                                                                </View>
-                                                            </View>
-
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Asset Type</Text>
-                                                                <View>
-                                                                    <TextInput
-                                                                        style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                                        editable={false}
-                                                                        placeholderTextColor="#868383DC"
-                                                                        value={selectedAsset['Asset Type']}
-                                                                    // onChangeText={(val) => { setColor(val) }}
-
-                                                                    />
-                                                                </View>
-                                                            </View>
-
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Mileage</Text>
-                                                                <TextInput
-                                                                    style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                                    editable={false}
-                                                                    placeholderTextColor="#868383DC"
-                                                                    value={selectedAsset.Mileage}
-                                                                // onChangeText={(val) => { setMileage(val) }}
-
-                                                                />
-                                                            </View>
-
-
-                                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Notes</Text>
-                                                                <TextInput
-                                                                    style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                                    editable={false}
-                                                                    placeholderTextColor="#868383DC"
-                                                                    value={selectedAsset.Notes}
-                                                                    multiline={true}
-                                                                // onChangeText={(val) => { setNotes(val) }}
-
-                                                                />
-                                                            </View>
-                                                        </View>
-                                                    </View>
-                                                </View>
-
-                                            </ScrollView>
-
-                                        </View>
-
-
-
-                                    </>
-                                :
-                                options == '2'
-                                    ?
-                                    <>
-                                        <View style={styles.optioncontentCardStyle}>
-                                            <Form
-                                                columns={[
-                                                    'formStatus',
-                                                    'id',
-                                                    'TimeStamp',
-                                                    'assetName',
-                                                    'driverName',
-                                                    'Company name',
-                                                    'Form name',
-                                                ]}
-                                                entriesData={dataState.value.data.filter((item) => item.assetNumber == selectedAsset['Asset Number'])}
-                                                titleForm="General Inspection"
-                                                onValueChange={handleInspectionFormValue}
-                                                row={styles.formRowStyle}
-                                                cell={styles.formCellStyle}
-                                                entryText={styles.formEntryTextStyle}
-                                                columnHeaderRow={styles.formColumnHeaderRowStyle}
-                                                columnHeaderCell={styles.formColumnHeaderCellStyle}
-                                                columnHeaderText={styles.formColumnHeaderTextStyle} />
-                                        </View>
-                                    </>
-                                    :
-                                    options == '3'
+                                    options == '2'
                                         ?
                                         <>
                                             <View style={styles.optioncontentCardStyle}>
                                                 <Form
                                                     columns={[
+                                                        'formStatus',
                                                         'id',
+                                                        'TimeStamp',
                                                         'assetName',
-                                                        'dateCreated',
-                                                        'priority',
-                                                        'severity',
-                                                        'title',
                                                         'driverName',
-                                                        'Work Order',
-                                                        'Action'
+                                                        'Company name',
+                                                        'Form name',
                                                     ]}
-                                                    entriesData={defectState.value.defect.filter((item) => item.assetNumber == selectedAsset['Asset Number'])}
-                                                    titleForm="Defects"
-                                                    onValueChange={handleDefectFormValue}
-                                                    onOpenWorkOrder={handleOpenWorkOrderValue}
+                                                    entriesData={dataState.value.data.filter((item) => item.assetNumber == selectedAsset['Asset Number'])}
+                                                    titleForm="General Inspection"
+                                                    onValueChange={handleInspectionFormValue}
                                                     row={styles.formRowStyle}
                                                     cell={styles.formCellStyle}
                                                     entryText={styles.formEntryTextStyle}
@@ -1017,41 +1144,70 @@ const AssetsPage = (props) => {
                                             </View>
                                         </>
                                         :
-                                        <>
-                                            <View style={styles.optioncontentCardStyle}>
-                                                <Form
-                                                    columns={[
-                                                        'id',
-                                                        'assetName',
-                                                        'defectedItems',
-                                                        'dueDate',
-                                                        'assignedMechanic',
-                                                        'Action',
-                                                    ]}
-                                                    entriesData={woState.value.data.filter((item) => item.assetNumber == selectedAsset['Asset Number'])}
-                                                    titleForm="Work Order"
-                                                    onValueChange={handleWOFormValue}
-                                                    row={styles.formRowStyle}
-                                                    cell={styles.formCellStyle}
-                                                    entryText={styles.formEntryTextStyle}
-                                                    columnHeaderRow={styles.formColumnHeaderRowStyle}
-                                                    columnHeaderCell={styles.formColumnHeaderCellStyle}
-                                                    columnHeaderText={styles.formColumnHeaderTextStyle} />
-                                            </View>
-                                        </>
+                                        options == '3'
+                                            ?
+                                            <>
+                                                <View style={styles.optioncontentCardStyle}>
+                                                    <Form
+                                                        columns={[
+                                                            'id',
+                                                            'assetName',
+                                                            'dateCreated',
+                                                            'priority',
+                                                            'severity',
+                                                            'title',
+                                                            'driverName',
+                                                            'Work Order',
+                                                            'Action'
+                                                        ]}
+                                                        entriesData={defectState.value.defect.filter((item) => item.assetNumber == selectedAsset['Asset Number'])}
+                                                        titleForm="Defects"
+                                                        onValueChange={handleDefectFormValue}
+                                                        onOpenWorkOrder={handleOpenWorkOrderValue}
+                                                        row={styles.formRowStyle}
+                                                        cell={styles.formCellStyle}
+                                                        entryText={styles.formEntryTextStyle}
+                                                        columnHeaderRow={styles.formColumnHeaderRowStyle}
+                                                        columnHeaderCell={styles.formColumnHeaderCellStyle}
+                                                        columnHeaderText={styles.formColumnHeaderTextStyle} />
+                                                </View>
+                                            </>
+                                            :
+                                            <>
+                                                <View style={styles.optioncontentCardStyle}>
+                                                    <Form
+                                                        columns={[
+                                                            'id',
+                                                            'assetName',
+                                                            'defectedItems',
+                                                            'dueDate',
+                                                            'assignedMechanic',
+                                                            'Action',
+                                                        ]}
+                                                        entriesData={woState.value.data.filter((item) => item.assetNumber == selectedAsset['Asset Number'])}
+                                                        titleForm="Work Order"
+                                                        onValueChange={handleWOFormValue}
+                                                        row={styles.formRowStyle}
+                                                        cell={styles.formCellStyle}
+                                                        entryText={styles.formEntryTextStyle}
+                                                        columnHeaderRow={styles.formColumnHeaderRowStyle}
+                                                        columnHeaderCell={styles.formColumnHeaderCellStyle}
+                                                        columnHeaderText={styles.formColumnHeaderTextStyle} />
+                                                </View>
+                                            </>
 
-                            :
-                            <>
+                                :
+                                <>
 
-                            </>
-                        }
-
-
-                    </ScrollView>
+                                </>
+                            }
 
 
+                        </ScrollView>
 
-                    {/* <View style={{ flexDirection: 'row', width: '100%', backgroundColor: '#67E9DA', paddingVertical: 20, justifyContent: 'flex-end', paddingRight: 80 }}>
+
+
+                        {/* <View style={{ flexDirection: 'row', width: '100%', backgroundColor: '#67E9DA', paddingVertical: 20, justifyContent: 'flex-end', paddingRight: 80 }}>
                         <View>
                             <AppBtn
                                 title="Close"
@@ -1077,361 +1233,430 @@ const AssetsPage = (props) => {
                                 }} />
                         </View>
                     </View> */}
-                    {editAsset && options === '1'
-                        ?
-                        <View style={{ flexDirection: 'row', width: '100%', backgroundColor: '#67E9DA', paddingVertical: 20, justifyContent: 'flex-end', paddingRight: 80 }}>
-                            <View>
-                                <AppBtn
-                                    title="Close"
-                                    btnStyle={[{
-                                        width: '100%',
-                                        height: 30,
-                                        backgroundColor: '#FFFFFF',
-                                        borderRadius: 5,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        shadowOffset: { width: 2, height: 2 },
-                                        shadowOpacity: 0.9,
-                                        shadowRadius: 5,
-                                        elevation: 0,
-                                        shadowColor: '#575757',
-                                        marginHorizontal: 10
-                                    }, { minWidth: 70 }]}
-                                    btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
-                                    onPress={() => {
-                                        setAssetDetail(false)
-                                        // clearAll()
-                                    }} />
+                        {editAsset && options === '1'
+                            ?
+                            <View style={{ flexDirection: 'row', width: '100%', backgroundColor: '#67E9DA', paddingVertical: 20, justifyContent: 'flex-end', paddingRight: 80 }}>
+                                <View>
+                                    <AppBtn
+                                        title="Close"
+                                        btnStyle={[{
+                                            width: '100%',
+                                            height: 30,
+                                            backgroundColor: '#FFFFFF',
+                                            borderRadius: 5,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            shadowOffset: { width: 2, height: 2 },
+                                            shadowOpacity: 0.9,
+                                            shadowRadius: 5,
+                                            elevation: 0,
+                                            shadowColor: '#575757',
+                                            marginHorizontal: 10
+                                        }, { minWidth: 70 }]}
+                                        btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                                        onPress={() => {
+                                            setAssetDetail(false)
+                                            // clearAll()
+                                        }} />
+                                </View>
+                                <View style={{ marginLeft: 20 }}>
+                                    <AppBtn
+                                        title="Save"
+                                        btnStyle={[{
+                                            width: '100%',
+                                            height: 30,
+                                            backgroundColor: '#FFFFFF',
+                                            borderRadius: 5,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            shadowOffset: { width: 2, height: 2 },
+                                            shadowOpacity: 0.9,
+                                            shadowRadius: 5,
+                                            elevation: 0,
+                                            shadowColor: '#575757',
+                                            marginHorizontal: 10
+                                        }, { minWidth: 70 }]}
+                                        btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                                        onPress={() => {
+
+                                            setloading(true)
+                                            handleUpdateAsset()
+
+
+                                        }} />
+                                </View>
                             </View>
-                            <View style={{ marginLeft: 20 }}>
-                                <AppBtn
-                                    title="Save"
-                                    btnStyle={[{
-                                        width: '100%',
-                                        height: 30,
-                                        backgroundColor: '#FFFFFF',
-                                        borderRadius: 5,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        shadowOffset: { width: 2, height: 2 },
-                                        shadowOpacity: 0.9,
-                                        shadowRadius: 5,
-                                        elevation: 0,
-                                        shadowColor: '#575757',
-                                        marginHorizontal: 10
-                                    }, { minWidth: 70 }]}
-                                    btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
-                                    onPress={() => {
+                            :
+                            null}
+                    </View>
 
-                                        setloading(true)
-                                        handleUpdateAsset()
-
-
-                                    }} />
-                            </View>
-                        </View>
-                        :
-                        null}
-
-
-                </View>
+                </TouchableWithoutFeedback>
                 :
                 createNewAssetModalVisible ?
-                    <View style={{ flex: 1, backgroundColor: '#f6f8f9' }}>
-                        <ScrollView style={{ height: 100 }}>
-                            <View style={{ flexDirection: 'row', marginHorizontal: 40, marginTop: 40, alignItems: 'center', }}>
-                                <Text style={{ fontSize: 30, color: '#1E3D5C', fontWeight: '900', marginLeft: 10, borderBottomColor: '#67E9DA', paddingBottom: 5, borderBottomWidth: 5 }}>
-                                    Create New Asset
-                                </Text>
-                                <View>
-
-                                </View>
-                            </View>
-                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center' }}>
-
-                                <View style={{ flexDirection: 'column', marginLeft: 40 }}>
-                                    {fileUri
-                                        ?
-                                        <TouchableOpacity onPress={pickDocument}>
-                                            <Image style={{ height: 100, width: 100, borderRadius: 50 }} source={{ uri: fileUri }} />
-                                        </TouchableOpacity>
-                                        :
-                                        <TouchableOpacity style={{ width: 100, height: 100, borderRadius: 50, borderColor: '#cccccc', borderWidth: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }} onPress={pickDocument}>
-
-                                            <Image style={{ height: 20, width: 20 }}
-                                                source={require('../../assets/add_photo_icon.png')}
-                                                tintColor='#67E9DA'></Image>
-                                            <Text style={{ color: '#30E0CB' }}>Add Photo</Text>
-
-                                        </TouchableOpacity>
-                                    }
-                                </View>
-                                <TextInput
-                                    style={[styles.input,{ borderColor: nameBorder }, textInputBorderColor == 'Asset Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                    placeholderTextColor="#868383DC"
-                                    value={assetName}
-                                    placeholder='Asset Name'
-                                    onChangeText={(val) => setAssetName(val)}
-
-                                />
-                            </View>
-
-
-                            <View style={[styles.contentCardStyle, { height: 'auto' }]}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <View style={{ height: 10, width: 10, borderRadius: 5, backgroundColor: '#67E9DA' }}></View>
-                                    <Text style={{ color: '#1E3D5C', fontSize: 20, fontWeight: 'bold', marginLeft: 10 }}>
-                                        Asset details
+                    <TouchableWithoutFeedback style={{ flex: 1, backgroundColor: '#f6f8f9' }}
+                        onPress={() => {
+                            CloseAllDropDowns()
+                        }}>
+                        <View style={{ flex: 1 }}>
+                            <ScrollView style={{ height: 100 }}>
+                                <View style={{ flexDirection: 'row', marginHorizontal: 40, marginTop: 40, alignItems: 'center', }}>
+                                    <Text style={{ fontSize: 30, color: '#1E3D5C', fontWeight: '900', marginLeft: 10, borderBottomColor: '#67E9DA', paddingBottom: 5, borderBottomWidth: 5 }}>
+                                        Create New Asset
                                     </Text>
-                                </View>
-                                <ScrollView horizontal style={{ paddingBottom: 10 }} >
-                                    <View style={{ flexDirection: 'row', }}>
-                                        <View style={{ flexDirection: 'column' }}>
-                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Asset Number*</Text>
-                                                <TextInput
-                                                    style={[styles.input, , textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                    placeholderTextColor="#868383DC"
-                                                    value={assetNumber}
-                                                // onChangeText={(val)=>setEmployeeNumber(val)}
+                                    <View>
 
-                                                />
-                                            </View>
-                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Plate Number*</Text>
-                                                <TextInput
-                                                    style={[styles.input, { borderColor: plateNumberBorder }, textInputBorderColor == 'Plate Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                    placeholderTextColor="#868383DC"
-                                                    value={plateNumber}
-                                                    onChangeText={(val) => { setPlateNumber(val) }}
-
-                                                />
-                                            </View>
-
-                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Make*</Text>
-                                                <TextInput
-                                                    style={[styles.input, { borderColor: makeBorder }, textInputBorderColor == 'Make' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                    placeholderTextColor="#868383DC"
-                                                    value={make}
-                                                    onChangeText={(val) => { setMake(val) }}
-
-                                                />
-                                            </View>
-
-                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Year*</Text>
-                                                <View>
-                                                    <TextInput
-                                                        style={[styles.input, { borderColor: yearBorder }, textInputBorderColor == 'Year' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                        placeholderTextColor="#868383DC"
-                                                        value={year}
-                                                        onChangeText={(val) => { setYear(val) }}
-
-                                                    />
-                                                </View>
-                                            </View>
-
-                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Model*</Text>
-                                                <View>
-                                                    <TextInput
-                                                        style={[styles.input, { borderColor: modelBorder }, textInputBorderColor == 'Model' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                        placeholderTextColor="#868383DC"
-                                                        value={model}
-                                                        onChangeText={(val) => { setModel(val) }}
-
-                                                    />
-                                                </View>
-                                            </View>
-
-                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Color</Text>
-                                                <View>
-                                                    <TextInput
-                                                        style={[styles.input, textInputBorderColor == 'Color' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                        placeholderTextColor="#868383DC"
-                                                        value={color}
-                                                        onChangeText={(val) => { setColor(val) }}
-
-                                                    />
-                                                </View>
-                                            </View>
-
-                                        </View>
-                                        <View style={{ flexDirection: 'column', marginLeft: 80 }}>
-
-                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 4 }}>
-                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Engine Type*</Text>
-                                                <DropDownComponent
-                                                    options={['Gas', 'Diesel']}
-                                                    onValueChange={(val) => setEngineType(val)}
-                                                    // title="Ubaid Arshad"
-                                                    selectedValue={engineType}
-                                                    imageSource={require('../../assets/up_arrow_icon.png')}
-                                                    container={styles.dropdownContainer}
-                                                    dropdownButton={styles.dropdownButton}
-                                                    selectedValueStyle={styles.dropdownSelectedValueStyle}
-                                                    optionsContainer={styles.dropdownOptionsContainer}
-                                                    option={styles.dropdownOption}
-                                                    hoveredOption={styles.dropdownHoveredOption}
-                                                    optionText={styles.dropdownOptionText}
-                                                    hoveredOptionText={styles.dropdownHoveredOptionText}
-                                                    dropdownButtonSelect={styles.dropdownButtonSelect}
-                                                    dropdownStyle={[styles.dropdown, { borderColor: engineTypeBorder }]}
-                                                />
-                                            </View>
-
-                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 3 }}>
-                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>ADA Wheelchair*</Text>
-                                                <DropDownComponent
-                                                    options={['Yes', 'No']}
-                                                    onValueChange={(val) => setADA(val)}
-                                                    // title="Ubaid Arshad"
-                                                    selectedValue={ADA}
-                                                    imageSource={require('../../assets/up_arrow_icon.png')}
-                                                    container={styles.dropdownContainer}
-                                                    dropdownButton={styles.dropdownButton}
-                                                    selectedValueStyle={styles.dropdownSelectedValueStyle}
-                                                    optionsContainer={styles.dropdownOptionsContainer}
-                                                    option={styles.dropdownOption}
-                                                    hoveredOption={styles.dropdownHoveredOption}
-                                                    optionText={styles.dropdownOptionText}
-                                                    hoveredOptionText={styles.dropdownHoveredOptionText}
-                                                    dropdownButtonSelect={styles.dropdownButtonSelect}
-                                                    dropdownStyle={[styles.dropdown, { borderColor: ADABorder }]}
-                                                />
-                                            </View>
-
-                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 2 }}>
-                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Air Brakes*</Text>
-                                                <DropDownComponent
-                                                    options={['Yes', 'No']}
-                                                    onValueChange={(val) => setAirBrakes(val)}
-                                                    // title="Ubaid Arshad"
-                                                    selectedValue={airBrakes}
-                                                    imageSource={require('../../assets/up_arrow_icon.png')}
-                                                    container={styles.dropdownContainer}
-                                                    dropdownButton={styles.dropdownButton}
-                                                    selectedValueStyle={styles.dropdownSelectedValueStyle}
-                                                    optionsContainer={styles.dropdownOptionsContainer}
-                                                    option={styles.dropdownOption}
-                                                    hoveredOption={styles.dropdownHoveredOption}
-                                                    optionText={styles.dropdownOptionText}
-                                                    hoveredOptionText={styles.dropdownHoveredOptionText}
-                                                    dropdownButtonSelect={styles.dropdownButtonSelect}
-                                                    dropdownStyle={[styles.dropdown, { borderColor: airBrakesBorder }]}
-                                                />
-                                            </View>
-
-                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
-                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Asset Type*</Text>
-                                                <DropDownComponent
-                                                    options={['Car', 'Bus', 'Van', 'Truck']}
-                                                    onValueChange={(val) => setAssetType(val)}
-                                                    // title="Ubaid Arshad"
-                                                    selectedValue={assetType}
-                                                    imageSource={require('../../assets/up_arrow_icon.png')}
-                                                    container={styles.dropdownContainer}
-                                                    dropdownButton={styles.dropdownButton}
-                                                    selectedValueStyle={styles.dropdownSelectedValueStyle}
-                                                    optionsContainer={styles.dropdownOptionsContainer}
-                                                    option={styles.dropdownOption}
-                                                    hoveredOption={styles.dropdownHoveredOption}
-                                                    optionText={styles.dropdownOptionText}
-                                                    hoveredOptionText={styles.dropdownHoveredOptionText}
-                                                    dropdownButtonSelect={styles.dropdownButtonSelect}
-                                                    dropdownStyle={[styles.dropdown, { borderColor: assetTypeBorder }]}
-                                                />
-                                            </View>
-
-                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Mileage*</Text>
-                                                <TextInput
-                                                    style={[styles.input, { borderColor: mileageBorder }, textInputBorderColor == 'Mileage' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                    placeholderTextColor="#868383DC"
-                                                    value={mileage}
-                                                    onChangeText={(val) => { setMileage(val) }}
-
-                                                />
-                                            </View>
-
-
-                                            <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                <Text style={{ fontSize: 16, fontWeight: '500' }}>Notes</Text>
-                                                <TextInput
-                                                    style={[styles.input, textInputBorderColor == 'Notes' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
-                                                    placeholderTextColor="#868383DC"
-                                                    value={notes}
-                                                    multiline={true}
-                                                    onChangeText={(val) => { setNotes(val) }}
-
-                                                />
-                                            </View>
-                                        </View>
                                     </View>
-                                </ScrollView>
-                            </View>
+                                </View>
+                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center' }}>
 
-                        </ScrollView>
+                                    <View style={{ flexDirection: 'column', marginLeft: 40 }}>
+                                        {fileUri
+                                            ?
+                                            <TouchableOpacity onPress={pickDocument}>
+                                                <Image style={{ height: 100, width: 100, borderRadius: 50 }} source={{ uri: fileUri }} />
+                                            </TouchableOpacity>
+                                            :
+                                            <TouchableOpacity style={{ width: 100, height: 100, borderRadius: 50, borderColor: '#cccccc', borderWidth: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }} onPress={pickDocument}>
 
-                        <View style={{ flexDirection: 'row', width: '100%', backgroundColor: '#67E9DA', paddingVertical: 20, justifyContent: 'flex-end', paddingRight: 80 }}>
-                            <View>
-                                <AppBtn
-                                    title="Close"
-                                    btnStyle={[{
-                                        width: '100%',
-                                        height: 30,
-                                        backgroundColor: '#FFFFFF',
-                                        borderRadius: 5,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        shadowOffset: { width: 2, height: 2 },
-                                        shadowOpacity: 0.9,
-                                        shadowRadius: 5,
-                                        elevation: 0,
-                                        shadowColor: '#575757',
-                                        marginHorizontal: 10
-                                    }, { minWidth: 70 }]}
-                                    btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
-                                    onPress={() => {
-                                        setCreateNewAssetModalVisible(false)
-                                        // clearAll()
-                                    }} />
-                            </View>
-                            <View style={{ marginLeft: 20 }}>
-                                <AppBtn
-                                    title="Save"
-                                    btnStyle={[{
-                                        width: '100%',
-                                        height: 30,
-                                        backgroundColor: '#FFFFFF',
-                                        borderRadius: 5,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        shadowOffset: { width: 2, height: 2 },
-                                        shadowOpacity: 0.9,
-                                        shadowRadius: 5,
-                                        elevation: 0,
-                                        shadowColor: '#575757',
-                                        marginHorizontal: 10
-                                    }, { minWidth: 70 }]}
-                                    btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
-                                    onPress={() => {
-                                        if (nameBorder == 'red' || plateNumberBorder == 'red' || makeBorder == 'red' || yearBorder == 'red' || modelBorder == 'red' || engineTypeBorder == 'red' || ADABorder == 'red' || airBrakesBorder == 'red' || assetTypeBorder == 'red' || mileageBorder == 'red') {
+                                                <Image style={{ height: 20, width: 20 }}
+                                                    source={require('../../assets/add_photo_icon.png')}
+                                                    tintColor='#67E9DA'></Image>
+                                                <Text style={{ color: '#30E0CB' }}>Add Photo</Text>
+
+                                            </TouchableOpacity>
                                         }
-                                        else {
-                                            setloading(true)
-                                            handleAddNewAsset()
-                                        }
+                                    </View>
+                                    <TextInput
+                                        style={[styles.input, { borderColor: nameBorder }, textInputBorderColor == 'Asset Name' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                        placeholderTextColor="#868383DC"
+                                        value={assetName}
+                                        placeholder='Asset Name'
+                                        onChangeText={(val) => setAssetName(val)}
+                                        onFocus={() => setNameBorder('#cccccc')}
 
-                                    }} />
+                                    />
+                                </View>
+
+
+                                <View style={[styles.contentCardStyle, { height: 'auto' }]}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <View style={{ height: 10, width: 10, borderRadius: 5, backgroundColor: '#67E9DA' }}></View>
+                                        <Text style={{ color: '#1E3D5C', fontSize: 20, fontWeight: 'bold', marginLeft: 10 }}>
+                                            Asset details
+                                        </Text>
+                                    </View>
+                                    <ScrollView horizontal style={{ paddingBottom: 10 }} >
+                                        <View style={{ flexDirection: 'row', }}>
+                                            <View style={{ flexDirection: 'column' }}>
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Asset Number*</Text>
+                                                    <TextInput
+                                                        style={[styles.input, , textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                        placeholderTextColor="#868383DC"
+                                                        value={assetNumber}
+                                                    // onChangeText={(val)=>setEmployeeNumber(val)}
+
+                                                    />
+                                                </View>
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Plate Number*</Text>
+                                                    <TextInput
+                                                        style={[styles.input, { borderColor: plateNumberBorder }, textInputBorderColor == 'Plate Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                        placeholderTextColor="#868383DC"
+                                                        value={plateNumber}
+                                                        onChangeText={(val) => { setPlateNumber(val) }}
+                                                        onFocus={() => setPlateNumberBorder('#cccccc')}
+
+                                                    />
+                                                </View>
+
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Make*</Text>
+                                                    <TextInput
+                                                        style={[styles.input, { borderColor: makeBorder }, textInputBorderColor == 'Make' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                        placeholderTextColor="#868383DC"
+                                                        value={make}
+                                                        onChangeText={(val) => { setMake(val) }}
+                                                        onFocus={() => setMakeBorder('#cccccc')}
+
+                                                    />
+                                                </View>
+
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Year*</Text>
+                                                    <View>
+                                                        <TextInput
+                                                            style={[styles.input, { borderColor: yearBorder }, textInputBorderColor == 'Year' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                            placeholderTextColor="#868383DC"
+                                                            value={year}
+                                                            onChangeText={(val) => { setYear(val) }}
+                                                            onFocus={() => setYearBorder('#cccccc')}
+
+                                                        />
+                                                    </View>
+                                                </View>
+
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Model*</Text>
+                                                    <View>
+                                                        <TextInput
+                                                            style={[styles.input, { borderColor: modelBorder }, textInputBorderColor == 'Model' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                            placeholderTextColor="#868383DC"
+                                                            value={model}
+                                                            onChangeText={(val) => { setModel(val) }}
+                                                            onFocus={() => setModelBorder('#cccccc')}
+
+                                                        />
+                                                    </View>
+                                                </View>
+
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Color</Text>
+                                                    <View>
+                                                        <TextInput
+                                                            style={[styles.input, textInputBorderColor == 'Color' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                            placeholderTextColor="#868383DC"
+                                                            value={color}
+                                                            onChangeText={(val) => { setColor(val) }}
+
+                                                        />
+                                                    </View>
+                                                </View>
+
+                                            </View>
+                                            <View style={{ flexDirection: 'column', marginLeft: 80 }}>
+
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 4 }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Engine Type*</Text>
+                                                    <DropDownComponent
+                                                        info='engineTypeSelection'
+                                                        options={['Gas', 'Diesel']}
+                                                        onValueChange={(val) => {
+                                                            if (val != 'Select') {
+                                                                setEngineTypeBorder('#cccccc')
+                                                            }
+                                                            setEngineType(val)
+                                                        }}
+                                                        // title="Ubaid Arshad"
+                                                        selectedValue={engineType}
+                                                        imageSource={require('../../assets/up_arrow_icon.png')}
+                                                        container={styles.dropdownContainer}
+                                                        dropdownButton={styles.dropdownButton}
+                                                        selectedValueStyle={styles.dropdownSelectedValueStyle}
+                                                        optionsContainer={styles.dropdownOptionsContainer}
+                                                        option={styles.dropdownOption}
+                                                        hoveredOption={styles.dropdownHoveredOption}
+                                                        optionText={styles.dropdownOptionText}
+                                                        hoveredOptionText={styles.dropdownHoveredOptionText}
+                                                        dropdownButtonSelect={styles.dropdownButtonSelect}
+                                                        dropdownStyle={[styles.dropdown, { borderColor: engineTypeBorder }]}
+                                                    />
+                                                </View>
+
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 3 }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>ADA Wheelchair*</Text>
+                                                    <DropDownComponent
+                                                        info='ADASelection'
+                                                        options={['Yes', 'No']}
+                                                        onValueChange={(val) => {
+                                                            if (val != 'Select') {
+                                                                setADABorder('#cccccc')
+                                                            }
+                                                            setADA(val)
+                                                        }}
+                                                        // title="Ubaid Arshad"
+                                                        selectedValue={ADA}
+                                                        imageSource={require('../../assets/up_arrow_icon.png')}
+                                                        container={styles.dropdownContainer}
+                                                        dropdownButton={styles.dropdownButton}
+                                                        selectedValueStyle={styles.dropdownSelectedValueStyle}
+                                                        optionsContainer={styles.dropdownOptionsContainer}
+                                                        option={styles.dropdownOption}
+                                                        hoveredOption={styles.dropdownHoveredOption}
+                                                        optionText={styles.dropdownOptionText}
+                                                        hoveredOptionText={styles.dropdownHoveredOptionText}
+                                                        dropdownButtonSelect={styles.dropdownButtonSelect}
+                                                        dropdownStyle={[styles.dropdown, { borderColor: ADABorder }]}
+                                                    />
+                                                </View>
+
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 2 }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Air Brakes*</Text>
+                                                    <DropDownComponent
+                                                        info='airBrakesSelection'
+                                                        options={['Yes', 'No']}
+                                                        onValueChange={(val) => {
+                                                            if (val != 'Select') {
+                                                                setAirBrakesBorder('#cccccc')
+                                                            }
+                                                            setAirBrakes(val)
+                                                        }}
+                                                        // title="Ubaid Arshad"
+                                                        selectedValue={airBrakes}
+                                                        imageSource={require('../../assets/up_arrow_icon.png')}
+                                                        container={styles.dropdownContainer}
+                                                        dropdownButton={styles.dropdownButton}
+                                                        selectedValueStyle={styles.dropdownSelectedValueStyle}
+                                                        optionsContainer={styles.dropdownOptionsContainer}
+                                                        option={styles.dropdownOption}
+                                                        hoveredOption={styles.dropdownHoveredOption}
+                                                        optionText={styles.dropdownOptionText}
+                                                        hoveredOptionText={styles.dropdownHoveredOptionText}
+                                                        dropdownButtonSelect={styles.dropdownButtonSelect}
+                                                        dropdownStyle={[styles.dropdown, { borderColor: airBrakesBorder }]}
+                                                    />
+                                                </View>
+
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Asset Type*</Text>
+                                                    <DropDownComponent
+                                                        info='assetTypeSelection'
+                                                        options={['Car', 'Bus', 'Van', 'Truck']}
+                                                        onValueChange={(val) => {
+                                                            if (val != 'Select') {
+                                                                setAssetTypeBorder('#cccccc')
+                                                            }
+                                                            setAssetType(val)
+                                                        }}
+                                                        // title="Ubaid Arshad"
+                                                        selectedValue={assetType}
+                                                        imageSource={require('../../assets/up_arrow_icon.png')}
+                                                        container={styles.dropdownContainer}
+                                                        dropdownButton={styles.dropdownButton}
+                                                        selectedValueStyle={styles.dropdownSelectedValueStyle}
+                                                        optionsContainer={styles.dropdownOptionsContainer}
+                                                        option={styles.dropdownOption}
+                                                        hoveredOption={styles.dropdownHoveredOption}
+                                                        optionText={styles.dropdownOptionText}
+                                                        hoveredOptionText={styles.dropdownHoveredOptionText}
+                                                        dropdownButtonSelect={styles.dropdownButtonSelect}
+                                                        dropdownStyle={[styles.dropdown, { borderColor: assetTypeBorder }]}
+                                                    />
+                                                </View>
+
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Mileage*</Text>
+                                                    <TextInput
+                                                        style={[styles.input, { borderColor: mileageBorder }, textInputBorderColor == 'Mileage' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                        placeholderTextColor="#868383DC"
+                                                        value={mileage}
+                                                        onChangeText={(val) => { setMileage(val) }}
+                                                        onFocus={() => setMileageBorder('#Cccccc')}
+
+                                                    />
+                                                </View>
+
+
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Notes</Text>
+                                                    <TextInput
+                                                        style={[styles.input, textInputBorderColor == 'Notes' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                        placeholderTextColor="#868383DC"
+                                                        value={notes}
+                                                        multiline={true}
+                                                        onChangeText={(val) => { setNotes(val) }}
+
+                                                    />
+                                                </View>
+                                            </View>
+                                        </View>
+                                    </ScrollView>
+                                </View>
+
+                            </ScrollView>
+
+                            <View style={{ flexDirection: 'row', width: '100%', backgroundColor: '#67E9DA', paddingVertical: 20, justifyContent: 'flex-end', paddingRight: 80 }}>
+                                <View>
+                                    <AppBtn
+                                        title="Close"
+                                        btnStyle={[{
+                                            width: '100%',
+                                            height: 30,
+                                            backgroundColor: '#FFFFFF',
+                                            borderRadius: 5,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            shadowOffset: { width: 2, height: 2 },
+                                            shadowOpacity: 0.9,
+                                            shadowRadius: 5,
+                                            elevation: 0,
+                                            shadowColor: '#575757',
+                                            marginHorizontal: 10
+                                        }, { minWidth: 70 }]}
+                                        btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                                        onPress={() => {
+                                            setCreateNewAssetModalVisible(false)
+                                            // clearAll()
+                                        }} />
+                                </View>
+                                <View style={{ marginLeft: 20 }}>
+                                    <AppBtn
+                                        title="Save"
+                                        btnStyle={[{
+                                            width: '100%',
+                                            height: 30,
+                                            backgroundColor: '#FFFFFF',
+                                            borderRadius: 5,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            shadowOffset: { width: 2, height: 2 },
+                                            shadowOpacity: 0.9,
+                                            shadowRadius: 5,
+                                            elevation: 0,
+                                            shadowColor: '#575757',
+                                            marginHorizontal: 10
+                                        }, { minWidth: 70 }]}
+                                        btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
+                                        onPress={() => {
+                                            if (assetName == '') {
+                                                setNameBorder('red')
+                                            }
+                                            if (plateNumber == '') {
+                                                setPlateNumberBorder('red')
+                                            }
+                                            if (make == '') {
+                                                setMakeBorder('red')
+                                            }
+                                            if (year == '') {
+                                                setYearBorder('red')
+                                            }
+                                            if (model == '') {
+                                                setModelBorder('red')
+                                            }
+                                            if (engineType == 'Select') {
+                                                setEngineTypeBorder('red')
+                                            }
+                                            if (ADA == 'Select') {
+                                                setADABorder('red')
+                                            }
+                                            if (airBrakes == 'Select') {
+                                                setAirBrakesBorder('red')
+                                            }
+                                            if (assetType == 'Select') {
+                                                setAssetTypeBorder('red')
+                                            }
+                                            if (mileage == '') {
+                                                setMileageBorder('red')
+                                            }
+
+                                            if (assetName == '' || plateNumber == '' || make == '' || year == '' || model == '' || engineType == 'Select' || ADA == 'Select' || airBrakes == 'Select' || assetType == 'Select' || mileage == '') {
+                                            }
+                                            else {
+                                                setloading(true)
+                                                addNewAsset()
+                                            }
+
+                                        }} />
+                                </View>
                             </View>
                         </View>
 
-                    </View>
+                    </TouchableWithoutFeedback>
                     :
-                    <View style={{ flex: 1, backgroundColor: '#f6f8f9' }}>
+                    <TouchableWithoutFeedback style={{ flex: 1, backgroundColor: '#f6f8f9' }}
+                        onPress={() => {
+                            CloseAllDropDowns()
+                        }}>
                         <ScrollView style={{ height: 100 }}>
                             <View style={{ flexDirection: 'row', margin: 40, justifyContent: 'space-between', alignItems: 'center' }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -1470,6 +1695,7 @@ const AssetsPage = (props) => {
                                             options={searchAssetOptionList}
                                             onValueChange={handleSearchAssetValueChange}
                                             // title="Ubaid Arshad"
+                                            info='searchSelection'
                                             selectedValue={searchAssetSelectedOption}
                                             imageSource={require('../../assets/up_arrow_icon.png')}
                                             container={styles.dropdownContainer}
@@ -1531,7 +1757,7 @@ const AssetsPage = (props) => {
                                     : null}
                             </View>
                         </ScrollView>
-                    </View>
+                    </TouchableWithoutFeedback>
             }
             {alertStatus == 'successful'
                 ?
@@ -1687,6 +1913,22 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
     },
+    hoverContent: {
+        backgroundColor: '#e0e0e0',
+        padding: 10,
+        borderRadius: 5,
+        marginBottom: 10,
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        padding: 10,
+        borderRadius: 5,
+        position: 'absolute',
+        top: -40,  // Adjust this value to position the tooltip above the content
+      },
+      tooltipText: {
+        color: '#fff',
+      },
     input: {
         width: 250,
         height: 40,

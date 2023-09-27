@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated, Dimensions, ImageBackground, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList, Animated, Dimensions, ImageBackground, Modal, ActivityIndicator, TouchableWithoutFeedback } from 'react-native';
 import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -12,6 +12,8 @@ import moment from 'moment'
 import { collection, deleteDoc, doc, getDocs, getFirestore, query, where } from 'firebase/firestore';
 import app from '../config/firebase';
 import AlertModal from '../../components/AlertModal';
+import { HeaderOptionContext } from '../store/context/HeaderOptionContext';
+import { CloseAllDropDowns } from '../../components/CloseAllDropdown';
 
 
 
@@ -299,6 +301,7 @@ const GeneralInspectionPage = (props) => {
     const { width, height } = Dimensions.get('window')
 
     const { state: dataState, setData } = useContext(DataContext)
+    const {state: headerOptionState, setHeaderOption} = useContext(HeaderOptionContext)
 
     const [myData, setMyData] = useState(dataState.value.data ? dataState.value.data : [])
     const [downloadHeader, setDownloadHeader] = useState([])
@@ -525,7 +528,11 @@ const GeneralInspectionPage = (props) => {
 
     return (
 
-        <Animated.View style={{ flex: 1, backgroundColor: '#f6f8f9' }}>
+        <>
+        <TouchableWithoutFeedback style={{ flex: 1, backgroundColor: '#f6f8f9' }}
+        onPress={()=>{
+            CloseAllDropDowns()
+        }}>
             <ScrollView style={{ height: 100 }}>
 
                 <View style={{ flexDirection: 'row', marginLeft: 40, marginTop: 40, marginRight: 40, justifyContent: 'space-between' }}>
@@ -638,9 +645,10 @@ const GeneralInspectionPage = (props) => {
                         null}
 
 
-            </ScrollView>
+            </ScrollView> 
+        </TouchableWithoutFeedback>
 
-            <Modal
+        <Modal
                 animationType="fade"
                 visible={deleteModal}
                 transparent={true}>
@@ -721,7 +729,8 @@ const GeneralInspectionPage = (props) => {
                     <ActivityIndicator color="#23d3d3" size="large" />
                 </View>
                 : null}
-        </Animated.View>
+
+        </>
 
     );
 }

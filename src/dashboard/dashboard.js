@@ -30,6 +30,10 @@ import { WOContext } from '../store/context/WOContext';
 import InHouseWorkOrderDetail from './inHouseWorkOrderDetail';
 import { AssetDetailContext } from '../store/context/AssetDetailContext';
 import { DriverDetailContext } from '../store/context/DriverDetailContext';
+import { PriorityOptionContext } from '../store/context/PriorityOptionContext';
+import { SeverityOptionContext } from '../store/context/SeverityOptionContext';
+import { HeaderOptionContext } from '../store/context/HeaderOptionContext';
+import { CloseAllDropDowns } from '../../components/CloseAllDropdown';
 
 
 const DashboardPage = (props) => {
@@ -91,6 +95,10 @@ const DashboardPage = (props) => {
   const { state: woState, setWO } = useContext(WOContext)
   const {state : assetDetailState, setAssetDetail} = useContext(AssetDetailContext)
   const {state : driverDetailState, setDriverDetail} = useContext(DriverDetailContext)
+  const {state : priorityOptionState, setPriorityOption} = useContext(PriorityOptionContext)
+  const {state : severityOptionState, setSeverityOption} = useContext(SeverityOptionContext)
+  const {state : headerOptionState, setHeaderOption} = useContext(HeaderOptionContext)
+
 
 
   const backgroundColor = colorAnimation.interpolate({
@@ -178,6 +186,23 @@ const DashboardPage = (props) => {
       setMaintenanceHovered(false)
     }
   }, [selectedPage])
+
+  // useEffect(()=>{
+
+  //   if(priorityOptionState.value.data == true){
+  //     setHeaderOption(false)
+  //     setSeverityOption(false)
+  //   }
+  //   else if (severityOptionState.value.data == true){
+  //     setHeaderOption(false)
+  //     setPriorityOption(false)
+  //   }
+  //   else if (headerOptionState.value.data == true){
+  //     setPriorityOption(false)
+  //     setSeverityOption(false)
+  //   }
+
+  // },[headerOptionState.value.data, priorityOptionState.value.data, severityOptionState.value.data])
 
 
   const handleDriverValueChange = (value) => {
@@ -403,7 +428,8 @@ const DashboardPage = (props) => {
       else if (inspectionSelectedPage == '45 days Inspection') {
         return (
           <DueDaysInspectionPage
-          onDashboardInHouseValueChange={handleInHouseInspectionValue} />
+          onDashboardInHouseValueChange={handleInHouseInspectionValue}
+          onDashboardDueDaysInspection={handleReturn} />
         )
       }
     }
@@ -412,7 +438,8 @@ const DashboardPage = (props) => {
         return (
           <DefectsPage
             onDashboardValueChange={handleDefectValue}
-            onDashboardWOValue={handleWOValue} />
+            onDashboardWOValue={handleWOValue}
+             />
         )
       }
       else if (maintenanceSelectedPage == 'Work Order') {
@@ -497,6 +524,10 @@ const DashboardPage = (props) => {
     setOtherSelection('nill')
   }
 
+  const handleReturn = () => {
+    setOtherSelection('nill')
+  }
+
   return (
     <>
       <Head>
@@ -504,6 +535,10 @@ const DashboardPage = (props) => {
         <meta name="description" content="Driver vehicle inspection report application dashboard" />
       </Head>
       <View style={[styles.container]}>
+        <TouchableWithoutFeedback style={[styles.leftSide,{ width: animateLeftSide}]} 
+         onPress={()=>{
+          CloseAllDropDowns()
+        }}>
         <Animated.View style={[styles.leftSide, { width: animateLeftSide },]}
           onMouseEnter={() => {
             if (collapseBtnClick == true) {
@@ -536,7 +571,9 @@ const DashboardPage = (props) => {
             if (selectedPage == 'Users' && collapseBtnClick == true) {
               setUsersOptionExpand(false)
             }
-          }}>
+          }}
+          >
+            
           <>
             <Text style={styles.title}>{openLeftSide ? 'D V I R' : 'D'}</Text>
             <View style={selectedPage == 'Dashboard' ? [styles.navItem, styles.hoverNavItem] : [styles.navItem, dashboardHovered && styles.hoverNavItem]}
@@ -551,6 +588,7 @@ const DashboardPage = (props) => {
                 <TouchableOpacity
                   style={{ paddingLeft: 20 }}
                   onPress={() => {
+                    CloseAllDropDowns()
                     fadeAnim.setValue(0);
                     setSelectedPage('Dashboard')
                     closeAllExpands('Dashboard')
@@ -568,7 +606,7 @@ const DashboardPage = (props) => {
               {openLeftSide ? <TouchableOpacity
                 style={{ paddingLeft: 20, flexDirection: 'row' }}
                 onPress={() => {
-
+                  CloseAllDropDowns()
                   setInspectionOptionExpand(!inspectionOptionExpand)
                   // setMaintenanceOptionExpand(false)
                   closeAllExpands('Inspection')
@@ -588,6 +626,7 @@ const DashboardPage = (props) => {
                     style={{ paddingLeft: 20 }}
                     onPress={() => {
                       // fadeAnim.setValue(0);
+                      CloseAllDropDowns()
                       setInspectionSelectedPage('General Inspection')
                       setSelectedPage("Inspection")
                       // setProfileSelected(false)
@@ -605,6 +644,7 @@ const DashboardPage = (props) => {
                     style={{ paddingLeft: 20 }}
                     onPress={() => {
                       // fadeAnim.setValue(0);
+                      CloseAllDropDowns()
                       setInspectionSelectedPage('45 days Inspection')
                       setSelectedPage("Inspection")
                       // setProfileSelected(false)
@@ -627,6 +667,7 @@ const DashboardPage = (props) => {
                 style={{ paddingLeft: 20, flexDirection: 'row' }}
                 onPress={() => {
                   // fadeAnim.setValue(0);
+                  CloseAllDropDowns()
                   setMaintenanceOptionExpand(!maintenanceOptionExpand)
                   // setInspectionOptionExpand(false)
                   closeAllExpands('Maintenance')
@@ -646,6 +687,7 @@ const DashboardPage = (props) => {
                     style={{ paddingLeft: 20 }}
                     onPress={() => {
                       // fadeAnim.setValue(0);
+                      CloseAllDropDowns()
                       setMaintenanceSelectedPage('Defects')
                       setSelectedPage("Maintenance")
                       // setProfileSelected(false)
@@ -663,6 +705,7 @@ const DashboardPage = (props) => {
                     style={{ paddingLeft: 20 }}
                     onPress={() => {
                       // fadeAnim.setValue(0);
+                      CloseAllDropDowns()
                       setMaintenanceSelectedPage('Work Order')
                       setSelectedPage("Maintenance")
                       // setProfileSelected(false)
@@ -684,6 +727,7 @@ const DashboardPage = (props) => {
                 style={{ paddingLeft: 20 }}
                 onPress={() => {
                   // fadeAnim.setValue(0);
+                  CloseAllDropDowns()
                   setSelectedPage('Assets')
                   // setInspectionOptionExpand(false)
                   // setInspectionSelectedPage("")
@@ -703,6 +747,7 @@ const DashboardPage = (props) => {
                   style={{ paddingLeft: 20, flexDirection: 'row' }}
                   onPress={() => {
                     // fadeAnim.setValue(0);
+                    CloseAllDropDowns()
                     setUsersOptionExpand(!usersOptionExpand)
                     // setInspectionOptionExpand(false)
                     // setMaintenanceOptionExpand(false)
@@ -723,6 +768,7 @@ const DashboardPage = (props) => {
                     style={{ paddingLeft: 20 }}
                     onPress={() => {
                       // fadeAnim.setValue(0);
+                      CloseAllDropDowns()
                       setUsersSelectedPage('Driver')
                       setSelectedPage("Users")
                       // setProfileSelected(false)
@@ -759,6 +805,7 @@ const DashboardPage = (props) => {
                     style={{ paddingLeft: 20 }}
                     onPress={() => {
                       // fadeAnim.setValue(0);
+                      CloseAllDropDowns()
                       setUsersSelectedPage('Manager')
                       setSelectedPage("Users")
                       // setProfileSelected(false)
@@ -773,6 +820,7 @@ const DashboardPage = (props) => {
               :
               null}
             <TouchableOpacity style={{ position: 'absolute', bottom: 30, left: 15, flexDirection: 'row' }} onPress={() => {
+              CloseAllDropDowns()
               if (collapseAndHoverLeftSide == true) {
                 setCollapseBtnClick(false)
                 setCollapseAndHoverLeftSide(false)
@@ -807,6 +855,7 @@ const DashboardPage = (props) => {
             </TouchableOpacity>
           </>
         </Animated.View>
+        </TouchableWithoutFeedback>
         <View style={{ flexDirection: 'column', flex: 1, }}>
           <View style={{ zIndex: 1 }}>
             <Header
@@ -822,7 +871,8 @@ const DashboardPage = (props) => {
                 ?
                 <FormDetail
                   formValue={inspectionFormValue}
-                  returnFormDetail={handleReturnFormDetail} />
+                  returnFormDetail={handleReturnFormDetail}
+                  onDashboardGeneralInspection={handleReturn} />
                 :
                 null
               :
@@ -832,6 +882,7 @@ const DashboardPage = (props) => {
                   ?
                   <DefectDetail
                     value={defectFormValue}
+                    onDashboardDefect={handleReturn}
                     onDashboardOpenWO={(item)=>{
                       const temp = [...woState.value.data.filter((value) => value.id == item.workOrder)]
                       if (temp.length != 0) {
@@ -847,7 +898,8 @@ const DashboardPage = (props) => {
                     ?
                     <WorkOrderDetail
                       value={workOrderFormValue}
-                      returnWorkOrderDetail={handleReturnWorkOrderDetail} />
+                      returnWorkOrderDetail={handleReturnWorkOrderDetail}
+                      onDashboardWorkOrder={handleReturn} />
                     :
                     null
                     :
@@ -858,6 +910,7 @@ const DashboardPage = (props) => {
                         <InHouseWorkOrderDetail
                           value={inHouseInspectionFormValue}
                           returnWorkOrderDetail={handleReturnWorkOrderDetail}
+                          onDashboardDueDaysInspection={handleReturn}
                         />
                         : null
                       :
