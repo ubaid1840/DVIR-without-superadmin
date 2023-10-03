@@ -224,10 +224,10 @@ const DueDaysInspectionPage = (props) => {
             // console.log(updatedArray);
             setAssets(updatedArray)
             setAssetData(updatedArray)
-            setLoading(false)
+           
         }
 
-
+        setLoading(false)
 
         // new Date(selectedDefect.dateCreated.seconds * 1000).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' })
     }

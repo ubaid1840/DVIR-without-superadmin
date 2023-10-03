@@ -1150,7 +1150,7 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                         column == 'status'
                                         ?
                                         <View style={{flexDirection:'row', alignItems:'center'}}>
-                                            <Image style={{height:20, width:20}} source={item.status == 'Completed' ? require('../assets/completed_icon.png') : require('../assets/pending_icon.png')} tintColor={item.status == 'Completed' ? 'green' : 'red'} resizeMode='contain'/>
+                                            <Image style={{height:20, width:20}} source={item.status == 'Completed' ? require('../assets/completed_icon.png') : item.status == 'In Progress' ? require('../assets/inprogress_icon.png') : require('../assets/pending_icon.png')} tintColor={item.status == 'Completed' ? 'green' : item.status == 'In Progress' ? '#539097' : 'red'} resizeMode='contain'/>
                                         <Text style={[entryText,]}>{item.status}</Text>
                                         </View>
                                         :

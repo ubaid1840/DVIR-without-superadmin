@@ -260,8 +260,7 @@ const DefectsPage = (props) => {
 
                         </View>
                         <View style={styles.contentCardStyle}>
-                            {defectedArray.length != 0
-                                ?
+                       
                                 <Form
                                     columns={columns}
                                     entriesData={searchDefectSelectedOption == 'Asset' ? defectedArray.filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
@@ -277,8 +276,7 @@ const DefectsPage = (props) => {
                                     columnHeaderCell={styles.formColumnHeaderCellStyle}
                                     columnHeaderText={styles.formColumnHeaderTextStyle}
                                 />
-                                :
-                                null}
+                             
 
                         </View>
                     </ScrollView>

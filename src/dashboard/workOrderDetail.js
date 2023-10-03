@@ -46,6 +46,7 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
     const { state: assetState } = useContext(AssetContext)
     const { state: authState, setAuth } = useContext(AuthContext)
     const { state: peopleState } = useContext(PeopleContext)
+    const [statusLoading, setStatusLoading] = useState(false)
 
     let debounceTimeout;
 
@@ -484,14 +485,14 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
     }
 
     const updateWOStatus = async () => {
-       await updateDoc(doc(db, 'WorkOrders', selectedWorkOrder.id.toString()), {
+        await updateDoc(doc(db, 'WorkOrders', selectedWorkOrder.id.toString()), {
             'status': 'Completed',
             'mileage': completionMileage
         })
 
-        if(selectedWorkOrder.defectID == '') {
+        if (selectedWorkOrder.defectID == '') {
         }
-        else{
+        else {
             await updateDoc(doc(db, 'Defects', selectedWorkOrder.defectID.toString()), {
                 'status': 'Corrected',
             })
@@ -502,9 +503,9 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
         updateDoc(doc(db, 'WorkOrders', selectedWorkOrder.id.toString()), {
             'status': 'Pending',
         })
-        if(selectedWorkOrder.defectID == '') {
+        if (selectedWorkOrder.defectID == '') {
         }
-        else{
+        else {
             await updateDoc(doc(db, 'Defects', selectedWorkOrder.defectID.toString()), {
                 'status': 'In Progress',
             })
@@ -534,378 +535,429 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
 
     }
 
+    const updateStatus = async (value) => {
+        try {
+            await updateDoc(doc(db, "WorkOrders", selectedWorkOrder.id.toString()), {
+                status: value
+            })
+            setStatusLoading(false)
+        } catch (error) {
+            console.log(error)
+            setStatusLoading(false)
+        }
+
+    }
+
 
     if (selectedWorkOrder.length != 0) {
         return (
             <>
                 <View style={{ flex: 1, backgroundColor: '#f6f8f9' }}>
-                    <TouchableWithoutFeedback onPress={()=>{
+                    <TouchableWithoutFeedback onPress={() => {
                         CloseAllDropDowns()
                     }}>
-                    <ScrollView style={{ height: 100 }}
-                        contentContainerStyle={{ paddingHorizontal: 30 }}>
-                                 <View style={{ marginTop: 30, paddingBottom: 10 }}>
-                            <AppBtn
-                                title="Back"
-                                btnStyle={[{
-                                    width: 100,
-                                    height: 40,
-                                    backgroundColor: '#FFFFFF',
-                                    borderRadius: 5,
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    shadowOffset: { width: 1, height: 1 },
-                                    shadowOpacity: 0.5,
-                                    shadowRadius: 3,
-                                    elevation: 0,
-                                    shadowColor: '#575757',
-                                    marginRight: 50
-                                }, { minWidth: 70 }]}
-                                btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
-                                onPress={() => {
-                                    onDashboardWorkOrder()
-                                    // clearAll()
-                                }} />
-                        </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, marginBottom: 20 }}>
-                            <Text style={{ fontFamily: 'inter-semibold', fontSize: 30 }}>WO-{selectedWorkOrder.id}</Text>
-                            <View>
+                        <ScrollView style={{ height: 100 }}
+                            contentContainerStyle={{ paddingHorizontal: 30 }}>
+                            <View style={{ marginTop: 30, paddingBottom: 10 }}>
                                 <AppBtn
-                                    title="Delete"
-                                    btnStyle={[styles.btn, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#ADADAD' }]}
-                                    btnTextStyle={[styles.btnText, { fontFamily: 'inter-regular', color: '#000000', fontSize: 13 }]}
+                                    title="Back"
+                                    btnStyle={[{
+                                        width: 100,
+                                        height: 40,
+                                        backgroundColor: '#FFFFFF',
+                                        borderRadius: 5,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        shadowOffset: { width: 1, height: 1 },
+                                        shadowOpacity: 0.5,
+                                        shadowRadius: 3,
+                                        elevation: 0,
+                                        shadowColor: '#575757',
+                                        marginRight: 50
+                                    }, { minWidth: 70 }]}
+                                    btnTextStyle={{ fontSize: 13, fontWeight: '400', color: '#000000' }}
                                     onPress={() => {
-                                        // setStatusLoading(true)
-                                        // updateStatus('In Progress')
-                                        setDeleteModal(true)
+                                        onDashboardWorkOrder()
+                                        // clearAll()
                                     }} />
                             </View>
-                        </View>
-
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                            <View style={[styles.newContentCardStyle,]}>
-                                <View style={{ borderBottomWidth: 1, borderBottomColor: '#C6C6C6', paddingHorizontal: 25, paddingVertical: 20, marginBottom: 10 }}>
-                                    <Text style={{ color: '#353535', fontFamily: 'inter-medium', fontSize: 20 }}>Work Order</Text>
-                                </View>
-                                <View style={styles.subViewStyle}>
-                                    <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Work Order ID:</Text>
-                                    <Text style={{}}>{selectedWorkOrder.id}</Text>
-                                </View>
-                                <View style={styles.subViewStyle}>
-                                    <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Type:</Text>
-                                    <Text style={{}}>General</Text>
-                                </View>
-                                <View style={styles.subViewStyle}>
-                                    <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Status:</Text>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        <Text style={{}}>{selectedWorkOrder.status}</Text>
-                                        {selectedWorkOrder.status == 'Completed'
-                                            ?
-                                            <Image style={{ height: 20, width: 20, marginLeft: 10 }} tintColor='green' source={require('../../assets/completed_icon.png')}></Image>
-                                            : null}
-                                    </View>
-
-                                </View>
-                                <View style={styles.subViewStyle}>
-                                    <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Due Date:</Text>
-                                    <Text style={{}}>{new Date(selectedWorkOrder.dueDate).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' })}</Text>
-                                </View>
-                                <View style={styles.subViewStyle}>
-                                    <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Assignee:</Text>
-                                    <Text style={{}}>{peopleState.value.data.find(mechanic => mechanic["Employee Number"].toString() === selectedWorkOrder.assignedMechanic)?.Name || 'n/a'}</Text>
-                                </View>
-                                <View style={styles.subViewStyle}>
-                                    <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Items:</Text>
-                                    <Text style={{}}>{totalItems}</Text>
-                                </View>
-                            </View>
-
-                            <View style={[styles.newContentCardStyle]}>
-                                <View style={{ borderBottomWidth: 1, borderBottomColor: '#C6C6C6', paddingHorizontal: 25, paddingVertical: 20, marginBottom: 10 }}>
-                                    <Text style={{ color: '#353535', fontFamily: 'inter-medium', fontSize: 20 }}>Asset</Text>
-                                </View>
-
-                                <View style={styles.subViewStyle}>
-                                    <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Asset Name:</Text>
-                                    <Text style={{}}>{assetState.value.data.find(asset => asset["Asset Number"].toString() === selectedWorkOrder.assetNumber)?.['Asset Name'] || 'n/a'}</Text>
-                                </View>
-                                <View style={styles.subViewStyle}>
-                                    <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Make, Model, Year:</Text>
-                                    <Text style={{}}>{`${assetState.value.data.find(asset => asset["Asset Number"].toString() === selectedWorkOrder.assetNumber)?.Make || 'n/a'}, ${assetState.value.data.find(asset => asset["Asset Number"].toString() === selectedWorkOrder.assetNumber)?.Model || 'n/a'}, ${assetState.value.data.find(asset => asset["Asset Number"].toString() === selectedWorkOrder.assetNumber)?.Year || 'n/a'}`}</Text>
-                                </View>
-                                <View style={styles.subViewStyle}>
-                                    <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>License Plate:</Text>
-                                    <Text style={{}}>{plateNumber}</Text>
-                                </View>
-                                <View style={styles.subViewStyle}>
-                                    <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Mileage:</Text>
-                                    <Text style={{}}>{selectedWorkOrder.mileage}</Text>
-                                </View>
-
-                            </View>
-
-                        </View>
-
-
-                        <View style={[styles.newContentCardStyle, { width: '100%' }]}>
-
-                            <View style={{ borderBottomWidth: 1, borderBottomColor: '#C6C6C6', paddingHorizontal: 25, paddingVertical: 20, flexDirection: 'row', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Text style={{ color: '#353535', fontFamily: 'inter-medium', fontSize: 20 }}>Items</Text>
-                                <View style={{}}>
-                                    <AppBtn
-                                        title="Items"
-                                        imgSource={require('../../assets/add_plus_btn_icon.png')}
-                                        btnStyle={styles.addBtn}
-                                        btnTextStyle={styles.addBtnText}
-                                        onPress={() => { setOpenAddItems(true) }} />
-                                </View>
-                            </View>
-
-                            <View style={{ width: '100%', borderColor: '#6B6B6B', paddingHorizontal: 25 }}>
-                                <ScrollView horizontal
-                                >
-                                    <View style={{ flexDirection: 'column' }}>
-                                        <View style={{ flexDirection: 'row', marginVertical: 15, }}>
-                                            <View style={{ width: 70 }}>
-                                                <Text style={{ fontFamily: 'inter-medium', fontSize: 14, }}>ID</Text>
-                                            </View>
-                                            <View style={{ width: 150, marginLeft: 5 }}>
-                                                <Text style={{ fontFamily: 'inter-medium', fontSize: 14, width: 200 }}>Priority</Text>
-                                            </View >
-                                            <View style={{ width: 200, marginLeft: 5 }}>
-                                                <Text style={{ fontFamily: 'inter-medium', fontSize: 14, }}>Title</Text>
-                                            </View>
-                                            <View style={{ width: 300, marginLeft: 5 }}>
-                                                <Text style={{ fontFamily: 'inter-medium', fontSize: 14, }}>Description</Text>
-                                            </View>
-                                            <View style={{ width: 100, marginLeft: 5 }}>
-                                                <Text style={{ fontFamily: 'inter-medium', fontSize: 14, }}>Labor</Text>
-                                            </View>
-                                            <View style={{ width: 100, marginLeft: 5 }}>
-                                                <Text style={{ fontFamily: 'inter-medium', fontSize: 14, }}>Qty</Text>
-                                            </View>
-                                            <View style={{ width: 100, marginLeft: 5 }}>
-                                                <Text style={{ fontFamily: 'inter-medium', fontSize: 14, }}>Parts</Text>
-                                            </View>
-                                            <View style={{ width: 100, marginLeft: 5 }}>
-                                                <Text style={{ fontFamily: 'inter-medium', fontSize: 14 }}>Total</Text>
-                                            </View>
-
-                                        </View>
-                                        {workOrderVariable.map((item, index) => {
-                                            return (
-                                                <WorkOrderVariableTable
-                                                    key={index.toString()}
-                                                    item={item}
-                                                    index={index}
-                                                    onUpdateTotal={(idx, total, labor, qty, parts) => handleUpdateTotal(idx, total, labor, qty, parts)}
-                                                    onUpdateDescription={(idx, description) => handleUpdateDescription(idx, description)}
-                                                    onUpdateTotalItems={(idx, item) => handleUpdateItems(idx, item)} />
-                                            )
-                                        })}
-                                    </View>
-                                </ScrollView>
-
-                            </View>
-                        </View>
-
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
-                            <View style={[styles.newContentCardStyle, { width: '48%' }]}>
-                                <View style={{ borderBottomWidth: 1, borderBottomColor: '#C6C6C6', paddingHorizontal: 25, paddingVertical: 20, width: '100%', }}>
-                                    <Text style={{ color: '#353535', fontFamily: 'inter-medium', fontSize: 20 }}>Activity</Text>
-                                </View>
-                                <View style={{ margin: 25, borderBottomWidth: 1, paddingBottom: 10, borderBottomColor: '#23d3d3' }}>
-                                    <Text style={{ fontFamily: 'inter-medium', fontSize: 15, color: '#23d3d3' }}>Comments</Text>
-                                </View>
-                                {selectedWorkOrder.comments.length == 0
-                                    ?
-                                    <View style={{ borderWidth: 1, padding: 35, margin: 25, borderColor: '#C6C6C6' }}>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 14 }}>There are no comments</Text>
-                                    </View>
-                                    :
-                                    <FlatList
-                                        style={{ maxHeight: 300 }}
-                                        data={selectedWorkOrder.comments}
-                                        ref={flatlistRef}
-                                        onContentSizeChange={() => {
-                                            if (selectedWorkOrder.comments.length != 0) {
-                                                flatlistRef.current.scrollToEnd({ animated: true })
-                                            }
-                                        }}
-                                        onLayout={() => {
-                                            if (selectedWorkOrder.comments.length != 0) {
-                                                flatlistRef.current.scrollToEnd()
-                                            }
-                                        }}
-                                        renderItem={({ item, index }) => {
-                                            if (item.sendBy == authState.value.name) {
-                                                return (
-                                                    <View key={index} style={{ width: '70%', marginVertical: 10, paddingHorizontal: 20, alignItems: 'flex-start', alignSelf: 'flex-start' }}>
-                                                        <Text style={{ fontFamily: 'inter-semibold', fontSize: 13 }}>{item.sendBy}</Text>
-                                                        <Text style={{ fontFamily: 'inter-regular', fontSize: 12, marginVertical: 5, color: '#AAAAAA' }}>{new Date(item.timeStamp).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }) + " " + new Date(item.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</Text>
-                                                        <Text style={{ fontFamily: 'inter-regular', fontSize: 13 }}>{item.msg}</Text>
-                                                    </View>
-                                                )
-                                            }
-                                            else {
-                                                return (
-                                                    <View key={index} style={{ width: '70%', marginVertical: 10, paddingHorizontal: 20, alignItems: 'flex-end', alignSelf: 'flex-end' }}>
-                                                        <Text style={{ fontFamily: 'inter-semibold', fontSize: 13 }}>{item.sendBy}</Text>
-                                                        <Text style={{ fontFamily: 'inter-regular', fontSize: 12, marginVertical: 5, color: '#AAAAAA' }}>{new Date(item.timeStamp).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }) + " " + new Date(item.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</Text>
-                                                        <Text style={{ fontFamily: 'inter-regular', fontSize: 13 }}>{item.msg}</Text>
-                                                    </View>
-                                                )
-                                            }
-                                        }} />
-                                }
-
-                                <View style={{ flexDirection: 'row', marginHorizontal: 25, alignItems: 'center' }}>
-                                    <Image style={{ height: 30, width: 30 }} source={require('../../assets/profile_icon.png')} tintColor="#8C8C8C" resizeMode='contain'></Image>
-                                    <TextInput
-                                        style={[styles.input, { marginLeft: 5, width: '100%' }, searchTextInputBorderColor && styles.withBorderInputContainer]}
-                                        placeholder=""
-                                        placeholderTextColor="#868383DC"
-                                        value={comment}
-                                        onChangeText={(val) => { setComment(val) }}
-                                        onFocus={() => { setSearchTextInputBorderColor(true) }}
-                                        onBlur={() => { setSearchTextInputBorderColor(false) }}
-                                    />
-                                </View>
-                                <View style={{ width: 130, marginTop: 20, marginBottom: 25, marginLeft: 25 }}>
-                                    <AppBtn
-                                        title="Add Comment"
-                                        btnStyle={[styles.btn, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#8C8C8C', height: 40 }]}
-                                        btnTextStyle={[styles.btnText, { color: '#000000', fontFamily: 'inter-regular', fontSize: 13 }]}
-                                        onPress={() => {
-                                            if (comment == null || comment == '') { }
-                                            else {
-                                                setComment("")
-                                                updateComment()
-                                            }
-
-                                        }} />
-                                </View>
-                            </View>
-
-                            <View style={{ flexDirection: 'column', width: '48%' }}>
-                                <View style={[styles.newContentCardStyle, { width: '100%' }]}>
-                                    <View style={{ borderBottomWidth: 1, borderBottomColor: '#C6C6C6', paddingHorizontal: 25, paddingVertical: 20, width: '100%', }}>
-                                        <Text style={{ color: '#353535', fontFamily: 'inter-medium', fontSize: 20 }}>Cost Summary</Text>
-                                    </View>
-                                    <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginTop: 20 }}>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Parts sub total:</Text>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>${partsSubTotal}</Text>
-                                    </View>
-
-                                    <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginVertical: 10, alignItems: 'center' }}>
-                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Parts Tax: %</Text>
-                                            <TextInput style={[styles.input, { width: 100, }]}
-                                                value={partsTax}
-                                                onChangeText={(val) => handlePartsTax(val.replace(/[^0-9]/g, ''))}
-                                                // onSubmitEditing={() => { handlePartsTax() }}
-                                                placeholder="0"
-                                                placeholderTextColor="#868383DC"
-                                            />
-                                        </View>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>${(parseFloat(partsSubTotal) || 0) * (parseFloat(selectedWorkOrder.partsTax) || 0) / 100}</Text>
-                                    </View>
-
-                                    <View style={{ width: '90%', borderBottomWidth: 1, borderBottomColor: '#C6C6C6', marginTop: 10, alignSelf: 'center' }}></View>
-
-                                    <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginTop: 20 }}>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Labor sub total:</Text>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>${laborSubTotal}</Text>
-                                    </View>
-
-                                    <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginVertical: 10, alignItems: 'center' }}>
-                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Labor Tax: %</Text>
-                                            <TextInput style={[styles.input, { width: 100, }]}
-                                                value={laborTax}
-                                                onChangeText={(val) => handleLaborTax(val.replace(/[^0-9]/g, ''))}
-                                                placeholder="0"
-                                                placeholderTextColor="#868383DC"
-                                            />
-                                        </View>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>${(parseFloat(laborSubTotal) || 0) * (parseFloat(selectedWorkOrder.laborTax) || 0) / 100}</Text>
-                                    </View>
-
-                                    <View style={{ width: '90%', borderBottomWidth: 1, borderBottomColor: '#C6C6C6', marginTop: 10, alignSelf: 'center' }}></View>
-
-                                    <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginTop: 20 }}>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 20, color: '#000000' }}>Total:</Text>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 20, color: '#000000' }}>
-                                            $ {((parseFloat(netTotal) || 0) + ((parseFloat(laborSubTotal) || 0) * (parseFloat(selectedWorkOrder.laborTax) || 0) / 100) + ((parseFloat(partsSubTotal) || 0) * (parseFloat(selectedWorkOrder.partsTax) || 0) / 100)).toFixed(2)}
-                                        </Text>
-                                    </View>
-
-                                </View>
-
-                                <View style={[styles.newContentCardStyle, { width: '100%' }]}>
-                                    <View style={{ borderBottomWidth: 1, borderBottomColor: '#C6C6C6', paddingHorizontal: 25, paddingVertical: 20, width: '100%', }}>
-                                        <Text style={{ color: '#353535', fontFamily: 'inter-medium', fontSize: 20 }}>Completion</Text>
-                                    </View>
-                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', padding: 20 }}>
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Date</Text>
-                                            <View style={{ height: 50, justifyContent: 'center' }}>
-                                                <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000', marginTop: 10 }}>{new Date().toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }).toString()}</Text>
-                                            </View>
-                                        </View>
-                                        <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                                            <View>
-                                                <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Mileage</Text>
-                                                {selectedWorkOrder.status == 'Pending'
-                                                    ?
-                                                    <TextInput style={[styles.input, { width: 200, marginTop: 10, paddingHorizontal: 10, marginLeft: 0 }]}
-                                                        value={completionMileage}
-                                                        onChangeText={(val) => setCompletionMileage(val.replace(/[^0-9]/g, ''))}
-                                                        placeholder="0"
-                                                        placeholderTextColor="#868383DC"
-                                                    />
-                                                    :
-                                                    <View style={{ height: 50, justifyContent: 'center' }}>
-                                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000', marginTop: 10 }}>{selectedWorkOrder.mileage}</Text>
-                                                    </View>
-                                                }
-                                            </View>
-
-                                        </View>
-                                    </View>
-                                    {selectedWorkOrder.status == 'Pending'
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, marginBottom: 20 }}>
+                                <Text style={{ fontFamily: 'inter-semibold', fontSize: 30 }}>WO-{selectedWorkOrder.id}</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    {selectedWorkOrder.status == 'Completed'
                                         ?
-                                        <View style={{ width: '90%', alignSelf: 'center' }}>
-                                            <AppBtn
-                                                title="Complete WO"
-                                                btnStyle={[styles.btn]}
-                                                btnTextStyle={styles.btnText}
-                                                onPress={() => {
-                                                    updateWOStatus()
-                                                    // setOpenAddItems(false)
-                                                    // clearAll()
-                                                }} />
-                                        </View>
+                                        null
                                         :
-                                        <View style={{ width: '90%', alignSelf: 'center' }}>
-                                            <AppBtn
-                                                title="Mark as Pending"
-                                                btnStyle={[styles.btn, { backgroundColor: 'orange' }]}
-                                                btnTextStyle={styles.btnText}
-                                                onPress={() => {
-                                                    updatePendingWOStatus()
-                                                    // setOpenAddItems(false)
-                                                    // clearAll()
-                                                }} />
+                                        <View style={{ marginRight: 10 }}>
+                                            {selectedWorkOrder.status == 'Pending'
+                                                ?
+                                                <AppBtn
+                                                    title="Mark as In Progress"
+                                                    btnStyle={[styles.btn, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#ADADAD' }]}
+                                                    btnTextStyle={[styles.btnText, { fontFamily: 'inter-regular', color: '#000000', fontSize: 13 }]}
+                                                    onPress={() => {
+                                                        setStatusLoading(true)
+                                                        updateStatus('In Progress')
+                                                    }} />
+                                                :
+                                                <AppBtn
+                                                    title="Mark as Pending"
+                                                    btnStyle={[styles.btn, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#ADADAD' }]}
+                                                    btnTextStyle={[styles.btnText, { fontFamily: 'inter-regular', color: '#000000', fontSize: 13 }]}
+                                                    onPress={() => {
+                                                        setStatusLoading(true)
+                                                        updateStatus('Pending')
+                                                    }} />
+                                            }
+
                                         </View>
                                     }
 
+                                    <View>
+                                        <AppBtn
+                                            title="Delete"
+                                            btnStyle={[styles.btn, { backgroundColor: '#23d3d3' }]}
+                                            btnTextStyle={[styles.btnText, { fontFamily: 'inter-regular', fontSize: 14 }]}
+                                            onPress={() => {
+                                                // setStatusLoading(true)
+                                                // updateStatus('In Progress')
+                                                setDeleteModal(true)
+                                            }} />
+                                    </View>
                                 </View>
 
                             </View>
 
-                        </View>
-                    </ScrollView>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                <View style={[styles.newContentCardStyle,]}>
+                                    <View style={{ borderBottomWidth: 1, borderBottomColor: '#C6C6C6', paddingHorizontal: 25, paddingVertical: 20, marginBottom: 10 }}>
+                                        <Text style={{ color: '#353535', fontFamily: 'inter-medium', fontSize: 20 }}>Work Order</Text>
+                                    </View>
+                                    <View style={styles.subViewStyle}>
+                                        <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Work Order ID:</Text>
+                                        <Text style={{}}>{selectedWorkOrder.id}</Text>
+                                    </View>
+                                    <View style={styles.subViewStyle}>
+                                        <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Type:</Text>
+                                        <Text style={{}}>General</Text>
+                                    </View>
+                                    <View style={styles.subViewStyle}>
+                                        <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Status:</Text>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            {statusLoading
+                                                ?
+                                                <ActivityIndicator color="#23d3d3" size="small" />
+                                                :
+                                                <Text style={{}}>{selectedWorkOrder.status}</Text>
+                                            }
+
+                                            {selectedWorkOrder.status == 'Completed'
+                                                ?
+                                                <Image style={{ height: 20, width: 20, marginLeft: 10 }} tintColor='green' source={require('../../assets/completed_icon.png')} resizeMode='contain'></Image>
+                                                : null}
+                                        </View>
+
+                                    </View>
+                                    <View style={styles.subViewStyle}>
+                                        <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Due Date:</Text>
+                                        <Text style={{}}>{new Date(selectedWorkOrder.dueDate).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' })}</Text>
+                                    </View>
+                                    <View style={styles.subViewStyle}>
+                                        <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Assignee:</Text>
+                                        <Text style={{}}>{peopleState.value.data.find(mechanic => mechanic["Employee Number"].toString() === selectedWorkOrder.assignedMechanic)?.Name || 'n/a'}</Text>
+                                    </View>
+                                    <View style={styles.subViewStyle}>
+                                        <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Items:</Text>
+                                        <Text style={{}}>{totalItems}</Text>
+                                    </View>
+                                </View>
+
+                                <View style={[styles.newContentCardStyle]}>
+                                    <View style={{ borderBottomWidth: 1, borderBottomColor: '#C6C6C6', paddingHorizontal: 25, paddingVertical: 20, marginBottom: 10 }}>
+                                        <Text style={{ color: '#353535', fontFamily: 'inter-medium', fontSize: 20 }}>Asset</Text>
+                                    </View>
+
+                                    <View style={styles.subViewStyle}>
+                                        <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Asset Name:</Text>
+                                        <Text style={{}}>{assetState.value.data.find(asset => asset["Asset Number"].toString() === selectedWorkOrder.assetNumber)?.['Asset Name'] || 'n/a'}</Text>
+                                    </View>
+                                    <View style={styles.subViewStyle}>
+                                        <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Make, Model, Year:</Text>
+                                        <Text style={{}}>{`${assetState.value.data.find(asset => asset["Asset Number"].toString() === selectedWorkOrder.assetNumber)?.Make || 'n/a'}, ${assetState.value.data.find(asset => asset["Asset Number"].toString() === selectedWorkOrder.assetNumber)?.Model || 'n/a'}, ${assetState.value.data.find(asset => asset["Asset Number"].toString() === selectedWorkOrder.assetNumber)?.Year || 'n/a'}`}</Text>
+                                    </View>
+                                    <View style={styles.subViewStyle}>
+                                        <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>License Plate:</Text>
+                                        <Text style={{}}>{plateNumber}</Text>
+                                    </View>
+                                    <View style={styles.subViewStyle}>
+                                        <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Mileage:</Text>
+                                        <Text style={{}}>{selectedWorkOrder.mileage}</Text>
+                                    </View>
+
+                                </View>
+
+                            </View>
+
+
+                            <View style={[styles.newContentCardStyle, { width: '100%' }]}>
+
+                                <View style={{ borderBottomWidth: 1, borderBottomColor: '#C6C6C6', paddingHorizontal: 25, paddingVertical: 20, flexDirection: 'row', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Text style={{ color: '#353535', fontFamily: 'inter-medium', fontSize: 20 }}>Items</Text>
+                                    <View style={{}}>
+                                        <AppBtn
+                                            title="Items"
+                                            imgSource={require('../../assets/add_plus_btn_icon.png')}
+                                            btnStyle={styles.addBtn}
+                                            btnTextStyle={styles.addBtnText}
+                                            onPress={() => { setOpenAddItems(true) }} />
+                                    </View>
+                                </View>
+
+                                <View style={{ width: '100%', borderColor: '#6B6B6B', paddingHorizontal: 25 }}>
+                                    <ScrollView horizontal
+                                    >
+                                        <View style={{ flexDirection: 'column' }}>
+                                            <View style={{ flexDirection: 'row', marginVertical: 15, }}>
+                                                <View style={{ width: 70 }}>
+                                                    <Text style={{ fontFamily: 'inter-medium', fontSize: 14, }}>ID</Text>
+                                                </View>
+                                                <View style={{ width: 150, marginLeft: 5 }}>
+                                                    <Text style={{ fontFamily: 'inter-medium', fontSize: 14, width: 200 }}>Priority</Text>
+                                                </View >
+                                                <View style={{ width: 200, marginLeft: 5 }}>
+                                                    <Text style={{ fontFamily: 'inter-medium', fontSize: 14, }}>Title</Text>
+                                                </View>
+                                                <View style={{ width: 300, marginLeft: 5 }}>
+                                                    <Text style={{ fontFamily: 'inter-medium', fontSize: 14, }}>Description</Text>
+                                                </View>
+                                                <View style={{ width: 100, marginLeft: 5 }}>
+                                                    <Text style={{ fontFamily: 'inter-medium', fontSize: 14, }}>Labor</Text>
+                                                </View>
+                                                <View style={{ width: 100, marginLeft: 5 }}>
+                                                    <Text style={{ fontFamily: 'inter-medium', fontSize: 14, }}>Qty</Text>
+                                                </View>
+                                                <View style={{ width: 100, marginLeft: 5 }}>
+                                                    <Text style={{ fontFamily: 'inter-medium', fontSize: 14, }}>Parts</Text>
+                                                </View>
+                                                <View style={{ width: 100, marginLeft: 5 }}>
+                                                    <Text style={{ fontFamily: 'inter-medium', fontSize: 14 }}>Total</Text>
+                                                </View>
+
+                                            </View>
+                                            {workOrderVariable.map((item, index) => {
+                                                return (
+                                                    <WorkOrderVariableTable
+                                                        key={index.toString()}
+                                                        item={item}
+                                                        index={index}
+                                                        onUpdateTotal={(idx, total, labor, qty, parts) => handleUpdateTotal(idx, total, labor, qty, parts)}
+                                                        onUpdateDescription={(idx, description) => handleUpdateDescription(idx, description)}
+                                                        onUpdateTotalItems={(idx, item) => handleUpdateItems(idx, item)} />
+                                                )
+                                            })}
+                                        </View>
+                                    </ScrollView>
+
+                                </View>
+                            </View>
+
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
+                                <View style={[styles.newContentCardStyle, { width: '48%' }]}>
+                                    <View style={{ borderBottomWidth: 1, borderBottomColor: '#C6C6C6', paddingHorizontal: 25, paddingVertical: 20, width: '100%', }}>
+                                        <Text style={{ color: '#353535', fontFamily: 'inter-medium', fontSize: 20 }}>Activity</Text>
+                                    </View>
+                                    <View style={{ margin: 25, borderBottomWidth: 1, paddingBottom: 10, borderBottomColor: '#23d3d3' }}>
+                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 15, color: '#23d3d3' }}>Comments</Text>
+                                    </View>
+                                    {selectedWorkOrder.comments.length == 0
+                                        ?
+                                        <View style={{ borderWidth: 1, padding: 35, margin: 25, borderColor: '#C6C6C6' }}>
+                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 14 }}>There are no comments</Text>
+                                        </View>
+                                        :
+                                        <FlatList
+                                            style={{ maxHeight: 300 }}
+                                            data={selectedWorkOrder.comments}
+                                            ref={flatlistRef}
+                                            onContentSizeChange={() => {
+                                                if (selectedWorkOrder.comments.length != 0) {
+                                                    flatlistRef.current.scrollToEnd({ animated: true })
+                                                }
+                                            }}
+                                            onLayout={() => {
+                                                if (selectedWorkOrder.comments.length != 0) {
+                                                    flatlistRef.current.scrollToEnd()
+                                                }
+                                            }}
+                                            renderItem={({ item, index }) => {
+                                                if (item.sendBy == authState.value.name) {
+                                                    return (
+                                                        <View key={index} style={{ width: '70%', marginVertical: 10, paddingHorizontal: 20, alignItems: 'flex-start', alignSelf: 'flex-start' }}>
+                                                            <Text style={{ fontFamily: 'inter-semibold', fontSize: 13 }}>{item.sendBy}</Text>
+                                                            <Text style={{ fontFamily: 'inter-regular', fontSize: 12, marginVertical: 5, color: '#AAAAAA' }}>{new Date(item.timeStamp).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }) + " " + new Date(item.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</Text>
+                                                            <Text style={{ fontFamily: 'inter-regular', fontSize: 13 }}>{item.msg}</Text>
+                                                        </View>
+                                                    )
+                                                }
+                                                else {
+                                                    return (
+                                                        <View key={index} style={{ width: '70%', marginVertical: 10, paddingHorizontal: 20, alignItems: 'flex-end', alignSelf: 'flex-end' }}>
+                                                            <Text style={{ fontFamily: 'inter-semibold', fontSize: 13 }}>{item.sendBy}</Text>
+                                                            <Text style={{ fontFamily: 'inter-regular', fontSize: 12, marginVertical: 5, color: '#AAAAAA' }}>{new Date(item.timeStamp).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }) + " " + new Date(item.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</Text>
+                                                            <Text style={{ fontFamily: 'inter-regular', fontSize: 13 }}>{item.msg}</Text>
+                                                        </View>
+                                                    )
+                                                }
+                                            }} />
+                                    }
+
+                                    <View style={{ flexDirection: 'row', marginHorizontal: 25, alignItems: 'center' }}>
+                                        <Image style={{ height: 30, width: 30 }} source={require('../../assets/profile_icon.png')} tintColor="#8C8C8C" resizeMode='contain'></Image>
+                                        <TextInput
+                                            style={[styles.input, { marginLeft: 5, width: '100%' }, searchTextInputBorderColor && styles.withBorderInputContainer]}
+                                            placeholder=""
+                                            placeholderTextColor="#868383DC"
+                                            value={comment}
+                                            onChangeText={(val) => { setComment(val) }}
+                                            onFocus={() => { setSearchTextInputBorderColor(true) }}
+                                            onBlur={() => { setSearchTextInputBorderColor(false) }}
+                                        />
+                                    </View>
+                                    <View style={{ width: 130, marginTop: 20, marginBottom: 25, marginLeft: 25 }}>
+                                        <AppBtn
+                                            title="Add Comment"
+                                            btnStyle={[styles.btn, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#8C8C8C', height: 40 }]}
+                                            btnTextStyle={[styles.btnText, { color: '#000000', fontFamily: 'inter-regular', fontSize: 13 }]}
+                                            onPress={() => {
+                                                if (comment == null || comment == '') { }
+                                                else {
+                                                    setComment("")
+                                                    updateComment()
+                                                }
+
+                                            }} />
+                                    </View>
+                                </View>
+
+                                <View style={{ flexDirection: 'column', width: '48%' }}>
+                                    <View style={[styles.newContentCardStyle, { width: '100%' }]}>
+                                        <View style={{ borderBottomWidth: 1, borderBottomColor: '#C6C6C6', paddingHorizontal: 25, paddingVertical: 20, width: '100%', }}>
+                                            <Text style={{ color: '#353535', fontFamily: 'inter-medium', fontSize: 20 }}>Cost Summary</Text>
+                                        </View>
+                                        <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginTop: 20 }}>
+                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Parts sub total:</Text>
+                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>${partsSubTotal}</Text>
+                                        </View>
+
+                                        <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginVertical: 10, alignItems: 'center' }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Parts Tax: %</Text>
+                                                <TextInput style={[styles.input, { width: 100, }]}
+                                                    value={partsTax}
+                                                    onChangeText={(val) => handlePartsTax(val.replace(/[^0-9]/g, ''))}
+                                                    // onSubmitEditing={() => { handlePartsTax() }}
+                                                    placeholder="0"
+                                                    placeholderTextColor="#868383DC"
+                                                />
+                                            </View>
+                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>${(parseFloat(partsSubTotal) || 0) * (parseFloat(selectedWorkOrder.partsTax) || 0) / 100}</Text>
+                                        </View>
+
+                                        <View style={{ width: '90%', borderBottomWidth: 1, borderBottomColor: '#C6C6C6', marginTop: 10, alignSelf: 'center' }}></View>
+
+                                        <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginTop: 20 }}>
+                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Labor sub total:</Text>
+                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>${laborSubTotal}</Text>
+                                        </View>
+
+                                        <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginVertical: 10, alignItems: 'center' }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Labor Tax: %</Text>
+                                                <TextInput style={[styles.input, { width: 100, }]}
+                                                    value={laborTax}
+                                                    onChangeText={(val) => handleLaborTax(val.replace(/[^0-9]/g, ''))}
+                                                    placeholder="0"
+                                                    placeholderTextColor="#868383DC"
+                                                />
+                                            </View>
+                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>${(parseFloat(laborSubTotal) || 0) * (parseFloat(selectedWorkOrder.laborTax) || 0) / 100}</Text>
+                                        </View>
+
+                                        <View style={{ width: '90%', borderBottomWidth: 1, borderBottomColor: '#C6C6C6', marginTop: 10, alignSelf: 'center' }}></View>
+
+                                        <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginTop: 20 }}>
+                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 20, color: '#000000' }}>Total:</Text>
+                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 20, color: '#000000' }}>
+                                                $ {((parseFloat(netTotal) || 0) + ((parseFloat(laborSubTotal) || 0) * (parseFloat(selectedWorkOrder.laborTax) || 0) / 100) + ((parseFloat(partsSubTotal) || 0) * (parseFloat(selectedWorkOrder.partsTax) || 0) / 100)).toFixed(2)}
+                                            </Text>
+                                        </View>
+
+                                    </View>
+
+                                    <View style={[styles.newContentCardStyle, { width: '100%' }]}>
+                                        <View style={{ borderBottomWidth: 1, borderBottomColor: '#C6C6C6', paddingHorizontal: 25, paddingVertical: 20, width: '100%', }}>
+                                            <Text style={{ color: '#353535', fontFamily: 'inter-medium', fontSize: 20 }}>Completion</Text>
+                                        </View>
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', padding: 20 }}>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Date</Text>
+                                                <View style={{ height: 50, justifyContent: 'center' }}>
+                                                    <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000', marginTop: 10 }}>{new Date().toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }).toString()}</Text>
+                                                </View>
+                                            </View>
+                                            <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                                                <View>
+                                                    <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Mileage</Text>
+                                                    {selectedWorkOrder.status != 'Completed'
+                                                        ?
+                                                        <TextInput style={[styles.input, { width: 200, marginTop: 10, paddingHorizontal: 10, marginLeft: 0 }]}
+                                                            value={completionMileage}
+                                                            onChangeText={(val) => setCompletionMileage(val.replace(/[^0-9]/g, ''))}
+                                                            placeholder="0"
+                                                            placeholderTextColor="#868383DC"
+                                                        />
+                                                        :
+                                                        <View style={{ height: 50, justifyContent: 'center' }}>
+                                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000', marginTop: 10 }}>{selectedWorkOrder.mileage}</Text>
+                                                        </View>
+                                                    }
+                                                </View>
+
+                                            </View>
+                                        </View>
+                                        {selectedWorkOrder.status != 'Completed'
+                                            ?
+                                            <View style={{ width: '90%', alignSelf: 'center' }}>
+                                                <AppBtn
+                                                    title="Complete WO"
+                                                    btnStyle={[styles.btn]}
+                                                    btnTextStyle={styles.btnText}
+                                                    onPress={() => {
+                                                        updateWOStatus()
+                                                        // setOpenAddItems(false)
+                                                        // clearAll()
+                                                    }} />
+                                            </View>
+                                            :
+                                            <View style={{ width: '90%', alignSelf: 'center' }}>
+                                                <AppBtn
+                                                    title="Mark as Pending"
+                                                    btnStyle={[styles.btn, { backgroundColor: 'orange' }]}
+                                                    btnTextStyle={styles.btnText}
+                                                    onPress={() => {
+                                                        updatePendingWOStatus()
+                                                        // setOpenAddItems(false)
+                                                        // clearAll()
+                                                    }} />
+                                            </View>
+                                        }
+
+                                    </View>
+
+                                </View>
+
+                            </View>
+                        </ScrollView>
                     </TouchableWithoutFeedback>
                 </View>
 

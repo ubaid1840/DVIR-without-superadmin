@@ -588,8 +588,7 @@ const GeneralInspectionPage = (props) => {
                         inspectionCalendarSelect == 'All'
                             ?
                             <View style={styles.contentCardStyle}>
-                                {dataState.value.data.length != 0
-                                    ?
+                            
                                     <Form
                                         columns={columns}
                                         entriesData={dataState.value.data}
@@ -601,9 +600,8 @@ const GeneralInspectionPage = (props) => {
                                         columnHeaderRow={styles.formColumnHeaderRowStyle}
                                         columnHeaderCell={styles.formColumnHeaderCellStyle}
                                         columnHeaderText={styles.formColumnHeaderTextStyle} />
-                                    :
-                                    null
-                                }
+                                    
+                                
 
                             </View>
                             :

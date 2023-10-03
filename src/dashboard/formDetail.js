@@ -14,6 +14,8 @@ import AppBtn from '../../components/Button';
 import jsPDF from 'jspdf';
 import * as interbold from '../../assets/fonts/Inter-Bold-normal'
 import * as interregular from '../../assets/fonts/Inter-Regular-normal'
+import * as intermedium from '../../assets/fonts/Inter-Medium-normal'
+import 'jspdf-autotable'
 
 
 
@@ -108,10 +110,10 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
 
     const mergeGroupsByType = (groups) => {
         const mergedGroups = [];
-    
+
         groups.forEach((group) => {
             const existingGroup = mergedGroups.find((mergedGroup) => mergedGroup[0].type === group[0].type);
-    
+
             if (existingGroup) {
                 // Merge the data of groups with the same type
                 existingGroup.push(...group);
@@ -120,7 +122,7 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
                 mergedGroups.push([...group]);
             }
         });
-    
+
         return mergedGroups;
     };
 
@@ -140,35 +142,53 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
         });
     };
 
+
     const generatePDFContent = async (groups) => {
         const doc = new jsPDF();
-        interbold
+
         interregular
-        const pageHeight = doc.internal.pageSize.height;
+        intermedium
+        console.log(doc.getFontList())
+
         const pageWidth = doc.internal.pageSize.width;
-
+        const usableWidth = pageWidth - 40; // Adjusted usable width with margins
         let yOffset = 20;
+        let i = 1;
 
-        doc.getFontList()
+        doc.setTextColor('#646464');
+        doc.setFont('Inter-Medium', 'normal');
+        doc.setFontSize(16);
+        doc.text('Inspection Report', 20, yOffset);
 
-        doc.setFont('Inter-Bold', 'normal');
-        doc.setFontSize(14);
+        yOffset+=10
+
+        doc.setFont('Inter-Medium', 'normal');
+        doc.setFontSize(10);
         doc.text('Form:', 20, yOffset);
         doc.text('eDVIR', 80, yOffset);
-        doc.text('Form Status:', 20, yOffset += 8)
-        doc.setTextColor('#FF0000');
+        yOffset += 8
+        doc.text('Form Status:', 20, yOffset)
+        if(formValue.formStatus == 'Failed'){
+            doc.setTextColor('#FF0000');
+        }
+        else if (formValue.formStatus == 'Passed'){
+            doc.setTextColor('green');
+        }
+        else {
+            doc.setTextColor('#646464'); 
+        }
         doc.text(`${formValue.formStatus}`, 80, yOffset);
-        yOffset += 15;
+        yOffset += 8;
         doc.setFont('Inter-Regular', 'normal');
-        doc.setTextColor('#000000')
-        doc.setFontSize(12);
+        doc.setTextColor('#646464');
+        doc.setFontSize(10);
         doc.text('Date Received:', 20, yOffset)
         doc.text(`${((new Date(formValue.TimeStamp.seconds * 1000)).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }) + " " + (new Date(formValue.TimeStamp.seconds * 1000)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })).toString()}`, 80, yOffset)
         yOffset += 8;
         doc.text('Date Inspected:', 20, yOffset)
         doc.text(`${((new Date(formValue.TimeStamp.seconds * 1000)).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }) + " " + (new Date(formValue.TimeStamp.seconds * 1000)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }))}`, 80, yOffset);
         yOffset += 8;
-        doc.text('Inspection Duration', 20, yOffset)
+        doc.text('Inspection Duration:', 20, yOffset)
         doc.text(`${moment.duration(formValue.duration).minutes() + ':' + moment.duration(formValue.duration).seconds() + " minutes"}`, 80, yOffset);
         yOffset += 8;
         doc.text('Driver:', 20, yOffset)
@@ -177,140 +197,150 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
         doc.text('Vehicle:', 20, yOffset)
         doc.text(`${assetState.value.data.find(asset => asset["Asset Number"].toString() === formValue.assetNumber)?.['Asset Name'] || 'Unknown Asset'}`, 80, yOffset);
 
-        yOffset += 20; // Move down for groups
+        yOffset += 10; // Move down for other content
 
-        let i = 1;
+        // Function to add a new page if needed
+        const addNewPageIfNeeded = (rowHeight) => {
+            if (yOffset + rowHeight > doc.internal.pageSize.height - 20) {
+                doc.addPage();
+                yOffset = 20;
+            }
+        };
 
+        // Iterate through each group
         for (const group of groups) {
-          
-            doc.setFont('Inter-Bold', 'normal');
-            doc.setFontSize(16);
-            doc.text(`${i}- ${group[0].type}`, 20, yOffset);
+            const groupType = group[0].type;
+            yOffset += 10;
+            // Add Group Type as the header
+            doc.setFillColor('#D3D3D3');  // Green color for the header
+            doc.rect(20, yOffset, usableWidth, 8, 'F');  // Draw a filled rectangle as the header
+            doc.setFont('Inter-Medium', 'normal');
+            doc.setFontSize(9);
+            doc.setTextColor(0);  // Set text color to white
+            doc.text(`${groupType}`, 30, yOffset + 5.5);  // Adjust position for text
 
-            let j = 1
+            // Move down for table headers
 
-            for (const groupData of group) {
-                
-                yOffset += 8;
+            // Table headers
+            const titleColumnWidth = usableWidth * 0.8;  // Adjust the width for the title column
+            const valueColumnWidth = usableWidth * 0.2;  // Adjust the width for the value column
 
-                // Check if the content exceeds the page height
-                if (yOffset > pageHeight - 20) {
-                    doc.addPage(); // Move to the next page
-                    yOffset = 20; // Reset the yOffset for the new page
-                }
+            // doc.rect(20, yOffset, titleColumnWidth, 10); // Title column
+            // doc.rect(20 + titleColumnWidth, yOffset, valueColumnWidth, 10); // Value column
+            // doc.setFont('Inter-Medium', 'normal');
+            // doc.setFontSize(10);
+            doc.setTextColor('#646464');  // Set text color to black
 
+            yOffset += 8; // Move down for table content
+
+            // Iterate through each item in the group
+            for (let j = 0; j < group.length; j++) {
+
+                const groupData = group[j];
+
+                // Draw cells for title and value
+
+                doc.setFontSize(9)
                 doc.setFont('Inter-Regular', 'normal');
-
-                doc.setFontSize(12);
-
-                const title = `${groupData.title}:`;
-                const value = `${groupData.value}`;
-
-
-                // Split title and value into multiple lines
-                const titleLines = doc.splitTextToSize(`${i}.${j}- ${groupData.title}:`, pageWidth - 50);
-                const valueLines = doc.splitTextToSize(`${groupData.value}`, pageWidth - 50);
-
-
-
-                // Display each line
-                titleLines.forEach((line, i) => {
-                    doc.setFont('Inter-Bold', 'normal');
-                    doc.text(line, 25, yOffset + (i * 5));
+                // doc.text(`${i}.${j + 1}- ${groupData.title}`, 30, yOffset + 5.5); // Title
+                let rectHeight = 0
+                const titleLines = doc.splitTextToSize(`${i}.${j + 1}- ${groupData.title}`, titleColumnWidth - 10);
+                titleLines.forEach((line, index) => {
+                    doc.text(line, 30, yOffset + 5.5 + (index * 5)); // Title
+                    rectHeight = rectHeight + index
                 });
 
-                yOffset += titleLines.length * 8;
+                if (groupData.value == 'Pass') {
+                    doc.setTextColor('green')
+                }
+                else if(groupData.value == 'Fail') {
+                    doc.setTextColor('red')
+                }
+                else{
+                    doc.setTextColor('#646464')
+                }
+                doc.text(groupData.value, 30 + titleColumnWidth, yOffset + 5.5 + (rectHeight * 2.25)); // Value
 
-                const valueColor = groupData.value === 'Fail' ? '#FF0000' : groupData.value === 'Pass' ? '#008000' : '#000000';
+                doc.setDrawColor('#8D8D8D');
+                doc.rect(20, yOffset, titleColumnWidth, 8 + (rectHeight * 5)); // Title cell
+                doc.rect(20 + titleColumnWidth, yOffset, valueColumnWidth, 8 + (rectHeight * 5)); // Value cell
 
-                valueLines.forEach((line, i) => {
-                    // Check if the content exceeds the page height
-                    if (yOffset > pageHeight - 20) {
-                        doc.addPage(); // Move to the next page
-                        yOffset = 20; // Reset the yOffset for the new page
-                    }
+                doc.setTextColor('#646464');
+                yOffset += 8 + (rectHeight * 5);
 
-                    doc.setFont('Inter-Regular', 'normal');
-                    doc.setTextColor(valueColor)
-                    doc.text(line, 25, yOffset + i * 5);
-                });
-
-
-                doc.setTextColor('#000000')
-                yOffset += valueLines.length*8; // Move to the next line
-
-
-                // Add image
+                // Add image if available
                 if (groupData.Defect && groupData.Defect.Image) {
-                    yOffset += 8
-                    let imgData;
                     try {
-                        imgData = await fetchImageAsDataUrl(groupData.Defect.Image);
+                        yOffset += 8
+                        const imgData = await fetchImageAsDataUrl(groupData.Defect.Image);
+                        const imgHeight = 50;
+                        const imgWidth = 50;
+                        if (yOffset + imgHeight > doc.internal.pageSize.height - 20) {
+                            doc.addPage(); // Move to the next page
+                            yOffset = 20; // Reset the yOffset for the new page
+                        }
+                        doc.addImage(imgData, 'JPEG', 30, yOffset, imgWidth, imgHeight);
+                        yOffset += 58;
                     } catch (error) {
                         console.log(error);
                     }
-                    const imgHeight = 100;
-                    const imgWidth = 100;
-
-                    // Check if there's enough space for the image
-                    if (yOffset + imgHeight > pageHeight - 20) {
-                        doc.addPage(); // Move to the next page
-                        yOffset = 20; // Reset the yOffset for the new page
-                    }
-
-                    doc.addImage(imgData, 'JPEG', 25, yOffset, imgWidth, imgHeight);
-                    yOffset += imgHeight;
                 }
 
+                // Add comments if available
                 if (groupData.Defect && groupData.Defect.Note) {
-                    yOffset += 8
-                    doc.setTextColor('#000000'); // Reset text color to default
-                    doc.setFont('Inter-Bold', 'normal');
-                    doc.text('Comment:', 25, yOffset += 8);
-                    const commentLines = doc.splitTextToSize(`${groupData.Defect.Note}`, pageWidth - 40);
-                    yOffset += 8
-
-                    if (yOffset > pageHeight - 20) {
+                    const commentLines = doc.splitTextToSize(`${groupData.Defect.Note}`, titleColumnWidth - 10);
+                    if (yOffset + commentLines.length * 5 > doc.internal.pageSize.height - 20) {
                         doc.addPage(); // Move to the next page
                         yOffset = 20; // Reset the yOffset for the new page
                     }
                     commentLines.forEach((line, i) => {
-                        doc.setFont('helvetica', 'italic');
+                        doc.setFont('Inter-Regular', 'normal');
                         doc.text(line, 30, yOffset + i * 5);
                     });
 
-                    yOffset += commentLines.length*5; // Move to the next line
+                    yOffset += commentLines.length * 5;
                 }
-                j++
+
+                // Check for page break
+                addNewPageIfNeeded(20);
             }
 
-            yOffset += 20; // Add some spacing between groups
-            i++
+            i++;
+
+            // Add a new page if needed for the next group
+            addNewPageIfNeeded(20);
         }
 
-
-        if(yOffset > pageHeight - 20){
-            doc.addPage();
-            yOffset = 20
-        }
-
-        doc.setFont('Inter-Bold', 'normal');
-        doc.setFontSize(14);
-        doc.text('Signature:', 20, yOffset);
-
+        yOffset += 10;
+        // Add Group Type as the header
+        doc.setFillColor('#D3D3D3');  // Green color for the header
+        doc.rect(20, yOffset, usableWidth, 8, 'F');  // Draw a filled rectangle as the header
+        doc.setFont('Inter-Medium', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(0);  // Set text color to white
+        doc.text(`Signature`, 30, yOffset + 5.5);  // Adjust position for text
         yOffset += 8
 
-        if(yOffset + 80 > pageHeight - 20)
+        if(yOffset + 80 > doc.internal.pageSize.height - 20)
         {
             doc.addPage();
             yOffset = 20
         }
 
-        doc.addImage(`${formValue.signature}`, 'JPEG', 25, yOffset, 50, 80);
+        doc.addImage(`${formValue.signature}`, 'JPEG', 25, yOffset, 30, 50);
+
+
 
         setLoading(false);
         return doc;
     };
+
+
+
+
+
+
+
 
 
     const fetchDriverDp = async () => {

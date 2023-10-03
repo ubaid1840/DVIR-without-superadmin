@@ -575,6 +575,11 @@ const MaintenancePage = (props) => {
                 Over Due
               </Text>
             </TouchableOpacity>
+            <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setWorkOrderCalendarSelect("In Progress")}>
+              <Text style={[styles.newCalenderSortText, workOrderCalendarSelect == "In Progress" && styles.newCalenderSortSelectedText]}>
+              In Progress
+              </Text>
+            </TouchableOpacity>
             <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setWorkOrderCalendarSelect("Pending")}>
               <Text style={[styles.newCalenderSortText, workOrderCalendarSelect == "Pending" && styles.newCalenderSortSelectedText]}>
                 Pending
@@ -626,6 +631,25 @@ const MaintenancePage = (props) => {
                     columnHeaderText={styles.formColumnHeaderTextStyle}
                   />
                   :
+                  workOrderCalendarSelect == 'In Progress'
+                    ?
+                    <Form
+                      columns={columns}
+                      entriesData={searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => item.status === 'In Progress').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+                      ) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => item.status === 'In Progress').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray.filter(item => item.status === 'In Progress')}
+                      // entriesData={workOrderArray}
+                      titleForm="Work Order"
+                      onValueChange={handleWorkOrderFormValueChange}
+                      onFormSortDateCreated={(val) => handleTimeStampSorting()}
+                      onFormSortDueDate={()=> handleDueDateSorting()}
+                      row={styles.formRowStyle}
+                      cell={styles.formCellStyle}
+                      entryText={styles.formEntryTextStyle}
+                      columnHeaderRow={styles.formColumnHeaderRowStyle}
+                      columnHeaderCell={styles.formColumnHeaderCellStyle}
+                      columnHeaderText={styles.formColumnHeaderTextStyle}
+                    />
+                    :
                   workOrderCalendarSelect == 'Pending'
                     ?
                     <Form
@@ -689,6 +713,24 @@ const MaintenancePage = (props) => {
                 <Form
                   columns={columns}
                   entriesData={searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => item.status != 'Completed').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => item.status == 'Pending').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray.filter(item => item.status == 'Pending')}
+                  // entriesData={workOrderArray}
+                  titleForm="Work Order"
+                  onValueChange={handleInHouseWOFormValueChange}
+                  onFormSortDateCreated={(val) => handleTimeStampSorting()}
+                  onFormSortDueDate={()=> handleDueDateSorting()}
+                  row={styles.formRowStyle}
+                  cell={styles.formCellStyle}
+                  entryText={styles.formEntryTextStyle}
+                  columnHeaderRow={styles.formColumnHeaderRowStyle}
+                  columnHeaderCell={styles.formColumnHeaderCellStyle}
+                  columnHeaderText={styles.formColumnHeaderTextStyle}
+                />
+                :
+                workOrderCalendarSelect == 'In Progress'
+                ?
+                <Form
+                  columns={columns}
+                  entriesData={searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => item.status == 'In Progress').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => item.status == 'In Progress').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray.filter(item => item.status == 'In Progress')}
                   // entriesData={workOrderArray}
                   titleForm="Work Order"
                   onValueChange={handleInHouseWOFormValueChange}

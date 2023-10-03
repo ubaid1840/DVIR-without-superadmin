@@ -796,7 +796,7 @@ const InHouseWorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardDueDa
                                     </View>
                                     <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginTop: 20 }}>
                                         <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Parts sub total:</Text>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>%{partsSubTotal}</Text>
+                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>${partsSubTotal}</Text>
                                     </View>
 
                                     <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginVertical: 10, alignItems: 'center' }}>
@@ -810,14 +810,14 @@ const InHouseWorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardDueDa
                                                 placeholderTextColor="#868383DC"
                                             />
                                         </View>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>%{(parseFloat(partsSubTotal) || 0) * (parseFloat(selectedWorkOrder.partsTax) || 0) / 100}</Text>
+                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>${(parseFloat(partsSubTotal) || 0) * (parseFloat(selectedWorkOrder.partsTax) || 0) / 100}</Text>
                                     </View>
 
                                     <View style={{ width: '90%', borderBottomWidth: 1, borderBottomColor: '#C6C6C6', marginTop: 10, alignSelf: 'center' }}></View>
 
                                     <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginTop: 20 }}>
                                         <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Labor sub total:</Text>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>%{laborSubTotal}</Text>
+                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>${laborSubTotal}</Text>
                                     </View>
 
                                     <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginVertical: 10, alignItems: 'center' }}>
@@ -830,7 +830,7 @@ const InHouseWorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardDueDa
                                                 placeholderTextColor="#868383DC"
                                             />
                                         </View>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>%{(parseFloat(laborSubTotal) || 0) * (parseFloat(selectedWorkOrder.laborTax) || 0) / 100}</Text>
+                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>${(parseFloat(laborSubTotal) || 0) * (parseFloat(selectedWorkOrder.laborTax) || 0) / 100}</Text>
                                     </View>
 
                                     <View style={{ width: '90%', borderBottomWidth: 1, borderBottomColor: '#C6C6C6', marginTop: 10, alignSelf: 'center' }}></View>

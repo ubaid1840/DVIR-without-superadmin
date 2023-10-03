@@ -142,7 +142,7 @@ const DefectDetail = ({ value, onDashboardOpenWO, onDashboardDefect }) => {
         })
         // console.log(oldComments)
 
-        const dbRef = doc(db, 'Defects', selectedDefect.id.toString())
+        const dbRef = doc(db, 'Defects1', selectedDefect.id.toString())
         await updateDoc(dbRef, {
             comments: oldComments
         })
@@ -155,7 +155,7 @@ const DefectDetail = ({ value, onDashboardOpenWO, onDashboardDefect }) => {
 
     const updateStatus = async (value) => {
         try {
-            await updateDoc(doc(db, "Defects", selectedDefect.id.toString()), {
+            await updateDoc(doc(db, "Defects1", selectedDefect.id.toString()), {
                 status: value
             })
             setStatusLoading(false)
@@ -168,7 +168,7 @@ const DefectDetail = ({ value, onDashboardOpenWO, onDashboardDefect }) => {
 
     const handleSeverityValueChange = async (value) => {
         try {
-            await updateDoc(doc(db, "Defects", selectedDefect.id.toString()), {
+            await updateDoc(doc(db, "Defects1", selectedDefect.id.toString()), {
                 severity: value
             })
             setSeveritySelectedOption(value)
@@ -181,7 +181,7 @@ const DefectDetail = ({ value, onDashboardOpenWO, onDashboardDefect }) => {
 
     const handlePriorityValueChange = async (value) => {
         try {
-            await updateDoc(doc(db, "Defects", selectedDefect.id.toString()), {
+            await updateDoc(doc(db, "Defects1", selectedDefect.id.toString()), {
                 priority: value
             })
             setPrioritySelectedOption(value)
@@ -238,7 +238,7 @@ const DefectDetail = ({ value, onDashboardOpenWO, onDashboardDefect }) => {
 
         try {
             let temp = []
-            await getDocs(query(collection(db, 'WorkOrders'), orderBy('TimeStamp', 'desc')))
+            await getDocs(query(collection(db, 'WorkOrders1'), orderBy('TimeStamp', 'desc')))
                 .then((snapshot) => {
                     snapshot.forEach((docs) => {
                         temp.push(docs.data())
@@ -246,7 +246,7 @@ const DefectDetail = ({ value, onDashboardOpenWO, onDashboardDefect }) => {
                 })
             if (temp.length == 0) {
 
-                setDoc(doc(db, 'WorkOrders', '1'), {
+                setDoc(doc(db, 'WorkOrders1', '1'), {
                     id: 1,
                     'assetNumber': selectedDefect.assetNumber,
                     'driverEmployeeNumber': selectedDefect.driverEmployeeNumber,
@@ -270,7 +270,7 @@ const DefectDetail = ({ value, onDashboardOpenWO, onDashboardDefect }) => {
                 })
 
 
-                await updateDoc(doc(db, 'Defects', selectedDefect.id.toString()), {
+                await updateDoc(doc(db, 'Defects1', selectedDefect.id.toString()), {
                     'workOrder': 1,
                     'assignedMechanic': assignedMechanicId.toString(),
                     'status': 'In Progress',
@@ -282,7 +282,7 @@ const DefectDetail = ({ value, onDashboardOpenWO, onDashboardDefect }) => {
             }
             else {
 
-                setDoc(doc(db, 'WorkOrders', (temp[0].id + 1).toString()), {
+                setDoc(doc(db, 'WorkOrders1', (temp[0].id + 1).toString()), {
                     id: (temp[0].id + 1),
                     'assetNumber': selectedDefect.assetNumber,
                     'defectID': selectedDefect.id,
@@ -305,7 +305,7 @@ const DefectDetail = ({ value, onDashboardOpenWO, onDashboardDefect }) => {
                     'laborTax': ''
                 })
 
-                await updateDoc(doc(db, 'Defects', selectedDefect.id.toString()), {
+                await updateDoc(doc(db, 'Defects1', selectedDefect.id.toString()), {
                     'workOrder': (temp[0].id + 1),
                     'assignedMechanic': assignedMechanicId.toString(),
                     'status': 'In Progress',
@@ -323,7 +323,7 @@ const DefectDetail = ({ value, onDashboardOpenWO, onDashboardDefect }) => {
     }
 
     const updateWorkOrders = async () => {
-        await getDocs(query(collection(db, 'WorkOrders'), orderBy('TimeStamp', 'desc')))
+        await getDocs(query(collection(db, 'WorkOrders1'), orderBy('TimeStamp', 'desc')))
             .then((snapshot) => {
                 let temp = []
                 snapshot.forEach((docs) => {
