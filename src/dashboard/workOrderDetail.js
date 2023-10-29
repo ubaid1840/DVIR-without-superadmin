@@ -33,6 +33,8 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
     const [partsTax, setPartsTax] = useState(value.partsTax)
     const [laborSubTotal, setLaborSubTotal] = useState('0')
     const [laborTax, setLaborTax] = useState(value.laborTax)
+    const [laborRate, setLaborRate] = useState(value.laborRate)
+    const [laborHours, setLaborHours] = useState(value.laborHours)
     const [netTotal, setNetTotal] = useState('0.00')
     const [completionMileage, setCompletionMileage] = useState('')
     const flatlistRef = useRef()
@@ -97,11 +99,13 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
 
                 for (const item of temp) {
                     totalPartsSum += (parseFloat(item.parts) || 0) * (parseFloat(item.qty) || 0);
-                    totalLaborSum += parseFloat(item.labor) || 0;
+
                 }
-                setNetTotal((totalPartsSum + totalLaborSum).toFixed(2).toString())
+                const laborTotal = (parseFloat(selectedWorkOrder.laborRate) || 0) * (parseFloat(selectedWorkOrder.laborHours) || 0)
+                setNetTotal((totalPartsSum).toFixed(2).toString())
                 setPartsSubTotal(totalPartsSum.toString())
-                setLaborSubTotal(totalLaborSum.toString())
+                // setLaborSubTotal(totalLaborSum.toString())
+                setLaborSubTotal((parseFloat(selectedWorkOrder.laborRate) || 0) * (parseFloat(selectedWorkOrder.laborHours) || 0))
                 setWorkOrderVariable(temp)
             }
             else {
@@ -164,13 +168,12 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
 
         for (const item of updatedItems) {
             totalPartsSum += (parseFloat(item.parts) || 0) * (parseFloat(item.qty) || 0);
-            totalLaborSum += parseFloat(item.labor) || 0;
+
         }
 
-        setNetTotal((totalPartsSum + totalLaborSum).toFixed(2).toString())
+        setNetTotal((totalPartsSum).toFixed(2).toString())
         setPartsSubTotal(totalPartsSum.toString())
-        setLaborSubTotal(totalLaborSum.toString())
-        console.log(updatedItems)
+        setLaborSubTotal((parseFloat(selectedWorkOrder.laborRate) || 0) * (parseFloat(selectedWorkOrder.laborHours) || 0))
         await updateDoc(doc(db, 'WorkOrders', selectedWorkOrder.id.toString()), {
             'defectedItems': [...updatedItems]
         })
@@ -193,12 +196,12 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
 
         for (const items of item) {
             totalPartsSum += (parseFloat(items.parts) || 0) * (parseFloat(items.qty) || 0);
-            totalLaborSum += parseFloat(items.labor) || 0;
+
         }
 
-        setNetTotal((totalPartsSum + totalLaborSum).toFixed(2).toString())
+        setNetTotal((totalPartsSum).toFixed(2).toString())
         setPartsSubTotal(totalPartsSum.toString())
-        setLaborSubTotal(totalLaborSum.toString())
+        setLaborSubTotal((parseFloat(selectedWorkOrder.laborRate) || 0) * (parseFloat(selectedWorkOrder.laborHours) || 0))
 
         setWorkOrderVariable(item)
         await updateDoc(doc(db, 'WorkOrders', selectedWorkOrder.id.toString()), {
@@ -227,7 +230,7 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
                     const labor = parseFloat(val.val) || 0;
                     const qty = parseFloat(qtyValue) || 0;
                     const parts = parseFloat(partsValue) || 0;
-                    const total = labor + (qty * parts)
+                    const total = (qty * parts)
                     resolve(total)
                 }
 
@@ -235,14 +238,14 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
                     const labor = parseFloat(laborValue) || 0;
                     const qty = parseFloat(qtyValue) || 0;
                     const parts = parseFloat(val.val) || 0;
-                    const total = labor + (qty * parts)
+                    const total = (qty * parts)
                     resolve(total)
                 }
                 else if (val.item == 'qty') {
                     const labor = parseFloat(laborValue) || 0;
                     const qty = parseFloat(val.val) || 0;
                     const parts = parseFloat(partsValue) || 0;
-                    const total = labor + (qty * parts)
+                    const total = (qty * parts)
                     resolve(total)
                 }
 
@@ -253,7 +256,6 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
 
         const handleUpdateTotal = () => {
             const newTotal = calculateTotal();
-            console.log(newTotal)
             if (newTotal !== parseFloat(item.total)) {
                 onUpdateTotal(index, newTotal.toString(), laborValue, qtyValue, partsValue);
             }
@@ -312,17 +314,17 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
 
         return (
             <View style={{ flexDirection: 'row', paddingVertical: 15, borderWidth: 1, borderRightWidth: 0, borderLeftWidth: 0, borderColor: '#cccccc', alignItems: 'center', }}>
-                <View style={{ minWidth: 70 }}>
+                <View style={{ width: 70 }}>
                     <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>#{index + 1}</Text>
                 </View>
-                <View style={{ minWidth: 150 }}>
+                <View style={{ width: 150 }}>
                     <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>{item.priority}</Text>
                 </View >
                 <View style={{ width: 200, paddingRight: 5 }}>
                     <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>{item.title}</Text>
                 </View >
 
-                <TextInput style={[styles.input, { width: 300 }]}
+                <TextInput style={[styles.input, { width: 300, marginHorizontal:10 }]}
                     ref={descriptionRef}
                     value={descriptionValue}
                     onChangeText={handleSaveDescription}
@@ -331,20 +333,7 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
                 // }}
                 />
 
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 10 }}>
-                    <Text style={{ fontFamily: 'inter-medium', fontSize: 14 }}>$</Text>
-                    <TextInput style={[styles.input, { width: 100, }]}
-                        ref={laborRef}
-                        value={laborValue}
-                        onChangeText={(val) => handleLaborValue(val.replace(/[^0-9]/g, ''))}
-                        placeholder="0"
-                        placeholderTextColor="#868383DC"
-                    />
-
-                </View>
-
-
-                <TextInput style={[styles.input, { width: 100 }]}
+                <TextInput style={[styles.input, { width: 100, marginHorizontal:10 }]}
                     ref={qtyRef}
                     placeholder="0"
                     value={qtyValue}
@@ -352,7 +341,7 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
                     placeholderTextColor="#868383DC"
                 />
 
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 10 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 10, marginHorizontal:10 }}>
                     <Text style={{ fontFamily: 'inter-medium', fontSize: 14 }}>$</Text>
                     <TextInput style={[styles.input, { width: 100 }]}
                         ref={partsRef}
@@ -363,7 +352,7 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
                     />
                 </View>
 
-                <View style={{ flexDirection: 'row', alignItems: 'center', }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal:10 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 10 }}>
                         <Text style={{ fontFamily: 'inter-medium', fontSize: 14 }}>$</Text>
                         <TextInput style={[styles.input, { width: 100 }]}
@@ -535,6 +524,28 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
 
     }
 
+    const handleLaborRate = async (text) => {
+        setLaborRate(text)
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(async () => {
+            await updateDoc(doc(db, 'WorkOrders', selectedWorkOrder.id.toString()), {
+                'laborRate': text
+            })
+        }, 2000)
+
+    }
+
+    const handleLaborHours = async (text) => {
+        setLaborHours(text)
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(async () => {
+            await updateDoc(doc(db, 'WorkOrders', selectedWorkOrder.id.toString()), {
+                'laborHours': text
+            })
+        }, 2000)
+
+    }
+
     const updateStatus = async (value) => {
         try {
             await updateDoc(doc(db, "WorkOrders", selectedWorkOrder.id.toString()), {
@@ -687,15 +698,13 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
                                     </View>
                                     <View style={styles.subViewStyle}>
                                         <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>License Plate:</Text>
-                                        <Text style={{}}>{plateNumber}</Text>
+                                        <Text style={{}}>{assetState.value.data.find(asset => asset["Asset Number"].toString() === selectedWorkOrder.assetNumber)?.["Plate Number"] || 'n/a'}</Text>
                                     </View>
                                     <View style={styles.subViewStyle}>
                                         <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Mileage:</Text>
-                                        <Text style={{}}>{selectedWorkOrder.mileage}</Text>
+                                        <Text style={{}}>{assetState.value.data.find(asset => asset["Asset Number"].toString() === selectedWorkOrder.assetNumber)?.Mileage || 'n/a'}</Text>
                                     </View>
-
                                 </View>
-
                             </View>
 
 
@@ -724,22 +733,19 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
                                                 <View style={{ width: 150, marginLeft: 5 }}>
                                                     <Text style={{ fontFamily: 'inter-medium', fontSize: 14, width: 200 }}>Priority</Text>
                                                 </View >
-                                                <View style={{ width: 200, marginLeft: 5 }}>
+                                                <View style={{  width: 200, paddingRight: 5 }}>
                                                     <Text style={{ fontFamily: 'inter-medium', fontSize: 14, }}>Title</Text>
                                                 </View>
-                                                <View style={{ width: 300, marginLeft: 5 }}>
+                                                <View style={{ width: 300, marginHorizontal:10 }}>
                                                     <Text style={{ fontFamily: 'inter-medium', fontSize: 14, }}>Description</Text>
                                                 </View>
-                                                <View style={{ width: 100, marginLeft: 5 }}>
-                                                    <Text style={{ fontFamily: 'inter-medium', fontSize: 14, }}>Labor</Text>
-                                                </View>
-                                                <View style={{ width: 100, marginLeft: 5 }}>
+                                                <View style={{width: 100, marginHorizontal:10 }}>
                                                     <Text style={{ fontFamily: 'inter-medium', fontSize: 14, }}>Qty</Text>
                                                 </View>
-                                                <View style={{ width: 100, marginLeft: 5 }}>
+                                                <View style={{ width: 120, marginLeft: 10, marginHorizontal:10 }}>
                                                     <Text style={{ fontFamily: 'inter-medium', fontSize: 14, }}>Parts</Text>
                                                 </View>
-                                                <View style={{ width: 100, marginLeft: 5 }}>
+                                                <View style={{ width: 100, marginLeft: 10, marginHorizontal:10 }}>
                                                     <Text style={{ fontFamily: 'inter-medium', fontSize: 14 }}>Total</Text>
                                                 </View>
 
@@ -844,12 +850,9 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
                                         <View style={{ borderBottomWidth: 1, borderBottomColor: '#C6C6C6', paddingHorizontal: 25, paddingVertical: 20, width: '100%', }}>
                                             <Text style={{ color: '#353535', fontFamily: 'inter-medium', fontSize: 20 }}>Cost Summary</Text>
                                         </View>
-                                        <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginTop: 20 }}>
-                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Parts sub total:</Text>
-                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>${partsSubTotal}</Text>
-                                        </View>
 
-                                        <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginVertical: 10, alignItems: 'center' }}>
+
+                                        {/* <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginVertical: 10, alignItems: 'center' }}>
                                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                                 <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Parts Tax: %</Text>
                                                 <TextInput style={[styles.input, { width: 100, }]}
@@ -861,16 +864,58 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
                                                 />
                                             </View>
                                             <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>${(parseFloat(partsSubTotal) || 0) * (parseFloat(selectedWorkOrder.partsTax) || 0) / 100}</Text>
+                                        </View> */}
+
+                                        <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginVertical: 10, alignItems: 'center', marginTop: 20 }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Labor Rate: $</Text>
+                                                <TextInput style={[styles.input, { width: 100, }]}
+                                                    value={laborRate}
+                                                    onChangeText={(val) => handleLaborRate(val.replace(/[^0-9]/g, ''))}
+                                                    placeholder="0"
+                                                    placeholderTextColor="#868383DC"
+                                                />
+                                            </View>
+
                                         </View>
+
+                                        <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginVertical: 10, alignItems: 'center' }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Labor Hours: </Text>
+                                                <TextInput style={[styles.input, { width: 100, }]}
+                                                    value={laborHours}
+                                                    onChangeText={(val) => handleLaborHours(val.replace(/[^0-9]/g, ''))}
+                                                    placeholder="0"
+                                                    placeholderTextColor="#868383DC"
+                                                />
+                                            </View>
+
+                                        </View>
+
+
 
                                         <View style={{ width: '90%', borderBottomWidth: 1, borderBottomColor: '#C6C6C6', marginTop: 10, alignSelf: 'center' }}></View>
 
                                         <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginTop: 20 }}>
                                             <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Labor sub total:</Text>
-                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>${laborSubTotal}</Text>
+                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>${((parseFloat(selectedWorkOrder.laborRate) || 0) * (parseFloat(selectedWorkOrder.laborHours) || 0))}</Text>
                                         </View>
 
-                                        <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginVertical: 10, alignItems: 'center' }}>
+                                        <View style={{ width: '90%', borderBottomWidth: 1, borderBottomColor: '#C6C6C6', marginTop: 10, alignSelf: 'center' }}></View>
+
+
+                                        <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginTop: 20 }}>
+                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Parts sub total:</Text>
+                                            <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>${partsSubTotal}</Text>
+                                        </View>
+
+
+
+
+
+
+
+                                        {/* <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginVertical: 10, alignItems: 'center' }}>
                                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                                 <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>Labor Tax: %</Text>
                                                 <TextInput style={[styles.input, { width: 100, }]}
@@ -881,14 +926,14 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
                                                 />
                                             </View>
                                             <Text style={{ fontFamily: 'inter-medium', fontSize: 16, color: '#000000' }}>${(parseFloat(laborSubTotal) || 0) * (parseFloat(selectedWorkOrder.laborTax) || 0) / 100}</Text>
-                                        </View>
+                                        </View> */}
 
                                         <View style={{ width: '90%', borderBottomWidth: 1, borderBottomColor: '#C6C6C6', marginTop: 10, alignSelf: 'center' }}></View>
 
                                         <View style={{ flexDirection: 'row', paddingHorizontal: 25, justifyContent: 'space-between', width: '100%', marginTop: 20 }}>
                                             <Text style={{ fontFamily: 'inter-medium', fontSize: 20, color: '#000000' }}>Total:</Text>
                                             <Text style={{ fontFamily: 'inter-medium', fontSize: 20, color: '#000000' }}>
-                                                $ {((parseFloat(netTotal) || 0) + ((parseFloat(laborSubTotal) || 0) * (parseFloat(selectedWorkOrder.laborTax) || 0) / 100) + ((parseFloat(partsSubTotal) || 0) * (parseFloat(selectedWorkOrder.partsTax) || 0) / 100)).toFixed(2)}
+                                                $ {((parseFloat(netTotal) || 0) + ((parseFloat(selectedWorkOrder.laborRate) || 0) * (parseFloat(selectedWorkOrder.laborHours) || 0))).toFixed(2)}
                                             </Text>
                                         </View>
 

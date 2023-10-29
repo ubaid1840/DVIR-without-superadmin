@@ -95,16 +95,14 @@ CloseAllDropDowns()
                                 temp.push(docs.data())
                         })
                     })
-                const sort = temp.slice().sort((a, b) => b.TimeStamp - a.TimeStamp);
-                console.log(sort)
+                const updatedTemp = [...temp.filter(item => item.Designation !== 'Owner')]
+                const sort = updatedTemp.slice().sort((a, b) => b.TimeStamp - a.TimeStamp);
                 setEmployeeNumber(sort.length == 0 ? 1 : sort[0]['Employee Number'] + 1)
-
                 const updatedItems = sort.filter((item, i) => item.Designation !== 'Driver');
-
                 // const sortedArray = dbData.slice().sort((a, b) => b.TimeStamp - a.TimeStamp);
                     
                 setTotalManager(updatedItems.length)
-                setPeopleData(updatedItems)
+                setPeopleData(sort)
                 setEntriesData(updatedItems)
                 setloading(false)
 

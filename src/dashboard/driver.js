@@ -378,6 +378,7 @@ const DriverPage = (props) => {
     }
 
     const handleWOFormValue = (value) => {
+        setDriverDetail(false)
         props.onDashboardWOValue(value)
     }
 
@@ -394,11 +395,18 @@ const DriverPage = (props) => {
     }
 
     const handleInspectionFormValue = (value) => {
+        setDriverDetail(false)
         props.onDashboardValue(value)
     }
 
     const handleDefectFormValue = (value) => {
+        setDriverDetail(false)
         props.onDashboardDefectValue(value)
+    }
+
+    const handleOpenWorkOrderValue = (value) => {
+        setDriverDetail(false)
+        props.onDashboardWODetailValue(value)
     }
 
 
@@ -592,7 +600,7 @@ const DriverPage = (props) => {
                                                         'dateCreated',
                                                         'priority',
                                                         'severity',
-                                                        'title',
+                                                        'defectsAll',
                                                         'driverName',
                                                         'Work Order',
                                                         'Action'
@@ -600,6 +608,7 @@ const DriverPage = (props) => {
                                                     entriesData={defectState.value.defect.filter((item) => item.driverEmployeeNumber == selectedDriver['Employee Number'])}
                                                     titleForm="Defects"
                                                     onValueChange={handleDefectFormValue}
+                                                    onOpenWorkOrder={handleOpenWorkOrderValue}
                                                     row={styles.formRowStyle}
                                                     cell={styles.formCellStyle}
                                                     entryText={styles.formEntryTextStyle}

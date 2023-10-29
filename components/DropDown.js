@@ -16,6 +16,9 @@ import { EngineTypeOptionContext } from '../src/store/context/EngineTypeOptionCo
 import { AirBrakesOptionContext } from '../src/store/context/AirBrakesOptionContext';
 import { AssetTypeOptionContext } from '../src/store/context/AssetTypeOptionContext';
 import { DatePickerContext } from '../src/store/context/DatePickerContext';
+import { TabHeadContext } from '../src/store/context/TabHeadContext'
+import { TabSubHeadContext } from '../src/store/context/TabSubHeadContext'
+import {TabHeadOptionContext} from '../src/store/context/TabHeadOptionContext'
 
 const DropDownComponent = (props) => {
 
@@ -37,6 +40,10 @@ const DropDownComponent = (props) => {
     const [arrowAnimateADA] = useState(new Animated.Value(0));
     const [arrowAnimateAirBrakes] = useState(new Animated.Value(0));
 
+    const [arrowAnimateTabHead] = useState(new Animated.Value(0));
+    const [arrowAnimateTabSubHead] = useState(new Animated.Value(0));
+    const [arrowAnimateTabHeadOption] = useState(new Animated.Value(0));
+
     const [dropdownSelect, setDropdownSelect] = useState(false)
 
     const { state: headerOptionState, setHeaderOption } = useContext(HeaderOptionContext)
@@ -46,14 +53,18 @@ const DropDownComponent = (props) => {
     const { state: severityOptionState, setSeverityOption } = useContext(SeverityOptionContext)
     const { state: searchOptionState, setSearchOption } = useContext(SearchOptionContext)
 
-    const {state : ADAOptionState, setADAOption} = useContext(ADAOptionContext)
-    const {state : engineTypeOptionState, setEngineTypeOption} = useContext(EngineTypeOptionContext)
-    const {state : airBrakesOptionState, setAirBrakesOption} = useContext(AirBrakesOptionContext)
-    const {state : assetTypeOptionState, setAssetTypeOption} = useContext(AssetTypeOptionContext)
+    const { state: ADAOptionState, setADAOption } = useContext(ADAOptionContext)
+    const { state: engineTypeOptionState, setEngineTypeOption } = useContext(EngineTypeOptionContext)
+    const { state: airBrakesOptionState, setAirBrakesOption } = useContext(AirBrakesOptionContext)
+    const { state: assetTypeOptionState, setAssetTypeOption } = useContext(AssetTypeOptionContext)
 
     const { state: datePickerState, setDatePicker } = useContext(DatePickerContext)
 
-    
+    const { state: tabHeadState, setTabHead } = useContext(TabHeadContext)
+    const { state: tabSubHeadState, setTabSubHead } = useContext(TabSubHeadContext)
+    const {state : tabHeadOptionState, setTabHeadOption} = useContext(TabHeadOptionContext)
+
+
 
     const router = useRouter()
 
@@ -232,6 +243,55 @@ const DropDownComponent = (props) => {
             useNativeDriver: false,
         }).start();
     };
+
+    const animationTabHead = () => {
+        Animated.timing(arrowAnimateTabHead, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: false,
+        }).start();
+    };
+
+    const animationTabHeadBack = () => {
+        Animated.timing(arrowAnimateTabHead, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: false,
+        }).start();
+    };
+
+    const animationTabSubHead = () => {
+        Animated.timing(arrowAnimateTabSubHead, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: false,
+        }).start();
+    };
+
+    const animationTabSubHeadBack = () => {
+        Animated.timing(arrowAnimateTabSubHead, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: false,
+        }).start();
+    };
+
+    const animationTabHeadOption = () => {
+        Animated.timing(arrowAnimateTabHeadOption, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: false,
+        }).start();
+    };
+
+    const animationTabHeadOptionBack = () => {
+        Animated.timing(arrowAnimateTabHeadOption, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: false,
+        }).start();
+    };
+
     const handleDropdownToggle = () => {
         if (info == 'mechanicSelection') {
             setMechanicOption(!mechanicOptionState.value.data)
@@ -264,7 +324,6 @@ const DropDownComponent = (props) => {
         }
 
         if (info == 'assetTypeSelection') {
-
             setAssetTypeOption(!assetTypeOptionState.value.data)
         }
 
@@ -274,8 +333,19 @@ const DropDownComponent = (props) => {
         }
 
         if (info == 'engineTypeSelection') {
-
             setEngineTypeOption(!engineTypeOptionState.value.data)
+        }
+
+        if (info == 'tabHeadSelection') {
+            setTabHead(!tabHeadState.value.data)
+        }
+
+        if (info == 'tabSubHeadSelection') {
+            setTabSubHead(!tabSubHeadState.value.data)
+        }
+
+        if (info == 'tabHeadOptionSelection') {
+            setTabHeadOption(!tabHeadOptionState.value.data)
         }
 
     };
@@ -365,10 +435,29 @@ const DropDownComponent = (props) => {
         }
     }, [ADAOptionState.value.data])
 
-  
+    useEffect(() => {
+        if (tabHeadState.value.data == false) {
+            animationTabHead();
+        } else {
+            animationTabHeadBack();
+        }
+    }, [tabHeadState.value.data])
 
+    useEffect(() => {
+        if (tabSubHeadState.value.data == false) {
+            animationTabSubHead();
+        } else {
+            animationTabSubHeadBack();
+        }
+    }, [tabSubHeadState.value.data])
 
-
+    useEffect(() => {
+        if (tabHeadOptionState.value.data == false) {
+            animationTabHeadOption();
+        } else {
+            animationTabHeadOptionBack();
+        }
+    }, [tabHeadOptionState.value.data])
 
 
     const rotateInterpolation = arrowAnimate.interpolate({
@@ -422,6 +511,21 @@ const DropDownComponent = (props) => {
     });
 
     const rotateInterpolationADA = arrowAnimateADA.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '180deg'],
+    });
+
+    const rotateInterpolationTabHead = arrowAnimateTabHead.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '180deg'],
+    });
+
+    const rotateInterpolationTabSubHead = arrowAnimateTabSubHead.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '180deg'],
+    });
+
+    const rotateInterpolationTabHeadOption = arrowAnimateTabHeadOption.interpolate({
         inputRange: [0, 1],
         outputRange: ['0deg', '180deg'],
     });
@@ -843,24 +947,24 @@ const DropDownComponent = (props) => {
 
                                                     {options.map((item, index) => (
 
-                                                            <TouchableOpacity
-                                                                key={index.toString()}
-                                                                style={[
-                                                                    option,
-                                                                    hoveredIndex === index && hoveredOption, // Apply the hoveredOption style conditionally
-                                                                ]}
-                                                                onPress={() => {
-                                                                    console.log('1')
-                                                                    console.log(item)
-                                                                    handleOptionSelect(item);
-                                                                }}
-                                                                onMouseEnter={() => handleOptionHover(index)}
-                                                                onMouseLeave={() => handleOptionHover(-1)}
-                                                            >
-                                                                <Text style={[optionText, hoveredIndex === index && hoveredOptionText]}>
-                                                                    {item}
-                                                                </Text>
-                                                            </TouchableOpacity>
+                                                        <TouchableOpacity
+                                                            key={index.toString()}
+                                                            style={[
+                                                                option,
+                                                                hoveredIndex === index && hoveredOption, // Apply the hoveredOption style conditionally
+                                                            ]}
+                                                            onPress={() => {
+                                                                console.log('1')
+                                                                console.log(item)
+                                                                handleOptionSelect(item);
+                                                            }}
+                                                            onMouseEnter={() => handleOptionHover(index)}
+                                                            onMouseLeave={() => handleOptionHover(-1)}
+                                                        >
+                                                            <Text style={[optionText, hoveredIndex === index && hoveredOptionText]}>
+                                                                {item}
+                                                            </Text>
+                                                        </TouchableOpacity>
                                                     ))}
 
 
@@ -869,179 +973,30 @@ const DropDownComponent = (props) => {
                                         </View>
                                         :
                                         info == 'airBrakesSelection'
-                                        ?
-                                        <View style={container}>
+                                            ?
+                                            <View style={container}>
 
-                                            <TouchableOpacity
-                                                style={[dropdownStyle, { flexDirection: 'row', justifyContent: 'space-between' }]}
-                                                onPress={() => {
-                                                    CloseAllDropDowns()
-                                                    handleDropdownToggle()
-                                                }}
-                                            >
-                                                <Text style={[selectedValueStyle]}>
-                                                    {selectedValue}
-                                                </Text>
-                                                <Text style={{ fontSize: 15, fontFamily: 'inter-semibold', color: '#5B5B5B' }}>{title}</Text>
-                                                <Animated.Image
-                                                    style={{ marginLeft: 10, width: 20, height: 20, transform: [{ rotate: rotateInterpolationAirBrakes }], alignSelf: 'center' }}
-                                                    source={imageSource}
-                                                ></Animated.Image>
-                                            </TouchableOpacity>
-                                            
-                                            {airBrakesOptionState.value.data && (
-                                                <ScrollView style={[optionsContainer, { right: 20, maxHeight: 150 }]}>
+                                                <TouchableOpacity
+                                                    style={[dropdownStyle, { flexDirection: 'row', justifyContent: 'space-between' }]}
+                                                    onPress={() => {
+                                                        CloseAllDropDowns()
+                                                        handleDropdownToggle()
+                                                    }}
+                                                >
+                                                    <Text style={[selectedValueStyle]}>
+                                                        {selectedValue}
+                                                    </Text>
+                                                    <Text style={{ fontSize: 15, fontFamily: 'inter-semibold', color: '#5B5B5B' }}>{title}</Text>
+                                                    <Animated.Image
+                                                        style={{ marginLeft: 10, width: 20, height: 20, transform: [{ rotate: rotateInterpolationAirBrakes }], alignSelf: 'center' }}
+                                                        source={imageSource}
+                                                    ></Animated.Image>
+                                                </TouchableOpacity>
 
-                                                    {options.map((item, index) => (
+                                                {airBrakesOptionState.value.data && (
+                                                    <ScrollView style={[optionsContainer, { right: 20, maxHeight: 150 }]}>
 
-                                                            <TouchableOpacity
-                                                                key={index.toString()}
-                                                                style={[
-                                                                    option,
-                                                                    hoveredIndex === index && hoveredOption, // Apply the hoveredOption style conditionally
-                                                                ]}
-                                                                onPress={() => {
-                                                                    handleOptionSelect(item);
-                                                                }}
-                                                                onMouseEnter={() => handleOptionHover(index)}
-                                                                onMouseLeave={() => handleOptionHover(-1)}
-                                                            >
-                                                                <Text style={[optionText, hoveredIndex === index && hoveredOptionText]}>
-                                                                    {item}
-                                                                </Text>
-                                                            </TouchableOpacity>
-                                                    ))}
-
-
-                                                </ScrollView>
-                                            )}
-                                        </View>
-                                        :
-                                        info == 'assetTypeSelection'
-                                        ?
-                                        <View style={container}>
-
-                                            <TouchableOpacity
-                                                style={[dropdownStyle, { flexDirection: 'row', justifyContent: 'space-between' }]}
-                                                onPress={() => {
-                                                    CloseAllDropDowns()
-                                                    handleDropdownToggle()
-                                                }}
-                                            >
-                                                <Text style={[selectedValueStyle]}>
-                                                    {selectedValue}
-                                                </Text>
-                                                <Text style={{ fontSize: 15, fontFamily: 'inter-semibold', color: '#5B5B5B' }}>{title}</Text>
-                                                <Animated.Image
-                                                    style={{ marginLeft: 10, width: 20, height: 20, transform: [{ rotate: rotateInterpolationAssetType }], alignSelf: 'center' }}
-                                                    source={imageSource}
-                                                ></Animated.Image>
-                                            </TouchableOpacity>
-                                            
-                                            {assetTypeOptionState.value.data && (
-                                                <ScrollView style={[optionsContainer, { right: 20, maxHeight: 150 }]}>
-
-                                                    {options.map((item, index) => (
-
-                                                            <TouchableOpacity
-                                                                key={index.toString()}
-                                                                style={[
-                                                                    option,
-                                                                    hoveredIndex === index && hoveredOption, // Apply the hoveredOption style conditionally
-                                                                ]}
-                                                                onPress={() => {
-                                                                  
-                                                                    handleOptionSelect(item);
-                                                                }}
-                                                                onMouseEnter={() => handleOptionHover(index)}
-                                                                onMouseLeave={() => handleOptionHover(-1)}
-                                                            >
-                                                                <Text style={[optionText, hoveredIndex === index && hoveredOptionText]}>
-                                                                    {item}
-                                                                </Text>
-                                                            </TouchableOpacity>
-                                                    ))}
-
-
-                                                </ScrollView>
-                                            )}
-                                        </View>
-                                        :
-                                        info == 'ADASelection'
-                                        ?
-                                        <View style={container}>
-
-                                            <TouchableOpacity
-                                                style={[dropdownStyle, { flexDirection: 'row', justifyContent: 'space-between' }]}
-                                                onPress={() => {
-                                                    CloseAllDropDowns()
-                                                    handleDropdownToggle()
-                                                }}
-                                            >
-                                                <Text style={[selectedValueStyle]}>
-                                                    {selectedValue}
-                                                </Text>
-                                                <Text style={{ fontSize: 15, fontFamily: 'inter-semibold', color: '#5B5B5B' }}>{title}</Text>
-                                                <Animated.Image
-                                                    style={{ marginLeft: 10, width: 20, height: 20, transform: [{ rotate: rotateInterpolationADA }], alignSelf: 'center' }}
-                                                    source={imageSource}
-                                                ></Animated.Image>
-                                            </TouchableOpacity>
-                                            
-                                            {ADAOptionState.value.data && (
-                                                <ScrollView style={[optionsContainer, { right: 20, maxHeight: 150 }]}>
-
-                                                    {options.map((item, index) => (
-
-                                                            <TouchableOpacity
-                                                                key={index.toString()}
-                                                                style={[
-                                                                    option,
-                                                                    hoveredIndex === index && hoveredOption, // Apply the hoveredOption style conditionally
-                                                                ]}
-                                                                onPress={() => {
-                                                                   
-                                                                    handleOptionSelect(item);
-                                                                }}
-                                                                onMouseEnter={() => handleOptionHover(index)}
-                                                                onMouseLeave={() => handleOptionHover(-1)}
-                                                            >
-                                                                <Text style={[optionText, hoveredIndex === index && hoveredOptionText]}>
-                                                                    {item}
-                                                                </Text>
-                                                            </TouchableOpacity>
-                                                    ))}
-
-
-                                                </ScrollView>
-                                            )}
-                                        </View>
-                                        :
-                                        info == 'engineTypeSelection'
-                                        ?
-                                        <View style={container}>
-
-                                            <TouchableOpacity
-                                                style={[dropdownStyle, { flexDirection: 'row', justifyContent: 'space-between' }]}
-                                                onPress={() => {
-                                                    CloseAllDropDowns()
-                                                    handleDropdownToggle()
-                                                }}
-                                            >
-                                                <Text style={[selectedValueStyle]}>
-                                                    {selectedValue}
-                                                </Text>
-                                                <Text style={{ fontSize: 15, fontFamily: 'inter-semibold', color: '#5B5B5B' }}>{title}</Text>
-                                                <Animated.Image
-                                                    style={{ marginLeft: 10, width: 20, height: 20, transform: [{ rotate: rotateInterpolationEngineType }], alignSelf: 'center' }}
-                                                    source={imageSource}
-                                                ></Animated.Image>
-                                            </TouchableOpacity>
-                                            
-                                            {engineTypeOptionState.value.data && (
-                                                <ScrollView style={[optionsContainer, { right: 20, maxHeight: 150 }]}>
-
-                                                    {options.map((item, index) => (
+                                                        {options.map((item, index) => (
 
                                                             <TouchableOpacity
                                                                 key={index.toString()}
@@ -1059,14 +1014,310 @@ const DropDownComponent = (props) => {
                                                                     {item}
                                                                 </Text>
                                                             </TouchableOpacity>
-                                                    ))}
+                                                        ))}
 
 
-                                                </ScrollView>
-                                            )}
-                                        </View>
-                                        :
-                                        null
+                                                    </ScrollView>
+                                                )}
+                                            </View>
+                                            :
+                                            info == 'assetTypeSelection'
+                                                ?
+                                                <View style={container}>
+
+                                                    <TouchableOpacity
+                                                        style={[dropdownStyle, { flexDirection: 'row', justifyContent: 'space-between' }]}
+                                                        onPress={() => {
+                                                            CloseAllDropDowns()
+                                                            handleDropdownToggle()
+                                                        }}
+                                                    >
+                                                        <Text style={[selectedValueStyle]}>
+                                                            {selectedValue}
+                                                        </Text>
+                                                        <Text style={{ fontSize: 15, fontFamily: 'inter-semibold', color: '#5B5B5B' }}>{title}</Text>
+                                                        <Animated.Image
+                                                            style={{ marginLeft: 10, width: 20, height: 20, transform: [{ rotate: rotateInterpolationAssetType }], alignSelf: 'center' }}
+                                                            source={imageSource}
+                                                        ></Animated.Image>
+                                                    </TouchableOpacity>
+
+                                                    {assetTypeOptionState.value.data && (
+                                                        <ScrollView style={[optionsContainer, { right: 20, maxHeight: 150 }]}>
+
+                                                            {options.map((item, index) => (
+
+                                                                <TouchableOpacity
+                                                                    key={index.toString()}
+                                                                    style={[
+                                                                        option,
+                                                                        hoveredIndex === index && hoveredOption, // Apply the hoveredOption style conditionally
+                                                                    ]}
+                                                                    onPress={() => {
+
+                                                                        handleOptionSelect(item);
+                                                                    }}
+                                                                    onMouseEnter={() => handleOptionHover(index)}
+                                                                    onMouseLeave={() => handleOptionHover(-1)}
+                                                                >
+                                                                    <Text style={[optionText, hoveredIndex === index && hoveredOptionText]}>
+                                                                        {item}
+                                                                    </Text>
+                                                                </TouchableOpacity>
+                                                            ))}
+
+
+                                                        </ScrollView>
+                                                    )}
+                                                </View>
+                                                :
+                                                info == 'ADASelection'
+                                                    ?
+                                                    <View style={container}>
+
+                                                        <TouchableOpacity
+                                                            style={[dropdownStyle, { flexDirection: 'row', justifyContent: 'space-between' }]}
+                                                            onPress={() => {
+                                                                CloseAllDropDowns()
+                                                                handleDropdownToggle()
+                                                            }}
+                                                        >
+                                                            <Text style={[selectedValueStyle]}>
+                                                                {selectedValue}
+                                                            </Text>
+                                                            <Text style={{ fontSize: 15, fontFamily: 'inter-semibold', color: '#5B5B5B' }}>{title}</Text>
+                                                            <Animated.Image
+                                                                style={{ marginLeft: 10, width: 20, height: 20, transform: [{ rotate: rotateInterpolationADA }], alignSelf: 'center' }}
+                                                                source={imageSource}
+                                                            ></Animated.Image>
+                                                        </TouchableOpacity>
+
+                                                        {ADAOptionState.value.data && (
+                                                            <ScrollView style={[optionsContainer, { right: 20, maxHeight: 150 }]}>
+
+                                                                {options.map((item, index) => (
+
+                                                                    <TouchableOpacity
+                                                                        key={index.toString()}
+                                                                        style={[
+                                                                            option,
+                                                                            hoveredIndex === index && hoveredOption, // Apply the hoveredOption style conditionally
+                                                                        ]}
+                                                                        onPress={() => {
+
+                                                                            handleOptionSelect(item);
+                                                                        }}
+                                                                        onMouseEnter={() => handleOptionHover(index)}
+                                                                        onMouseLeave={() => handleOptionHover(-1)}
+                                                                    >
+                                                                        <Text style={[optionText, hoveredIndex === index && hoveredOptionText]}>
+                                                                            {item}
+                                                                        </Text>
+                                                                    </TouchableOpacity>
+                                                                ))}
+
+
+                                                            </ScrollView>
+                                                        )}
+                                                    </View>
+                                                    :
+                                                    info == 'engineTypeSelection'
+                                                        ?
+                                                        <View style={container}>
+
+                                                            <TouchableOpacity
+                                                                style={[dropdownStyle, { flexDirection: 'row', justifyContent: 'space-between' }]}
+                                                                onPress={() => {
+                                                                    CloseAllDropDowns()
+                                                                    handleDropdownToggle()
+                                                                }}
+                                                            >
+                                                                <Text style={[selectedValueStyle]}>
+                                                                    {selectedValue}
+                                                                </Text>
+                                                                <Text style={{ fontSize: 15, fontFamily: 'inter-semibold', color: '#5B5B5B' }}>{title}</Text>
+                                                                <Animated.Image
+                                                                    style={{ marginLeft: 10, width: 20, height: 20, transform: [{ rotate: rotateInterpolationEngineType }], alignSelf: 'center' }}
+                                                                    source={imageSource}
+                                                                ></Animated.Image>
+                                                            </TouchableOpacity>
+
+                                                            {engineTypeOptionState.value.data && (
+                                                                <ScrollView style={[optionsContainer, { right: 20, maxHeight: 150 }]}>
+
+                                                                    {options.map((item, index) => (
+
+                                                                        <TouchableOpacity
+                                                                            key={index.toString()}
+                                                                            style={[
+                                                                                option,
+                                                                                hoveredIndex === index && hoveredOption, // Apply the hoveredOption style conditionally
+                                                                            ]}
+                                                                            onPress={() => {
+                                                                                handleOptionSelect(item);
+                                                                            }}
+                                                                            onMouseEnter={() => handleOptionHover(index)}
+                                                                            onMouseLeave={() => handleOptionHover(-1)}
+                                                                        >
+                                                                            <Text style={[optionText, hoveredIndex === index && hoveredOptionText]}>
+                                                                                {item}
+                                                                            </Text>
+                                                                        </TouchableOpacity>
+                                                                    ))}
+
+
+                                                                </ScrollView>
+                                                            )}
+                                                        </View>
+                                                        :
+                                                        info == 'tabHeadSelection'
+                                                            ?
+                                                            <View style={container}>
+
+                                                                <TouchableOpacity
+                                                                    style={[dropdownStyle, { flexDirection: 'row', justifyContent: 'space-between' }]}
+                                                                    onPress={() => {
+                                                                        CloseAllDropDowns()
+                                                                        handleDropdownToggle()
+                                                                    }}
+                                                                >
+                                                                    <Text style={[selectedValueStyle]}>
+                                                                        {selectedValue}
+                                                                    </Text>
+                                                                    <Text style={{ fontSize: 15, fontFamily: 'inter-semibold', color: '#5B5B5B' }}>{title}</Text>
+                                                                    <Animated.Image
+                                                                        style={{ marginLeft: 10, width: 20, height: 20, transform: [{ rotate: rotateInterpolationTabHead }], alignSelf: 'center' }}
+                                                                        source={imageSource}
+                                                                    ></Animated.Image>
+                                                                </TouchableOpacity>
+
+                                                                {tabHeadState.value.data && (
+                                                                    <ScrollView style={[optionsContainer, { right: 20, maxHeight: 150 }]}>
+
+                                                                        {options.map((item, index) => (
+
+                                                                            <TouchableOpacity
+                                                                                key={index.toString()}
+                                                                                style={[
+                                                                                    option,
+                                                                                    hoveredIndex === index && hoveredOption, // Apply the hoveredOption style conditionally
+                                                                                ]}
+                                                                                onPress={() => {
+                                                                                    handleOptionSelect(item);
+                                                                                }}
+                                                                                onMouseEnter={() => handleOptionHover(index)}
+                                                                                onMouseLeave={() => handleOptionHover(-1)}
+                                                                            >
+                                                                                <Text style={[optionText, hoveredIndex === index && hoveredOptionText]}>
+                                                                                    {item}
+                                                                                </Text>
+                                                                            </TouchableOpacity>
+                                                                        ))}
+
+
+                                                                    </ScrollView>
+                                                                )}
+                                                            </View>
+                                                            :
+                                                            info == 'tabSubHeadSelection'
+                                                                ?
+                                                                <View style={container}>
+
+                                                                    <TouchableOpacity
+                                                                        style={[dropdownStyle, { flexDirection: 'row', justifyContent: 'space-between' }]}
+                                                                        onPress={() => {
+                                                                            CloseAllDropDowns()
+                                                                            handleDropdownToggle()
+                                                                        }}
+                                                                    >
+                                                                        <Text style={[selectedValueStyle]}>
+                                                                            {selectedValue}
+                                                                        </Text>
+                                                                        <Text style={{ fontSize: 15, fontFamily: 'inter-semibold', color: '#5B5B5B' }}>{title}</Text>
+                                                                        <Animated.Image
+                                                                            style={{ marginLeft: 10, width: 20, height: 20, transform: [{ rotate: rotateInterpolationTabSubHead }], alignSelf: 'center' }}
+                                                                            source={imageSource}
+                                                                        ></Animated.Image>
+                                                                    </TouchableOpacity>
+
+                                                                    {tabSubHeadState.value.data && (
+                                                                        <ScrollView style={[optionsContainer, { right: 20, maxHeight: 150 }]}>
+
+                                                                            {options.map((item, index) => (
+
+                                                                                <TouchableOpacity
+                                                                                    key={index.toString()}
+                                                                                    style={[
+                                                                                        option,
+                                                                                        hoveredIndex === index && hoveredOption, // Apply the hoveredOption style conditionally
+                                                                                    ]}
+                                                                                    onPress={() => {
+                                                                                        handleOptionSelect(item);
+                                                                                    }}
+                                                                                    onMouseEnter={() => handleOptionHover(index)}
+                                                                                    onMouseLeave={() => handleOptionHover(-1)}
+                                                                                >
+                                                                                    <Text style={[optionText, hoveredIndex === index && hoveredOptionText]}>
+                                                                                        {item}
+                                                                                    </Text>
+                                                                                </TouchableOpacity>
+                                                                            ))}
+
+
+                                                                        </ScrollView>
+                                                                    )}
+                                                                </View>
+                                                                :
+                                                                info == 'tabHeadOptionSelection'
+                                                                ?
+                                                                <View style={container}>
+    
+                                                                    <TouchableOpacity
+                                                                        style={[dropdownStyle, { flexDirection: 'row', justifyContent: 'space-between' }]}
+                                                                        onPress={() => {
+                                                                            CloseAllDropDowns()
+                                                                            handleDropdownToggle()
+                                                                        }}
+                                                                    >
+                                                                        <Text style={[selectedValueStyle]}>
+                                                                            {selectedValue}
+                                                                        </Text>
+                                                                        <Text style={{ fontSize: 15, fontFamily: 'inter-semibold', color: '#5B5B5B' }}>{title}</Text>
+                                                                        <Animated.Image
+                                                                            style={{ marginLeft: 10, width: 20, height: 20, transform: [{ rotate: rotateInterpolationTabHeadOption }], alignSelf: 'center' }}
+                                                                            source={imageSource}
+                                                                        ></Animated.Image>
+                                                                    </TouchableOpacity>
+    
+                                                                    {tabHeadOptionState.value.data && (
+                                                                        <ScrollView style={[optionsContainer, { right: 20, maxHeight: 150 }]}>
+    
+                                                                            {options.map((item, index) => (
+    
+                                                                                <TouchableOpacity
+                                                                                    key={index.toString()}
+                                                                                    style={[
+                                                                                        option,
+                                                                                        hoveredIndex === index && hoveredOption, // Apply the hoveredOption style conditionally
+                                                                                    ]}
+                                                                                    onPress={() => {
+                                                                                        handleOptionSelect(item);
+                                                                                    }}
+                                                                                    onMouseEnter={() => handleOptionHover(index)}
+                                                                                    onMouseLeave={() => handleOptionHover(-1)}
+                                                                                >
+                                                                                    <Text style={[optionText, hoveredIndex === index && hoveredOptionText]}>
+                                                                                        {item}
+                                                                                    </Text>
+                                                                                </TouchableOpacity>
+                                                                            ))}
+    
+    
+                                                                        </ScrollView>
+                                                                    )}
+                                                                </View>
+                                                                :
+                                                                null
             }
         </>
     );

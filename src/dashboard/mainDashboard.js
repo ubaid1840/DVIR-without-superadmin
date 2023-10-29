@@ -14,6 +14,8 @@ import moment from 'moment'
 import { collection, getDocs, getFirestore, query, where } from 'firebase/firestore';
 import app from '../config/firebase';
 import { HeaderOptionContext } from '../store/context/HeaderOptionContext';
+import { WOContext } from '../store/context/WOContext'
+import { PeopleContext } from '../store/context/PeopleContext';
 
 const driverOptionList = ['Inspection'];
 const assetOptionList = ['Inspection', 'Defects'];
@@ -23,7 +25,9 @@ const MainDashboard = (props) => {
   const db = getFirestore(app)
 
   const { state: dataState, setData } = useContext(DataContext)
-  const {state : headerOptionState, setHeaderOption} = useContext(HeaderOptionContext)
+  const { state: headerOptionState, setHeaderOption } = useContext(HeaderOptionContext)
+  const { state: woState } = useContext(WOContext)
+  const {state : peopleState} = useContext(PeopleContext)
 
   const [selectedPage, setSelectedPage] = useState('Inspection');
   const [dashboardHovered, setDashboardHovered] = useState(false)
@@ -51,6 +55,9 @@ const MainDashboard = (props) => {
   const [assetLeaderboardwithDefects, setAssetLeaderboardWithDefects] = useState([])
   const [allDrivers, setAllDrivers] = useState([])
 
+  const [openWorkOrders, setOpenWorkOrders] = useState(0)
+  const [closedWorkOrders, setClosedWorkOrders] = useState(0)
+
 
   useEffect(() => {
 
@@ -73,7 +80,44 @@ const MainDashboard = (props) => {
         occurrenceCount: driverEmployeeNumberCounts[driverNumber],
       }));
 
-      // console.log(uniqueDriverArray);
+      const recentDriver = [];
+      const recentAsset = [];
+
+      for (const entry of myData) {
+        // Check if the driverID is not already in the `drivers` array
+        if (!recentDriver.includes(entry.driverEmployeeNumber)) {
+          // Push the driverID into the `drivers` array
+          recentDriver.push(entry.driverEmployeeNumber);
+
+          // Check if you have found the three most recent drivers
+          if (recentDriver.length === 3) {
+            break;
+          }
+        }
+      }
+
+      for (const entry of myData) {
+        // Check if the driverID is not already in the `drivers` array
+        if (!recentAsset.includes(entry.assetNumber)) {
+          // Push the driverID into the `drivers` array
+          recentAsset.push(entry.assetNumber);
+
+          // Check if you have found the three most recent drivers
+          if (recentAsset.length === 3) {
+            break;
+          }
+        }
+      }
+
+      const list = []
+
+      recentDriver.map((item)=> {
+        uniqueDriverArray.map((item1)=>{
+          if(item == item1.driverEmployeeNumber){
+            list.push(item1)
+          }
+        })
+      })
 
       const assetNumberCounts = {};
       const failedCounts = {};
@@ -110,7 +154,17 @@ const MainDashboard = (props) => {
         }
       });
 
-      setAssetLeaderboard(uniqueArray)
+     const list1 = []
+
+     recentAsset.map((item)=>{
+      uniqueArray.map((item1)=> {
+        if(item == item1.assetNumber){
+          list1.push(item1)
+        }
+      })
+     })
+
+      setAssetLeaderboard(list1)
 
       const sortedByFailedCount = uniqueArray.slice().sort((a, b) => {
         return b.failedCount - a.failedCount;
@@ -169,25 +223,39 @@ const MainDashboard = (props) => {
                 }
               })
               driverNumber.push(docs.data()['Employee Number'])
-
             })
           })
-
-        setAllDrivers(driversList)
+        setAllDrivers(list)
         setDriverNumbers(driverNumber)
-        console.log(driverNumber)
         setLoading(false)
 
       } catch (error) {
         console.log('error')
       }
-
-
-
       // console.log(driverNumbersArray)
     }
 
     fetchDriver()
+  }, [])
+
+
+  useEffect(() => {
+
+    const drivers = [];
+
+    for (const entry of myData) {
+      // Check if the driverID is not already in the `drivers` array
+      if (!drivers.includes(entry.driverEmployeeNumber)) {
+        // Push the driverID into the `drivers` array
+        drivers.push(entry.driverID);
+
+        // Check if you have found the three most recent drivers
+        if (drivers.length === 3) {
+          break;
+        }
+      }
+    }
+
   }, [])
 
   useEffect(() => {
@@ -280,7 +348,6 @@ const MainDashboard = (props) => {
               }
             })
             const driverNumbersArray = Array.from(uniqueDriverNumbers);
-            console.log(driverNumbersArray)
             setInspectingDrivers(Math.round(driverNumbersArray.length * 100 / driverNumbers.length))
             // console.log(temp.length)
             setPassedInspection(Math.round((total * 100) / temp.length))
@@ -335,7 +402,6 @@ const MainDashboard = (props) => {
             })
             // console.log(temp.length)
             const driverNumbersArray = Array.from(uniqueDriverNumbers);
-            console.log('1')
             console.log(driverNumbersArray)
             setInspectingDrivers(Math.round(driverNumbersArray.length * 100 / driverNumbers.length))
             setPassedInspection(Math.round((total * 100) / temp.length))
@@ -389,8 +455,8 @@ const MainDashboard = (props) => {
             })
             // console.log(temp.length)
             const driverNumbersArray = Array.from(uniqueDriverNumbers);
-            console.log('2')
-            console.log(driverNumbersArray)
+          
+           
             setInspectingDrivers(Math.round(driverNumbersArray.length * 100 / driverNumbers.length))
             setPassedInspection(Math.round((total * 100) / temp.length))
             setDefectsReported(defects)
@@ -446,7 +512,7 @@ const MainDashboard = (props) => {
 
             // console.log(uniqueDriverNumbers)
             const driverNumbersArray = Array.from(uniqueDriverNumbers);
-            console.log('3', driverNumbersArray)
+            //console.log('3', driverNumbersArray)
             const val = (driverNumbersArray.length * 100) / driverNumbers.length
             setInspectingDrivers(val)
             setPassedInspection(Math.round((total * 100) / temp.length))
@@ -501,7 +567,7 @@ const MainDashboard = (props) => {
             })
             // console.log(temp.length)
             const driverNumbersArray = Array.from(uniqueDriverNumbers);
-            console.log('4', driverNumbersArray)
+            //console.log('4', driverNumbersArray)
             setInspectingDrivers(Math.round(driverNumbersArray.length * 100 / driverNumbers.length))
             setPassedInspection(Math.round((total * 100) / temp.length))
             setDefectsReported(defects)
@@ -546,6 +612,15 @@ const MainDashboard = (props) => {
   }, [selectedPage])
 
 
+  useEffect(() => {
+    const closedList = [...woState.value.data.filter(item => item.status === 'Completed')]
+    const openList = [...woState.value.data.filter(item => item.status !== 'Completed')]
+
+    setOpenWorkOrders(openList.length)
+    setClosedWorkOrders(closedList.length)
+
+  }, [selectedPage])
+
 
   const handleDriverValueChange = (value) => {
     setDriverSelectedOption(value);
@@ -562,10 +637,10 @@ const MainDashboard = (props) => {
 
   return (
     <>
-      <TouchableWithoutFeedback style={{ flex: 1, backgroundColor: '#f6f8f9'}}
-      onPress={()=>{
-        setHeaderOption(false)
-      }}>
+      <TouchableWithoutFeedback style={{ flex: 1, backgroundColor: '#f6f8f9' }}
+        onPress={() => {
+          setHeaderOption(false)
+        }}>
         <ScrollView style={{ height: 100 }}>
           <View style={{ flexDirection: 'row', marginLeft: 40, marginTop: 40, alignItems: 'center' }}>
             <View style={{ backgroundColor: '#23d3d3', borderRadius: 15, }}>
@@ -634,12 +709,12 @@ const MainDashboard = (props) => {
               horizontal>
               <View style={{ width: '100%' }}>
                 <Text style={{ color: '#335a75', fontSize: 24, fontFamily: 'inter-extrablack', paddingBottom: 30 }}>
-                  Inspection & Defects
+                  Summary
                 </Text>
 
                 <View style={{ flexDirection: 'row', justifyContent: 'space-evenly', marginBottom: 15, width: '100%' }}>
 
-                  <View style={{ flexDirection: 'column', borderRightWidth: 2, paddingRight: 60, borderRightColor: '#D2D2D2' }}>
+                  <View style={{ flexDirection: 'column', paddingHorizontal: 10, }}>
                     <View style={{ flexDirection: 'row' }}>
                       <Text style={{ fontFamily: 'inter-regular', fontSize: 55, color: '#23d3d3' }}>{totalInspection.length}</Text>
                       <View style={{ flexDirection: 'column', justifyContent: 'space-evenly', marginLeft: 10 }}>
@@ -653,7 +728,8 @@ const MainDashboard = (props) => {
                     </TouchableOpacity>
                   </View>
 
-                  <View style={{ flexDirection: 'column', borderRightWidth: 2, paddingHorizontal: 60, borderRightColor: '#D2D2D2' }}>
+
+                  <View style={{ flexDirection: 'column', paddingHorizontal: 10, }}>
                     <View style={{ flexDirection: 'row' }}>
                       <Text style={{ fontFamily: 'inter-regular', fontSize: 55, color: '#23d3d3' }}>{averageDuration}</Text>
                       <View style={{ flexDirection: 'column', justifyContent: 'space-evenly', marginLeft: 10 }}>
@@ -668,7 +744,8 @@ const MainDashboard = (props) => {
                     </TouchableOpacity>
                   </View>
 
-                  <View style={{ flexDirection: 'column', marginLeft: 60 }}>
+
+                  <View style={{ flexDirection: 'column', paddingHorizontal: 10, }}>
                     <View style={{ flexDirection: 'row' }}>
                       <Text style={{ fontFamily: 'inter-regular', fontSize: 55, color: 'red' }}>{defectsReported}</Text>
                       <View style={{ flexDirection: 'column', marginLeft: 10, marginTop: 10 }}>
@@ -678,6 +755,37 @@ const MainDashboard = (props) => {
                     </View>
                     <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={props.openDefects}>
                       <Text style={{ color: '#A8A8A8', fontFamily: 'inter-regular', fontSize: 12 }}>View defects</Text>
+                      <Image style={{ height: 15, width: 15, marginLeft: 5 }} source={require('../../assets/arrow_right_icon.png')} tintColor='#A8A8A8'></Image>
+                    </TouchableOpacity>
+                  </View>
+
+                </View>
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-evenly', marginVertical: 30, width: '100%' }}>
+                  <View style={{ flexDirection: 'column', paddingHorizontal: 60 }}>
+                    <View style={{ flexDirection: 'row' }}>
+                      <Text style={{ fontFamily: 'inter-regular', fontSize: 55, color: 'red' }}>{openWorkOrders}</Text>
+                      <View style={{ flexDirection: 'column', marginLeft: 10, marginTop: 10 }}>
+                        <Text style={{ color: 'red', fontFamily: 'inter-medium', fontSize: 15 }}>open</Text>
+                        <Text style={{ color: 'red', fontFamily: 'inter-medium', fontSize: 15 }}>work orders</Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={props.openWorkOrder}>
+                      <Text style={{ color: '#A8A8A8', fontFamily: 'inter-regular', fontSize: 12 }}>View work orders</Text>
+                      <Image style={{ height: 15, width: 15, marginLeft: 5 }} source={require('../../assets/arrow_right_icon.png')} tintColor='#A8A8A8'></Image>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={{ flexDirection: 'column', paddingHorizontal: 10, }}>
+                    <View style={{ flexDirection: 'row' }}>
+                      <Text style={{ fontFamily: 'inter-regular', fontSize: 55, color: '#23d3d3' }}>{closedWorkOrders}</Text>
+                      <View style={{ flexDirection: 'column', marginLeft: 10, marginTop: 10 }}>
+                        <Text style={{ color: '#23d3d3', fontFamily: 'inter-medium', fontSize: 15 }}>closed</Text>
+                        <Text style={{ color: '#23d3d3', fontFamily: 'inter-medium', fontSize: 15 }}>work orders</Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={props.openWorkOrder}>
+                      <Text style={{ color: '#A8A8A8', fontFamily: 'inter-regular', fontSize: 12 }}>View work orders</Text>
                       <Image style={{ height: 15, width: 15, marginLeft: 5 }} source={require('../../assets/arrow_right_icon.png')} tintColor='#A8A8A8'></Image>
                     </TouchableOpacity>
                   </View>
@@ -738,13 +846,14 @@ const MainDashboard = (props) => {
               </View>
             </ScrollView>
           </View>
+
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 40 }}>
             <View style={styles.contentCardStyle}>
               <Text style={{ color: '#1E3D5C', fontSize: 24, fontWeight: 'bold', paddingBottom: 30 }}>
-                Driver Leaderboard
+              Recent Drivers
               </Text>
 
-              <DropDownComponent
+              {/* <DropDownComponent
                 options={driverOptionList}
                 onValueChange={handleDriverValueChange}
                 // title="Ubaid Arshad"
@@ -760,23 +869,23 @@ const MainDashboard = (props) => {
                 hoveredOptionText={styles.dropdownHoveredOptionText}
                 dropdownButtonSelect={styles.dropdownButtonSelect}
                 dropdownStyle={styles.dropdown}
-              />
+              /> */}
 
               <FlatList
                 data={allDrivers}
                 renderItem={({ item, index }) => {
-                  if (index < 3 && item)
+                  if (item)
                     return (
                       <View style={{ marginTop: 20, paddingTop: 20, borderTopWidth: 1, borderTopColor: '#CAC8C8' }}>
                         <View style={{ flexDirection: 'row' }}>
-                          <NameAvatar title={item.Name.split(' ')[0].charAt(0).toUpperCase()} />
+                          <NameAvatar title={(peopleState.value.data.filter(d => d.Designation === 'Driver').find(driver => driver["Employee Number"].toString() === item.driverEmployeeNumber)?.Name || 'Unknown Driver').split(' ')[0].charAt(0).toUpperCase()} />
                           <View style={{ paddingLeft: 20 }}>
-                            <Text style={{ fontSize: 15, color: '#6C6C6C', fontFamily: 'inter-semibold' }}>{item.Name.split(' ')[0]}</Text>
+                            <Text style={{ fontSize: 15, color: '#6C6C6C', fontFamily: 'inter-semibold' }}>{(peopleState.value.data.filter(d => d.Designation === 'Driver').find(driver => driver["Employee Number"].toString() === item.driverEmployeeNumber)?.Name || 'Unknown Driver').split(' ')[0]}</Text>
                             <Text style={{ fontSize: 15, color: 'grey', marginTop: 15 }}>Form 1</Text>
                           </View>
                           <View style={{ right: 0, position: 'absolute' }}>
                             {driverSelectedOption == "Inspection" ?
-                              <Text style={{ fontSize: 15, color: '#6C6C6C', fontFamily: 'inter-semibold' }}>{item.count} Inspection</Text>
+                              <Text style={{ fontSize: 15, color: '#6C6C6C', fontFamily: 'inter-semibold' }}>{item.occurrenceCount} Inspection</Text>
                               :
                               // <Text style={{ fontSize: 15, color: 'black', fontWeight: '600' }}>{item.defects} Defects</Text>
                               null
@@ -791,10 +900,10 @@ const MainDashboard = (props) => {
 
             <View style={styles.contentCardStyle}>
               <Text style={{ color: '#1E3D5C', fontSize: 24, fontWeight: 'bold', paddingBottom: 30 }}>
-                Asset Leaderboard
+              Recent Assets
               </Text>
 
-              <DropDownComponent
+              {/* <DropDownComponent
                 options={assetOptionList}
                 onValueChange={handleAssetValueChange}
                 selectedValue={assetSelectedOption}
@@ -809,7 +918,7 @@ const MainDashboard = (props) => {
                 hoveredOptionText={styles.dropdownHoveredOptionText}
                 dropdownButtonSelect={styles.dropdownButtonSelect}
                 dropdownStyle={styles.dropdown}
-              />
+              /> */}
 
 
               {assetSelectedOption == "Inspection"

@@ -69,6 +69,9 @@ const AssetsPage = (props) => {
     const [model, setModel] = useState('')
     const [color, setColor] = useState('')
     const [notes, setNotes] = useState('')
+    const [VIN, setVIN] = useState('')
+    const [lastOil, setLastOil] = useState('')
+    const [frequency, setFrequency] = useState('')
     const [company, setCompany] = useState('')
     const [mileage, setMileage] = useState('')
     const [assetType, setAssetType] = useState('Select')
@@ -92,6 +95,9 @@ const AssetsPage = (props) => {
 
     const [nameBorder, setNameBorder] = useState('#cccccc')
     const [plateNumberBorder, setPlateNumberBorder] = useState('#cccccc')
+    const [VINBorder, setVINBorder] = useState('#cccccc')
+    const [lastOilBorder, setLastOilBorder] = useState('#cccccc')
+    const [frequencyBorder, setFrequencyBorder] = useState('#cccccc')
     const [makeBorder, setMakeBorder] = useState('#cccccc')
     const [modelBorder, setModelBorder] = useState('#cccccc')
     const [yearBorder, setYearBorder] = useState('#cccccc')
@@ -331,18 +337,22 @@ const AssetsPage = (props) => {
     }
 
     const handleInspectionFormValue = (value) => {
+        setAssetDetail(false)
         props.onDashboardValue(value)
     }
 
 
     const handleDefectFormValue = (value) => {
+        setAssetDetail(false)
         props.onDashboardDefectValue(value)
     }
     const handleOpenWorkOrderValue = (value) => {
+        setAssetDetail(false)
         props.onDashboardWODetailValue(value)
     }
 
     const handleWOFormValue = (value) => {
+        setAssetDetail(false)
         props.onDashboardWOValue(value)
     }
 
@@ -370,6 +380,8 @@ const AssetsPage = (props) => {
             'Mileage': mileage,
             'Notes': notes,
             'Asset Name': assetName,
+            'Frequency' : frequency,
+            'LastOil' : lastOil
         })
 
         setEditAsset(false)
@@ -484,10 +496,14 @@ const AssetsPage = (props) => {
             'Action': 'Button',
             'lastInspection': serverTimestamp(),
             'inhouseInspection': 'not issued',
+            'oilChangeWorkOrder' : 'not issued',
             'DefectStatus': false,
             TimeStamp: serverTimestamp(),
             'active': true,
-            'image': imageURL
+            'image': imageURL,
+            'VIN': VIN,
+            'LastOil': lastOil,
+            'Frequency': frequency
         });
 
 
@@ -512,6 +528,12 @@ const AssetsPage = (props) => {
         setMileage('')
         setNotes('')
         setAssetName('')
+        setVIN('')
+        setLastOil('')
+        setFrequency('')
+        setVINBorder('#cccccc')
+        setLastOilBorder('#cccccc')
+        setFrequencyBorder('#cccccc')
         setNameBorder('#cccccc')
         setPlateNumberBorder('#cccccc')
         setMakeBorder('#cccccc')
@@ -755,6 +777,18 @@ const AssetsPage = (props) => {
                                                                 </View>
 
                                                                 <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>VIN</Text>
+                                                                    <TextInput
+                                                                        style={[styles.input, { backgroundColor: '#E2E2E2' },]}
+                                                                        value={selectedAsset['VIN']}
+                                                                        // onChangeText={(val) => { setAssetType(val) }}
+                                                                        editable={false}
+
+                                                                    />
+                                                                </View>
+
+
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
                                                                     <Text style={{ fontSize: 16, fontWeight: '500' }}>Make</Text>
                                                                     <TextInput
                                                                         style={[styles.input, textInputBorderColor == 'Make' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
@@ -803,8 +837,23 @@ const AssetsPage = (props) => {
                                                                     </View>
                                                                 </View>
 
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Notes</Text>
+                                                                    <TextInput
+                                                                        style={[styles.input, textInputBorderColor == 'Notes' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                        placeholderTextColor="#868383DC"
+                                                                        value={notes}
+                                                                        multiline={true}
+                                                                        onChangeText={(val) => { setNotes(val) }}
+
+                                                                    />
+                                                                </View>
+
+
+
                                                             </View>
                                                             <View style={{ flexDirection: 'column', marginLeft: 80 }}>
+
 
                                                                 <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 4 }}>
                                                                     <Text style={{ fontSize: 16, fontWeight: '500' }}>Engine Type</Text>
@@ -819,7 +868,6 @@ const AssetsPage = (props) => {
                                                                         />
                                                                     </View>
                                                                 </View>
-
                                                                 <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between', zIndex: 3 }}>
                                                                     <Text style={{ fontSize: 16, fontWeight: '500' }}>ADA Wheelchair</Text>
                                                                     <View>
@@ -867,23 +915,36 @@ const AssetsPage = (props) => {
                                                                         style={[styles.input, textInputBorderColor == 'Mileage' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                                         placeholderTextColor="#868383DC"
                                                                         value={mileage}
-                                                                        onChangeText={(val) => { setMileage(val) }}
+                                                                        onChangeText={(val) => { setMileage(val.replace(/[^0-9]/g, '')) }}
 
                                                                     />
                                                                 </View>
-
 
                                                                 <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Notes</Text>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Last oil change</Text>
                                                                     <TextInput
-                                                                        style={[styles.input, textInputBorderColor == 'Notes' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                        style={[styles.input, textInputBorderColor == 'Last Oil' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                                         placeholderTextColor="#868383DC"
-                                                                        value={notes}
-                                                                        multiline={true}
-                                                                        onChangeText={(val) => { setNotes(val) }}
+                                                                        value={lastOil}
+                                                                        onChangeText={(val) => { setLastOil(val.replace(/[^0-9]/g, '')) }}
 
                                                                     />
                                                                 </View>
+
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Frequency</Text>
+                                                                    <TextInput
+                                                                        style={[styles.input, textInputBorderColor == 'Frequency' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                        placeholderTextColor="#868383DC"
+                                                                        value={frequency}
+                                                                        onChangeText={(val) => { setFrequency(val.replace(/[^0-9]/g, '')) }}
+
+                                                                    />
+                                                                </View>
+
+
+
+
                                                             </View>
                                                         </View>
                                                     </View>
@@ -969,6 +1030,18 @@ const AssetsPage = (props) => {
                                                                 </View>
 
                                                                 <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>VIN</Text>
+                                                                    <TextInput
+                                                                        style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'VIN' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                        editable={false}
+                                                                        placeholderTextColor="#868383DC"
+                                                                        value={selectedAsset['VIN']}
+                                                                    // onChangeText={(val) => { setPlateNumber(val) }}
+
+                                                                    />
+                                                                </View>
+
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
                                                                     <Text style={{ fontSize: 16, fontWeight: '500' }}>Make</Text>
                                                                     <TextInput
                                                                         style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
@@ -1020,6 +1093,19 @@ const AssetsPage = (props) => {
 
                                                                         />
                                                                     </View>
+                                                                </View>
+
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Notes</Text>
+                                                                    <TextInput
+                                                                        style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                        editable={false}
+                                                                        placeholderTextColor="#868383DC"
+                                                                        value={selectedAsset.Notes}
+                                                                        multiline={true}
+                                                                    // onChangeText={(val) => { setNotes(val) }}
+
+                                                                    />
                                                                 </View>
 
                                                             </View>
@@ -1093,19 +1179,32 @@ const AssetsPage = (props) => {
                                                                     />
                                                                 </View>
 
-
                                                                 <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Notes</Text>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Last oil change</Text>
                                                                     <TextInput
                                                                         style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                                         editable={false}
                                                                         placeholderTextColor="#868383DC"
-                                                                        value={selectedAsset.Notes}
-                                                                        multiline={true}
-                                                                    // onChangeText={(val) => { setNotes(val) }}
+                                                                        value={selectedAsset.LastOil}
+                                                                    // onChangeText={(val) => { setMileage(val) }}
 
                                                                     />
                                                                 </View>
+
+                                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Frequency</Text>
+                                                                    <TextInput
+                                                                        style={[styles.input, !editAsset && { backgroundColor: '#E2E2E2' }, textInputBorderColor == 'Asset Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                                        editable={false}
+                                                                        placeholderTextColor="#868383DC"
+                                                                        value={selectedAsset.Frequency}
+                                                                    // onChangeText={(val) => { setMileage(val) }}
+
+                                                                    />
+                                                                </View>
+
+
+                                                              
                                                             </View>
                                                         </View>
                                                     </View>
@@ -1155,7 +1254,7 @@ const AssetsPage = (props) => {
                                                             'dateCreated',
                                                             'priority',
                                                             'severity',
-                                                            'title',
+                                                            'defectsAll',
                                                             'driverName',
                                                             'Work Order',
                                                             'Action'
@@ -1359,6 +1458,17 @@ const AssetsPage = (props) => {
                                                     />
                                                 </View>
                                                 <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>VIN Number*</Text>
+                                                    <TextInput
+                                                        style={[styles.input, { borderColor: VINBorder }, textInputBorderColor == 'VIN Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                        placeholderTextColor="#868383DC"
+                                                        value={VIN}
+                                                        onChangeText={(val) => { setVIN(val) }}
+                                                        onFocus={() => setVINBorder('#cccccc')}
+
+                                                    />
+                                                </View>
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
                                                     <Text style={{ fontSize: 16, fontWeight: '500' }}>Plate Number*</Text>
                                                     <TextInput
                                                         style={[styles.input, { borderColor: plateNumberBorder }, textInputBorderColor == 'Plate Number' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
@@ -1421,6 +1531,18 @@ const AssetsPage = (props) => {
 
                                                         />
                                                     </View>
+                                                </View>
+
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Notes</Text>
+                                                    <TextInput
+                                                        style={[styles.input, textInputBorderColor == 'Notes' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                        placeholderTextColor="#868383DC"
+                                                        value={notes}
+                                                        multiline={true}
+                                                        onChangeText={(val) => { setNotes(val) }}
+
+                                                    />
                                                 </View>
 
                                             </View>
@@ -1540,24 +1662,37 @@ const AssetsPage = (props) => {
                                                         style={[styles.input, { borderColor: mileageBorder }, textInputBorderColor == 'Mileage' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                         placeholderTextColor="#868383DC"
                                                         value={mileage}
-                                                        onChangeText={(val) => { setMileage(val) }}
+                                                        onChangeText={(val) => { setMileage(val.replace(/[^0-9]/g, '')) }}
                                                         onFocus={() => setMileageBorder('#Cccccc')}
 
                                                     />
                                                 </View>
 
-
                                                 <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Notes</Text>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Last oil change</Text>
                                                     <TextInput
-                                                        style={[styles.input, textInputBorderColor == 'Notes' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                        style={[styles.input, { borderColor: lastOilBorder }, textInputBorderColor == 'Mileage' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
                                                         placeholderTextColor="#868383DC"
-                                                        value={notes}
-                                                        multiline={true}
-                                                        onChangeText={(val) => { setNotes(val) }}
-
+                                                        value={lastOil}
+                                                        onChangeText={(val) => { setLastOil(val.replace(/[^0-9]/g, '')) }}
+                                                        onFocus={() => setLastOilBorder('#Cccccc')}
+                                                        placeholder='Mileage'
                                                     />
                                                 </View>
+
+                                                <View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Frequency</Text>
+                                                    <TextInput
+                                                        style={[styles.input, { borderColor: frequencyBorder }, textInputBorderColor == 'Mileage' && styles.withBorderInputContainer /*&& styles.withBorderInputContainer*/]}
+                                                        placeholderTextColor="#868383DC"
+                                                        value={frequency}
+                                                        onChangeText={(val) => { setFrequency(val.replace(/[^0-9]/g, '')) }}
+                                                        onFocus={() => setFrequencyBorder('#Cccccc')}
+                                                    />
+                                                </View>
+
+
+
                                             </View>
                                         </View>
                                     </ScrollView>
@@ -1638,8 +1773,17 @@ const AssetsPage = (props) => {
                                             if (mileage == '') {
                                                 setMileageBorder('red')
                                             }
+                                            if (VIN == '') {
+                                                setVINBorder('red')
+                                            }
+                                            if (lastOil == '') {
+                                                setLastOilBorder('red')
+                                            }
+                                            if (frequency == '') {
+                                                setFrequencyBorder('red')
+                                            }
 
-                                            if (assetName == '' || plateNumber == '' || make == '' || year == '' || model == '' || engineType == 'Select' || ADA == 'Select' || airBrakes == 'Select' || assetType == 'Select' || mileage == '') {
+                                            if (assetName == '' || plateNumber == '' || make == '' || year == '' || model == '' || engineType == 'Select' || ADA == 'Select' || airBrakes == 'Select' || assetType == 'Select' || mileage == '' || VIN == '' || lastOil == '' || frequency == '') {
                                             }
                                             else {
                                                 setloading(true)
@@ -1918,17 +2062,17 @@ const styles = StyleSheet.create({
         padding: 10,
         borderRadius: 5,
         marginBottom: 10,
-      },
-      tooltip: {
+    },
+    tooltip: {
         backgroundColor: 'rgba(0, 0, 0, 0.7)',
         padding: 10,
         borderRadius: 5,
         position: 'absolute',
         top: -40,  // Adjust this value to position the tooltip above the content
-      },
-      tooltipText: {
+    },
+    tooltipText: {
         color: '#fff',
-      },
+    },
     input: {
         width: 250,
         height: 40,

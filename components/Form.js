@@ -14,7 +14,7 @@ import { PeopleContext } from '../src/store/context/PeopleContext';
 import { AuthContext } from '../src/store/context/AuthContext';
 import { getAuth } from 'firebase/auth';
 
-const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, columnHeaderCell, columnHeaderText, titleForm, onValueChange, onOpenWorkOrder, inHouseValueChange, onHandleAssetStatus, onFormSortDateCreated, onFormSortDueDate }) => {
+const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, columnHeaderCell, columnHeaderText, titleForm, onValueChange, onOpenWorkOrder, inHouseValueChange, onHandleAssetStatus, onFormSortDateCreated, onFormSortDueDate, oilChangeValueChange }) => {
 
     const priorityOptionList = ['High', 'Medium', 'Low', 'Undefined'];
     const severityOptionList = ['Non critical', 'Critical', 'Undefined'];
@@ -291,9 +291,35 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
         setRowColor(newRowColor)
     }
 
+    const setColorsOilChange = () => {
+
+        let newRowColor = []
+
+        entriesData.map((data, index) => {
+
+            const lastoil = data.LastOil ? parseInt(data.LastOil) : 0
+            const currentMileage = data.Mileage ? parseInt(data.Mileage) : 0
+            const freq = data.Frequency ? parseInt(data.Frequency) : 0
+
+            const nextOilChange = lastoil + freq
+
+            if (currentMileage >= nextOilChange) {
+                newRowColor[index] = 'pink'
+            } else {
+                newRowColor[index] = 'white'
+            }
+        })
+        setRowColor(newRowColor)
+    }
+
     useEffect(() => {
         if (titleForm == '45 days Inspection')
             setColors()
+    }, [])
+
+    useEffect(() => {
+        if (titleForm == 'Oil Change')
+            setColorsOilChange()
     }, [])
 
     const handlePriorityValueChange = (value) => {
@@ -631,6 +657,145 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
 
                                 <View key={column} style={[columnHeaderCell, { zIndex: 2 }]}>
                                     <Text style={columnHeaderText}>{column == 'lastInspection' ? 'Last Inspection' : column == 'nextInspection' ? 'Next Inspection' : column == 'status' ? 'Status' : column}</Text>
+                                </View>
+                            ))}
+                            {/* <Text style={styles.columnHeaderText}>Action</Text> */}
+                        </View>
+                        <FlatList
+                            data={visibleEntries}
+                            keyExtractor={(_, index) => `${startIndex + index}`}
+                            renderItem={renderRow}
+                            showsHorizontalScrollIndicator={false}
+                        />
+                        {/* Pagination */}
+                    </View>
+
+                </ScrollView>
+
+                <View style={{ flexDirection: 'row', alignSelf: 'flex-end', marginVertical: 20 }}>
+                    <TouchableOpacity onPress={() => goToPage(currentPage - 1)} disabled={currentPage === 1}>
+                        <Image style={{ height: 20, width: 20 }} source={require('../assets/left_arrow_icon.png')}></Image>
+                    </TouchableOpacity>
+
+                    <Text style={{ paddingHorizontal: 20 }}>{`Page ${currentPage} of ${Math.ceil(
+                        entriesData.length / entriesPerPage
+                    )}`}</Text>
+
+                    <TouchableOpacity
+                        onPress={() => goToPage(currentPage + 1)}
+                        disabled={currentPage === Math.ceil(entriesData.length / entriesPerPage)}>
+                        <Image style={{ height: 20, width: 20, transform: [{ rotate: '180deg' }] }} source={require('../assets/left_arrow_icon.png')}></Image>
+                    </TouchableOpacity>
+                </View>
+
+                {loading
+                    ?
+                    <View style={styles.activityIndicatorStyle}>
+                        <ActivityIndicator color="#23d3d3" size="large" />
+                    </View>
+                    : null}
+            </>
+
+        );
+    }
+
+    else if (titleForm == "Oil Change") {
+
+        entriesData.sort((a, b) => b.TimeStamp - a.TimeStamp)
+
+        const totalPages = Math.ceil(entriesData.length / entriesPerPage);
+
+        const goToPage = (pageNumber) => {
+            if (pageNumber >= 1 && pageNumber <= totalPages) {
+                setCurrentPage(pageNumber);
+            }
+        };
+
+        const startIndex = (currentPage - 1) * entriesPerPage;
+        const endIndex = startIndex + entriesPerPage;
+        const visibleEntries = entriesData.slice(startIndex, endIndex);
+
+        const handleOilChangeWO = (item) => {
+            oilChangeValueChange(item)
+        }
+
+        const renderRow = ({ item, index }) => {
+
+            return (
+                <Animated.View style={[row, { backgroundColor: rowColor[index] }]}>
+                    {columns.map((column) => {
+                        let formattedDateTime
+                        if (column == 'lastOilChange' || column == 'nextOilChange') {
+                            const date = new Date(column == 'lastInspection' ? item[column].seconds * 1000 : item[column]);
+
+                            // Format the date as AM/PM time
+                            const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+
+                            // Format the date as "Mon DD, YYYY" (e.g., "Jan 01, 2020")
+                            const options = { year: 'numeric', month: 'short', day: '2-digit' };
+                            const formattedDate = date.toLocaleDateString([], options);
+
+                            // Combine the formatted date and time
+                            formattedDateTime = `${formattedDate}`;
+                        }
+                        return (
+
+                            <View key={column} style={cell}
+                            >
+                                {
+                                    column == 'lastOilChange'
+                                        ?
+                                        <Text style={[entryText,]}>{item.LastOil ? item.LastOil : 0}</Text>
+                                        :
+                                        column == 'nextOilChange'
+                                            ?
+                                            <Text style={[entryText,]}>{(item.LastOil ? parseInt(item.LastOil) : 0) + (item.Frequency ? parseInt(item.Frequency) : 0)}</Text>
+                                            :
+                                            column == 'currentMileage'
+                                                ?
+                                                <Text style={[entryText,]}>{item.Mileage ? item.Mileage : 0}</Text>
+                                                :
+                                                column == 'Action'
+                                                    ?
+                                                    item.oilChangeWorkOrder == 'not issued'
+                                                        ?
+                                                        <View style={{ maxWidth: 100 }}>
+                                                            <AppBtn
+                                                                title="Create WO"
+                                                                btnStyle={[{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#8C8C8C', height: 40, width: '100%', justifyContent: 'center', alignItems: 'center' }]}
+                                                                btnTextStyle={[styles.btnText, { color: '#000000', fontFamily: 'inter-regular', fontSize: 13 }]}
+                                                                onPress={() => {
+                                                                    handleValueChange(item)
+                                                                }} />
+                                                        </View>
+                                                        :
+                                                        <TouchableOpacity onPress={() => { handleOilChangeWO(item) }}>
+                                                            <Text style={[entryText, { color: '#67E9DA', fontFamily: 'inter-regular', fontSize: 13 }]}>WO-{item.oilChangeWorkOrder}</Text>
+                                                        </TouchableOpacity>
+                                                    :
+
+                                                    <Text style={[entryText,]}>{item[column]}</Text>
+                                }
+
+                            </View>
+                        )
+                    })}
+                </Animated.View>
+            );
+        };
+        return (
+            <>
+
+                <ScrollView style={{ flex: 1, }} horizontal
+                    contentContainerStyle={{ flexGrow: 1 }}
+                >
+
+                    <View style={{ width: '100%' }}>
+                        <View style={columnHeaderRow}>
+                            {columns.map((column) => (
+
+                                <View key={column} style={[columnHeaderCell, { zIndex: 2 }]}>
+                                    <Text style={columnHeaderText}>{column == 'lastOilChange' ? 'Last oil change' : column == 'nextOilChange' ? 'Next oil change' : column == 'currentMileage' ? 'Current mileage' : column}</Text>
                                 </View>
                             ))}
                             {/* <Text style={styles.columnHeaderText}>Action</Text> */}
@@ -1013,9 +1178,9 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                                             ?
                                                             <Text style={[entryText, {}, rowHovered[index] && { color: '#FFFFFF', }]}>{item[column]}</Text>
                                                             :
-                                                            column == 'title'
+                                                            column == 'defectsAll'
                                                                 ?
-                                                                <Text style={[entryText, {}, rowHovered[index] && { color: '#FFFFFF' }, {}]}>{item[column].length > 35 ? item[column].slice(0, 30) + "..." : item[column]}</Text>
+                                                                    <Text style={[entryText, {}, rowHovered[index] && { color: '#FFFFFF' }, {}]}>{item[column].length}</Text>
                                                                 :
                                                                 column == 'Work Order'
                                                                     ?
@@ -1063,7 +1228,7 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                             {columns.map((column) => (
 
                                 <View key={column} style={[columnHeaderCell]}>
-                                    <Text style={columnHeaderText}>{column == 'priority' ? 'Priority' : column == 'severity' ? 'Severity' : column == 'title' ? 'Defect' : column == 'id' ? 'Defect ID' : column == 'dateCreated' ? 'Date Created' : column == 'assetName' ? 'Asset' : column == 'driverName' ? 'Driver' : column == 'Work Order' ? 'Work Order' : column}</Text>
+                                    <Text style={columnHeaderText}>{column == 'priority' ? 'Priority' : column == 'severity' ? 'Severity' : column == 'defectsAll' ? 'Total defects' : column == 'id' ? 'Defect ID' : column == 'dateCreated' ? 'Date Created' : column == 'assetName' ? 'Asset' : column == 'driverName' ? 'Driver' : column == 'Work Order' ? 'Work Order' : null}</Text>
                                 </View>
                             ))}
 
@@ -1148,58 +1313,58 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                         <Text style={[entryText, {},]}>WO-{item['id']}</Text>
                                         :
                                         column == 'status'
-                                        ?
-                                        <View style={{flexDirection:'row', alignItems:'center'}}>
-                                            <Image style={{height:20, width:20}} source={item.status == 'Completed' ? require('../assets/completed_icon.png') : item.status == 'In Progress' ? require('../assets/inprogress_icon.png') : require('../assets/pending_icon.png')} tintColor={item.status == 'Completed' ? 'green' : item.status == 'In Progress' ? '#539097' : 'red'} resizeMode='contain'/>
-                                        <Text style={[entryText,]}>{item.status}</Text>
-                                        </View>
-                                        :
-                                        column == 'assetName'
                                             ?
-                                            <Text style={[entryText, {},]}>{assetState.value.data.find(asset => asset["Asset Number"].toString() === item.assetNumber)?.['Asset Name'] || 'Unknown Asset'}</Text>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <Image style={{ height: 20, width: 20 }} source={item.status == 'Completed' ? require('../assets/completed_icon.png') : item.status == 'In Progress' ? require('../assets/inprogress_icon.png') : require('../assets/pending_icon.png')} tintColor={item.status == 'Completed' ? 'green' : item.status == 'In Progress' ? '#539097' : 'red'} resizeMode='contain' />
+                                                <Text style={[entryText,]}>{item.status}</Text>
+                                            </View>
                                             :
-                                            column == 'defectedItems'
+                                            column == 'assetName'
                                                 ?
-                                                <Text style={[entryText, {},]}>{item[column].length}</Text>
-
+                                                <Text style={[entryText, {},]}>{assetState.value.data.find(asset => asset["Asset Number"].toString() === item.assetNumber)?.['Asset Name'] || 'Unknown Asset'}</Text>
                                                 :
-                                                column == 'dueDate'
+                                                column == 'defectedItems'
                                                     ?
-                                                    <Text style={[entryText, {},]}>{formattedDateTime}</Text>
+                                                    <Text style={[entryText, {},]}>{item[column].length}</Text>
 
                                                     :
-                                                    column == 'assignedMechanic'
+                                                    column == 'dueDate'
                                                         ?
-                                                        <Text style={[entryText, {},]}>{peopleState.value.data.find(mechanic => mechanic["Employee Number"].toString() === item.assignedMechanic)?.Name || 'Unknown Mechanic'}</Text>
+                                                        <Text style={[entryText, {},]}>{formattedDateTime}</Text>
+
                                                         :
-                                                        column == 'TimeStamp'
+                                                        column == 'assignedMechanic'
                                                             ?
-                                                            <Text style={[entryText, {},]}>{new Date(item[column].seconds * 1000).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' })}</Text>
+                                                            <Text style={[entryText, {},]}>{peopleState.value.data.find(mechanic => mechanic["Employee Number"].toString() === item.assignedMechanic)?.Name || 'Unknown Mechanic'}</Text>
                                                             :
-                                                            column == 'priority'
-                                                            ?
-                                                            <Text style={[entryText, {},]}>{item.priority}</Text>
-                                                            :
-                                                            column == 'Action'
+                                                            column == 'TimeStamp'
                                                                 ?
-                                                                <TouchableOpacity
-                                                                    onPress={() => {
-                                                                        handleValueChange(item)
-                                                                    }}
-                                                                    key={column}
-                                                                    style={[cell, { paddingHorizontal: 20 }]}
-                                                                    onMouseEnter={() => handleMouseEnter(index)}
-                                                                    onMouseLeave={() => handleMouseLeave(index)}
-                                                                >
-                                                                    <Image
-                                                                        style={[styles.btn, { transform: [{ rotate: '90deg' }] }]}
-                                                                        resizeMode='contain'
-                                                                        source={require('../assets/up_arrow_action_icon.png')}
-                                                                        tintColor={imageHovered[index] ? '#67E9DA' : '#1E3D5C'}
-                                                                    />
-                                                                </TouchableOpacity>
+                                                                <Text style={[entryText, {},]}>{new Date(item[column].seconds * 1000).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' })}</Text>
                                                                 :
-                                                                null
+                                                                column == 'priority'
+                                                                    ?
+                                                                    <Text style={[entryText, {},]}>{item.priority}</Text>
+                                                                    :
+                                                                    column == 'Action'
+                                                                        ?
+                                                                        <TouchableOpacity
+                                                                            onPress={() => {
+                                                                                handleValueChange(item)
+                                                                            }}
+                                                                            key={column}
+                                                                            style={[cell, { paddingHorizontal: 20 }]}
+                                                                            onMouseEnter={() => handleMouseEnter(index)}
+                                                                            onMouseLeave={() => handleMouseLeave(index)}
+                                                                        >
+                                                                            <Image
+                                                                                style={[styles.btn, { transform: [{ rotate: '90deg' }] }]}
+                                                                                resizeMode='contain'
+                                                                                source={require('../assets/up_arrow_action_icon.png')}
+                                                                                tintColor={imageHovered[index] ? '#67E9DA' : '#1E3D5C'}
+                                                                            />
+                                                                        </TouchableOpacity>
+                                                                        :
+                                                                        null
                                 }
 
                             </View>
@@ -1222,15 +1387,15 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
                                 <View key={column} style={[columnHeaderCell, { zIndex: 2, flexDirection: 'row', alignItems: 'center' }]}>
                                     <Text style={columnHeaderText}>{column == 'id' ? 'Work Order' : column == 'assetName' ? 'Asset Name' : column == 'defectedItems' ? 'Items' : column == 'dueDate' ? 'Due Date' : column == 'assignedMechanic' ? 'Assignee' : column == 'TimeStamp' ? 'Date Created' : column == 'priority' ? 'Priority' : column == 'status' ? 'Status' : column}</Text>
                                     {column == 'TimeStamp' ?
-                                        <TouchableOpacity onPress={()=>{
+                                        <TouchableOpacity onPress={() => {
                                             onFormSortDateCreated()
                                         }}>
                                             <Image style={{ height: 18, width: 18, marginBottom: 5 }} tintColor='#000000' source={require('../assets/sort_icon.png')} />
                                         </TouchableOpacity>
                                         :
                                         null}
-                                         {column == 'dueDate' ?
-                                        <TouchableOpacity onPress={()=>{
+                                    {column == 'dueDate' ?
+                                        <TouchableOpacity onPress={() => {
                                             onFormSortDueDate()
                                         }}>
                                             <Image style={{ height: 18, width: 18, marginBottom: 5 }} tintColor='#000000' source={require('../assets/sort_icon.png')} />

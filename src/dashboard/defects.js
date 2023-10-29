@@ -24,7 +24,7 @@ const columns = [
     'dateCreated',
     'priority',
     'severity',
-    'title',
+    'defectsAll',
     'driverName',
     'Work Order',
     'Action'
@@ -124,7 +124,7 @@ const DefectsPage = (props) => {
     const searchDefectOptionList = ["Select", "Asset", "Driver",]
 
     const handleDefectsFormValueChange = (value) => {
-        console.log('ubaid')
+       
         // console.log(value)
         // setSelectedDefect(value)
         props.onDashboardValueChange(value)

@@ -12,6 +12,10 @@ import {AssetTypeOptionContext} from '../src/store/context/AssetTypeOptionContex
 import {AirBrakesOptionContext} from '../src/store/context/AirBrakesOptionContext'
 import { DatePickerContext } from "../src/store/context/DatePickerContext"
 
+import { TabHeadContext } from "../src/store/context/TabHeadContext"
+import { TabSubHeadContext } from "../src/store/context/TabSubHeadContext"
+import { TabHeadOptionContext } from "../src/store/context/TabHeadOptionContext"
+
 const {setHeaderOption} = useContext(HeaderOptionContext)
 const {setMechanicOption} = useContext(MechanicOptionContext)
 const {setAssetOption} = useContext(AssetOptionContext)
@@ -24,7 +28,10 @@ const {setAirBrakesOption} = useContext(AirBrakesOptionContext)
 const {setEngineTypeOption} = useContext(EngineTypeOptionContext)
 const {setAssetTypeOption} = useContext(AssetTypeOptionContext)
 
+const {setTabHead} = useContext(TabHeadContext)
+const {setTabSubHead} = useContext(TabSubHeadContext)
 const {setDatePicker} = useContext(DatePickerContext)
+const {setTabHeadOption} = useContext(TabHeadOptionContext)
 
 
 
@@ -43,4 +50,10 @@ export function CloseAllDropDowns () {
     setAssetTypeOption(false)
     setADAOption(false)
     setAirBrakesOption(false)
+
+    setTabHead(false)
+    setTabSubHead(false)
+    setTabHeadOption(false)
+
+    
 }

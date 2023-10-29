@@ -1,6 +1,6 @@
 import { useContext, useEffect } from "react"
 import { DataContext } from "../store/context/DataContext"
-import { collection, getDocs, getFirestore, or, orderBy, query, where } from "firebase/firestore"
+import { collection, deleteDoc, doc, getDocs, getFirestore, or, orderBy, query, setDoc, where } from "firebase/firestore"
 import app from "../config/firebase"
 import DashboardPage from "./dashboard"
 import { useState } from "react"
@@ -24,8 +24,8 @@ const DataFetchPage = (props) => {
 
     const { state: authState, setAuth } = useContext(AuthContext)
     const { state: peopleState, setPeopleData } = useContext(PeopleContext)
-    const {state : woState, setWO} = useContext(WOContext)
-    const {state : inHouseWOState, setInHouseWO} = useContext(InHouseWOContext)
+    const { state: woState, setWO } = useContext(WOContext)
+    const { state: inHouseWOState, setInHouseWO } = useContext(InHouseWOContext)
 
 
     useEffect(() => {
@@ -34,37 +34,37 @@ const DataFetchPage = (props) => {
             const db = getFirestore(app)
             const auth = getAuth(app)
 
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        if (user.emailVerified) {
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    if (user.emailVerified) {
 
-                            await getDocs(collection(db, 'AllowedUsers'))
-                            .then((snapshot)=>{ 
+                        await getDocs(collection(db, 'AllowedUsers'))
+                            .then((snapshot) => {
                                 let temp = []
-                                snapshot.forEach((docs)=>{
+                                snapshot.forEach((docs) => {
                                     temp.push(docs.data())
                                 })
-                                const loginUser = [...temp.filter((item)=> item.Email === auth.currentUser.email)]
+                                const loginUser = [...temp.filter((item) => item.Email === auth.currentUser.email)]
                                 setAuth(loginUser[0].Number, loginUser[0].Name, loginUser[0].Designation, loginUser[0]['Employee Number'], loginUser[0].dp)
-                                const data = [...temp] 
+                                const data = [...temp]
                                 const sortData = data.slice().sort((a, b) => b.TimeStamp - a.TimeStamp)
                                 setPeopleData(sortData)
                             })
-                        }
-                        else {
-                            router.replace('/')
-                        }
                     }
                     else {
                         router.replace('/')
                     }
+                }
+                else {
+                    router.replace('/')
+                }
 
-                });
-            
+            });
+
 
             try {
 
-                const snapshot = await getDocs(collection(db, "Forms"))
+                const snapshot = await getDocs(query(collection(db, "Forms"), orderBy('TimeStamp', 'desc')))
                 const list = []
                 snapshot.forEach((docs) => {
                     list.push(docs.data())
@@ -122,7 +122,7 @@ const DataFetchPage = (props) => {
 
                 if (defectList.length === 0) {
                     setDefect([])
-                     setIsLoading(false)
+                    setIsLoading(false)
                 } else {
                     setDefect(defectList)
                     setIsLoading(false)
@@ -147,7 +147,7 @@ const DataFetchPage = (props) => {
         <>
             {!isLoading
                 ?
-             
+
                 <DashboardPage />
                 // Show a loading indicator while data is being fetched
                 :

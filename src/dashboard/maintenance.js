@@ -24,6 +24,7 @@ import { DatePickerContext } from '../store/context/DatePickerContext';
 import { MechanicOptionContext } from '../store/context/MechanicOptionContext';
 import { AssetOptionContext } from '../store/context/AssetOptionContext';
 import { CloseAllDropDowns } from '../../components/CloseAllDropdown';
+import { OilChangeWOContext } from '../store/context/OilChangeWOContext';
 
 const columns = [
   'id',
@@ -56,6 +57,9 @@ const MaintenancePage = (props) => {
 
 
   const [searchWorkOrderSelectedOption, setSearchWorkOrderSelectedOption] = useState('Select')
+  const [tabHeadSelectionOption, setTabHeadSelectionOption] = useState('All')
+  const [tabHeadOptionSelectionOption, setTabHeadOptionSelectionOption] = useState('All')
+  const [tabSubHeadSelectionOption, setTabSubHeadSelectionOption] = useState('All')
   const [openCustomWO, setOpenCustomWO] = useState(false)
   const [selectedAsset, setSelectedAsset] = useState('')
   const [workOrderVariable, setWorkOrderVariable] = useState([]);
@@ -80,6 +84,7 @@ const MaintenancePage = (props) => {
   const { state: assetState, } = useContext(AssetContext)
   const { state: peopleState } = useContext(PeopleContext)
   const { state: inHouseWOState, setInHouseWO } = useContext(InHouseWOContext)
+  const { state: oilChangeWOState, setOilChangeWO } = useContext(OilChangeWOContext)
   const { state: datePickerState, setDatePicker } = useContext(DatePickerContext)
   const { state: mechanicOptionState, setMechanicOption } = useContext(MechanicOptionContext)
   const { state: assetOptionState, setAssetOption } = useContext(AssetOptionContext)
@@ -90,9 +95,16 @@ const MaintenancePage = (props) => {
     fetchInHouseData()
   }, [])
 
+  useEffect(() => {
+    setTabHeadOptionSelectionOption('All')
+  }, [tabHeadSelectionOption])
+
+  useEffect(() => {
+    setTabHeadSelectionOption('All')
+  }, [tabSubHeadSelectionOption])
 
   const fetchInHouseData = async () => {
-    await getDocs(query(collection(db, 'InHouseWorkOrders'), orderBy('TimeStamp', 'desc')))
+    await getDocs(query(collection(db, 'OilChangeWorkOrders'), orderBy('TimeStamp', 'desc')))
       .then((snapshot) => {
         let temp = []
         snapshot.forEach((docs) => {
@@ -102,7 +114,7 @@ const MaintenancePage = (props) => {
         // const updatedWorkorders = updateWorkOrdersWithAssetInfo(temp, assetState.value.data);
 
         setInHouseWOArray([...temp])
-        setInHouseWO([...temp])
+        setOilChangeWO([...temp])
 
         let i = 0
         let j = 0
@@ -235,6 +247,22 @@ const MaintenancePage = (props) => {
     setSearchWorkOrderSelectedOption(value)
   }
 
+  const handleTabHeadValueChange = (value) => {
+    setTabHeadSelectionOption(value)
+    if (value == 'All') {
+      setTabHeadOptionSelectionOption('All')
+    }
+  }
+
+  const handleTabHeadOptionValueChange = (value) => {
+    setTabHeadOptionSelectionOption(value)
+  }
+
+  const handleTabSubHeadValueChange = (value) => {
+    setTabSubHeadSelectionOption(value)
+    setWorkOrderCalendarSelect(value)
+  }
+
   const handleWorkOrderFormValueChange = (value) => {
     // console.log(value)
     // setSelectedDefect(value)
@@ -245,7 +273,7 @@ const MaintenancePage = (props) => {
   }
 
   const handleInHouseWOFormValueChange = (value) => {
-    props.onDashboardInHouseValueChange(value)
+    props.onDashboardOilChangeValueChange(value)
   }
 
   const WorkOrderVariableTable = useCallback(({ item, index }) => {
@@ -423,12 +451,12 @@ const MaintenancePage = (props) => {
 
   const handleTimeStampSorting = () => {
     let temp = []
-    if(timeStampSort == false){
-      temp = [...workOrderArray.sort((a,b)=> a.TimeStamp.seconds*1000 - b.TimeStamp.seconds*1000)]
+    if (timeStampSort == false) {
+      temp = [...workOrderArray.sort((a, b) => a.TimeStamp.seconds * 1000 - b.TimeStamp.seconds * 1000)]
       setWorkOrderArray(temp)
     }
-    if(timeStampSort == true){
-      temp = [...workOrderArray.sort((a,b)=> b.TimeStamp.seconds*1000 - a.TimeStamp.seconds*1000)]
+    if (timeStampSort == true) {
+      temp = [...workOrderArray.sort((a, b) => b.TimeStamp.seconds * 1000 - a.TimeStamp.seconds * 1000)]
       setWorkOrderArray(temp)
     }
     setTimeStampSort(!timeStampSort)
@@ -436,16 +464,626 @@ const MaintenancePage = (props) => {
 
   const handleDueDateSorting = () => {
     let temp = []
-    if(dueDateSort == false){
-      temp = [...workOrderArray.sort((a,b)=> a.dueDate - b.dueDate)]
+    if (dueDateSort == false) {
+      temp = [...workOrderArray.sort((a, b) => a.dueDate - b.dueDate)]
       setWorkOrderArray(temp)
     }
-    if(dueDateSort == true){
-      temp = [...workOrderArray.sort((a,b)=> b.dueDate - a.dueDate)]
+    if (dueDateSort == true) {
+      temp = [...workOrderArray.sort((a, b) => b.dueDate - a.dueDate)]
       setWorkOrderArray(temp)
     }
     setDueDateSort(!dueDateSort)
   }
+
+  const RenderForm = useCallback(() => {
+    if (tabSubHeadSelectionOption == 'All' && tabHeadSelectionOption == 'All') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray}
+          // entriesData={workOrderArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+    else if (tabSubHeadSelectionOption == 'All' && tabHeadSelectionOption == 'Status') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={tabHeadOptionSelectionOption != 'All' ? searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray.filter(item => item.status == tabHeadOptionSelectionOption) : workOrderArray}
+          // entriesData={workOrderArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+    else if (tabSubHeadSelectionOption == 'All' && tabHeadSelectionOption == 'Priority') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={tabHeadOptionSelectionOption != 'All' ? searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray.filter(item => item.priority == tabHeadOptionSelectionOption) : workOrderArray}
+          // entriesData={workOrderArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+
+    else if (tabSubHeadSelectionOption == 'Over Due' && tabHeadSelectionOption == 'All') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime()).filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime()).filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray.filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime())}
+          // entriesData={workOrderArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+    else if (tabSubHeadSelectionOption == 'Over Due' && tabHeadSelectionOption == 'Status') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={tabHeadOptionSelectionOption != 'All' ? searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime()).filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime()).filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime()) : workOrderArray.filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime())}
+          // entriesData={workOrderArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+    else if (tabSubHeadSelectionOption == 'Over Due' && tabHeadSelectionOption == 'Priority') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={tabHeadOptionSelectionOption != 'All' ? searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime()).filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime()).filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime()) : workOrderArray.filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime())}
+          // entriesData={workOrderArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+
+    else if (tabSubHeadSelectionOption == 'In Progress' && tabHeadSelectionOption == 'All') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => item.status === 'In Progress').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => item.status === 'In Progress').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray.filter(item => item.status === 'In Progress')}
+          // entriesData={workOrderArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+    else if (tabSubHeadSelectionOption == 'In Progress' && tabHeadSelectionOption == 'Status') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={tabHeadOptionSelectionOption != 'All' ? searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status === 'In Progress').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status === 'In Progress').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status === 'In Progress') : workOrderArray.filter(item => item.status === 'In Progress')}
+          // entriesData={workOrderArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+    else if (tabSubHeadSelectionOption == 'In Progress' && tabHeadSelectionOption == 'Priority') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={tabHeadOptionSelectionOption != 'All' ? searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status === 'In Progress').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status === 'In Progress').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status === 'In Progress') : workOrderArray.filter(item => item.status === 'In Progress')}
+          // entriesData={workOrderArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+
+    else if (tabSubHeadSelectionOption == 'Pending' && tabHeadSelectionOption == 'All') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => item.status === 'Pending').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => item.status === 'Pending').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray.filter(item => item.status === 'Pending')}
+          // entriesData={workOrderArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+    else if (tabSubHeadSelectionOption == 'Pending' && tabHeadSelectionOption == 'Status') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={tabHeadOptionSelectionOption != 'All' ? searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status === 'Pending').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status === 'Pending').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status === 'Pending') : workOrderArray.filter(item => item.status === 'Pending')}
+          // entriesData={workOrderArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+    else if (tabSubHeadSelectionOption == 'Pending' && tabHeadSelectionOption == 'Priority') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={tabHeadOptionSelectionOption != 'All' ? searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status === 'Pending').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status === 'Pending').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status === 'Pending') : workOrderArray.filter(item => item.status === 'Pending')}
+          // entriesData={workOrderArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+
+    else if (tabSubHeadSelectionOption == 'Completed' && tabHeadSelectionOption == 'All') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => item.status === 'Completed').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => item.status === 'Completed').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray.filter(item => item.status === 'Completed')}
+          // entriesData={workOrderArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+    else if (tabSubHeadSelectionOption == 'Completed' && tabHeadSelectionOption == 'Status') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={tabHeadOptionSelectionOption != 'All' ? searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status === 'Completed').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status === 'Completed').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status === 'Completed') : workOrderArray.filter(item => item.status === 'Completed')}
+          // entriesData={workOrderArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+    else if (tabSubHeadSelectionOption == 'Completed' && tabHeadSelectionOption == 'Priority') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={tabHeadOptionSelectionOption != 'All' ? searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status === 'Completed').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status === 'Completed').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status === 'Completed') : workOrderArray.filter(item => item.status === 'Completed')}
+          // entriesData={workOrderArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+
+  },[tabHeadSelectionOption, tabSubHeadSelectionOption, tabHeadOptionSelectionOption, search, searchWorkOrderSelectedOption, workOrderArray, inHouseWOArray])
+
+  const RenderFormOilChange = useCallback(() => {
+    if (tabSubHeadSelectionOption == 'All' && tabHeadSelectionOption == 'All') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray}
+          // entriesData={inHouseWOArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+    else if (tabSubHeadSelectionOption == 'All' && tabHeadSelectionOption == 'Status') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={tabHeadOptionSelectionOption != 'All' ? searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray.filter(item => item.status == tabHeadOptionSelectionOption) : inHouseWOArray}
+          // entriesData={inHouseWOArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+    else if (tabSubHeadSelectionOption == 'All' && tabHeadSelectionOption == 'Priority') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={tabHeadOptionSelectionOption != 'All' ? searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray.filter(item => item.priority == tabHeadOptionSelectionOption) : inHouseWOArray}
+          // entriesData={inHouseWOArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+
+    else if (tabSubHeadSelectionOption == 'Over Due' && tabHeadSelectionOption == 'All') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime()).filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime()).filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray.filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime())}
+          // entriesData={inHouseWOArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+    else if (tabSubHeadSelectionOption == 'Over Due' && tabHeadSelectionOption == 'Status') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={tabHeadOptionSelectionOption != 'All' ? searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime()).filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime()).filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime()) : inHouseWOArray.filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime())}
+          // entriesData={inHouseWOArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+    else if (tabSubHeadSelectionOption == 'Over Due' && tabHeadSelectionOption == 'Priority') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={tabHeadOptionSelectionOption != 'All' ? searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime()).filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime()).filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime()) : inHouseWOArray.filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime())}
+          // entriesData={inHouseWOArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+
+    else if (tabSubHeadSelectionOption == 'In Progress' && tabHeadSelectionOption == 'All') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => item.status === 'In Progress').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => item.status === 'In Progress').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray.filter(item => item.status === 'In Progress')}
+          // entriesData={inHouseWOArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+    else if (tabSubHeadSelectionOption == 'In Progress' && tabHeadSelectionOption == 'Status') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={tabHeadOptionSelectionOption != 'All' ? searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status === 'In Progress').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status === 'In Progress').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status === 'In Progress') : inHouseWOArray.filter(item => item.status === 'In Progress')}
+          // entriesData={inHouseWOArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+    else if (tabSubHeadSelectionOption == 'In Progress' && tabHeadSelectionOption == 'Priority') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={tabHeadOptionSelectionOption != 'All' ? searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status === 'In Progress').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status === 'In Progress').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status === 'In Progress') : inHouseWOArray.filter(item => item.status === 'In Progress')}
+          // entriesData={inHouseWOArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+
+    else if (tabSubHeadSelectionOption == 'Pending' && tabHeadSelectionOption == 'All') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => item.status === 'Pending').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => item.status === 'Pending').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray.filter(item => item.status === 'Pending')}
+          // entriesData={inHouseWOArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+    else if (tabSubHeadSelectionOption == 'Pending' && tabHeadSelectionOption == 'Status') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={tabHeadOptionSelectionOption != 'All' ? searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status === 'Pending').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status === 'Pending').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status === 'Pending') : inHouseWOArray.filter(item => item.status === 'Pending')}
+          // entriesData={inHouseWOArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+    else if (tabSubHeadSelectionOption == 'Pending' && tabHeadSelectionOption == 'Priority') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={tabHeadOptionSelectionOption != 'All' ? searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status === 'Pending').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status === 'Pending').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status === 'Pending') : inHouseWOArray.filter(item => item.status === 'Pending')}
+          // entriesData={inHouseWOArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+
+    else if (tabSubHeadSelectionOption == 'Completed' && tabHeadSelectionOption == 'All') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => item.status === 'Completed').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => item.status === 'Completed').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray.filter(item => item.status === 'Completed')}
+          // entriesData={inHouseWOArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+    else if (tabSubHeadSelectionOption == 'Completed' && tabHeadSelectionOption == 'Status') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={tabHeadOptionSelectionOption != 'All' ? searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status === 'Completed').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status === 'Completed').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray.filter(item => item.status == tabHeadOptionSelectionOption).filter(item => item.status === 'Completed') : inHouseWOArray.filter(item => item.status === 'Completed')}
+          // entriesData={inHouseWOArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+    else if (tabSubHeadSelectionOption == 'Completed' && tabHeadSelectionOption == 'Priority') {
+      return (
+        <Form
+          columns={columns}
+          entriesData={tabHeadOptionSelectionOption != 'All' ? searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status === 'Completed').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
+          ) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status === 'Completed').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray.filter(item => item.priority == tabHeadOptionSelectionOption).filter(item => item.status === 'Completed') : inHouseWOArray.filter(item => item.status === 'Completed')}
+          // entriesData={inHouseWOArray}
+          titleForm="Work Order"
+          onValueChange={handleWorkOrderFormValueChange}
+          onFormSortDateCreated={(val) => handleTimeStampSorting()}
+          onFormSortDueDate={() => handleDueDateSorting()}
+          row={styles.formRowStyle}
+          cell={styles.formCellStyle}
+          entryText={styles.formEntryTextStyle}
+          columnHeaderRow={styles.formColumnHeaderRowStyle}
+          columnHeaderCell={styles.formColumnHeaderCellStyle}
+          columnHeaderText={styles.formColumnHeaderTextStyle}
+        />
+      )
+    }
+
+  },[tabHeadSelectionOption, tabSubHeadSelectionOption, tabHeadOptionSelectionOption, search, searchWorkOrderSelectedOption, workOrderArray, inHouseWOArray])
 
   return (
     <Animated.View style={{ flex: 1, backgroundColor: '#f6f8f9' }}>
@@ -488,10 +1126,10 @@ const MaintenancePage = (props) => {
                 <Text style={{ color: options == '1' ? 'white' : 'grey', fontFamily: 'inter-bold', fontSize: options == '1' ? 16 : 14, padding: 10, backgroundColor: options == '1' ? '#335a75' : null, borderWidth: options == '1' ? 1 : 0, borderColor: '#335a75', borderRadius: 10 }}>General WO</Text>
               </TouchableOpacity>
               <TouchableOpacity style={{ flexDirection: 'row', marginHorizontal: 15, height: 40, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }} onPress={() => setOptions('2')}>
-                <Text style={{ color: options == '2' ? 'white' : 'grey', fontFamily: 'inter-bold', fontSize: options == '2' ? 16 : 14, padding: 10, backgroundColor: options == '2' ? '#335a75' : null, borderWidth: options == '2' ? 1 : 0, borderColor: '#335a75', borderRadius: 10 }}>In House WO</Text>
+                <Text style={{ color: options == '2' ? 'white' : 'grey', fontFamily: 'inter-bold', fontSize: options == '2' ? 16 : 14, padding: 10, backgroundColor: options == '2' ? '#335a75' : null, borderWidth: options == '2' ? 1 : 0, borderColor: '#335a75', borderRadius: 10 }}>Oil Change WO</Text>
               </TouchableOpacity>
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 40, zIndex: 1, }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 40, zIndex: 2, }}>
               <View style={{ flexDirection: 'row' }}>
                 <View style={{ marginRight: 10 }}>
                   <TextInput
@@ -564,223 +1202,79 @@ const MaintenancePage = (props) => {
             </View>
           </View>
 
-          <View style={{ flexDirection: 'row', marginLeft: 40, alignItems: 'center', marginTop: 20 }}>
-            <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setWorkOrderCalendarSelect("All")}>
-              <Text style={[styles.newCalenderSortText, workOrderCalendarSelect == "All" && styles.newCalenderSortSelectedText]}>
-                All
-              </Text>
-            </TouchableOpacity >
-            <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setWorkOrderCalendarSelect("Over Due")}>
-              <Text style={[styles.newCalenderSortText, workOrderCalendarSelect == "Over Due" && styles.newCalenderSortSelectedText]}>
-                Over Due
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setWorkOrderCalendarSelect("In Progress")}>
-              <Text style={[styles.newCalenderSortText, workOrderCalendarSelect == "In Progress" && styles.newCalenderSortSelectedText]}>
-              In Progress
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setWorkOrderCalendarSelect("Pending")}>
-              <Text style={[styles.newCalenderSortText, workOrderCalendarSelect == "Pending" && styles.newCalenderSortSelectedText]}>
-                Pending
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={{ marginRight: 40 }} onPress={() => setWorkOrderCalendarSelect("Completed")}>
-              <Text style={[styles.newCalenderSortText, workOrderCalendarSelect == "Completed" && styles.newCalenderSortSelectedText]}>
-                Completed
-              </Text>
-            </TouchableOpacity>
+          <View style={{ flexDirection: 'row', marginLeft: 40, alignItems: 'center', marginTop: 10, zIndex: 1 }}>
+
+            <View style={{ marginRight: 10 }}>
+              <DropDownComponent
+                options={['All', 'Over Due', 'In Progress', 'Pending', 'Completed']}
+                onValueChange={handleTabSubHeadValueChange}
+                // title="Ubaid Arshad"
+                info="tabSubHeadSelection"
+                selectedValue={tabSubHeadSelectionOption}
+                imageSource={require('../../assets/up_arrow_icon.png')}
+                container={styles.dropdownContainer}
+                dropdownButton={styles.dropdownButton}
+                selectedValueStyle={styles.dropdownSelectedValueStyle}
+                optionsContainer={styles.dropdownOptionsContainer}
+                option={styles.dropdownOption}
+                hoveredOption={styles.dropdownHoveredOption}
+                optionText={styles.dropdownOptionText}
+                hoveredOptionText={styles.dropdownHoveredOptionText}
+                dropdownButtonSelect={styles.dropdownButtonSelect}
+                dropdownStyle={styles.dropdown}
+              />
+            </View>
+
+            <View style={{ marginRight: 10 }}>
+              <DropDownComponent
+                options={['All', 'Priority', 'Status']}
+                onValueChange={handleTabHeadValueChange}
+                // title="Ubaid Arshad"
+                info="tabHeadSelection"
+                selectedValue={tabHeadSelectionOption}
+                imageSource={require('../../assets/up_arrow_icon.png')}
+                container={styles.dropdownContainer}
+                dropdownButton={styles.dropdownButton}
+                selectedValueStyle={styles.dropdownSelectedValueStyle}
+                optionsContainer={styles.dropdownOptionsContainer}
+                option={styles.dropdownOption}
+                hoveredOption={styles.dropdownHoveredOption}
+                optionText={styles.dropdownOptionText}
+                hoveredOptionText={styles.dropdownHoveredOptionText}
+                dropdownButtonSelect={styles.dropdownButtonSelect}
+                dropdownStyle={styles.dropdown}
+              />
+            </View>
+
+            <View style={{ marginRight: 10 }}>
+              <DropDownComponent
+                options={tabHeadSelectionOption == 'Priority' ? ['All', 'High', 'Medium', 'Low', 'Undefined'] : tabHeadSelectionOption == 'Status' ? ['All', 'Pending', 'In Progress', 'Completed',] : []}
+                onValueChange={handleTabHeadOptionValueChange}
+                // title="Ubaid Arshad"
+                info="tabHeadOptionSelection"
+                selectedValue={tabHeadOptionSelectionOption}
+                imageSource={require('../../assets/up_arrow_icon.png')}
+                container={styles.dropdownContainer}
+                dropdownButton={styles.dropdownButton}
+                selectedValueStyle={styles.dropdownSelectedValueStyle}
+                optionsContainer={styles.dropdownOptionsContainer}
+                option={styles.dropdownOption}
+                hoveredOption={styles.dropdownHoveredOption}
+                optionText={styles.dropdownOptionText}
+                hoveredOptionText={styles.dropdownHoveredOptionText}
+                dropdownButtonSelect={styles.dropdownButtonSelect}
+                dropdownStyle={styles.dropdown}
+              />
+            </View>
           </View>
+
           <View style={[styles.contentCardStyle, { marginTop: 10 }]}>
             {options == '1'
               ?
-              workOrderCalendarSelect == 'All'
-                ?
-                <Form
-                  columns={columns}
-                  entriesData={searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
-                  ) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray}
-                  // entriesData={workOrderArray}
-                  titleForm="Work Order"
-                  onValueChange={handleWorkOrderFormValueChange}
-                  onFormSortDateCreated={(val) => handleTimeStampSorting()}
-                  onFormSortDueDate={()=> handleDueDateSorting()}
-                  row={styles.formRowStyle}
-                  cell={styles.formCellStyle}
-                  entryText={styles.formEntryTextStyle}
-                  columnHeaderRow={styles.formColumnHeaderRowStyle}
-                  columnHeaderCell={styles.formColumnHeaderCellStyle}
-                  columnHeaderText={styles.formColumnHeaderTextStyle}
-                />
-                :
-                workOrderCalendarSelect == 'Over Due'
-                  ?
-                  <Form
-                    columns={columns}
-                    entriesData={searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime()).filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime()).filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray.filter(item => item.status != 'Completed').filter(item => item.dueDate < new Date().getTime())}
-                    // entriesData={workOrderArray}
-                    titleForm="Work Order"
-                    onValueChange={handleWorkOrderFormValueChange}
-                    onFormSortDateCreated={(val) => handleTimeStampSorting()}
-                    onFormSortDueDate={()=> handleDueDateSorting()}
-                    row={styles.formRowStyle}
-                    cell={styles.formCellStyle}
-                    entryText={styles.formEntryTextStyle}
-                    columnHeaderRow={styles.formColumnHeaderRowStyle}
-                    columnHeaderCell={styles.formColumnHeaderCellStyle}
-                    columnHeaderText={styles.formColumnHeaderTextStyle}
-                  />
-                  :
-                  workOrderCalendarSelect == 'In Progress'
-                    ?
-                    <Form
-                      columns={columns}
-                      entriesData={searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => item.status === 'In Progress').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
-                      ) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => item.status === 'In Progress').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray.filter(item => item.status === 'In Progress')}
-                      // entriesData={workOrderArray}
-                      titleForm="Work Order"
-                      onValueChange={handleWorkOrderFormValueChange}
-                      onFormSortDateCreated={(val) => handleTimeStampSorting()}
-                      onFormSortDueDate={()=> handleDueDateSorting()}
-                      row={styles.formRowStyle}
-                      cell={styles.formCellStyle}
-                      entryText={styles.formEntryTextStyle}
-                      columnHeaderRow={styles.formColumnHeaderRowStyle}
-                      columnHeaderCell={styles.formColumnHeaderCellStyle}
-                      columnHeaderText={styles.formColumnHeaderTextStyle}
-                    />
-                    :
-                  workOrderCalendarSelect == 'Pending'
-                    ?
-                    <Form
-                      columns={columns}
-                      entriesData={searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => item.status === 'Pending').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
-                      ) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => item.status === 'Pending').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray.filter(item => item.status === 'Pending')}
-                      // entriesData={workOrderArray}
-                      titleForm="Work Order"
-                      onValueChange={handleWorkOrderFormValueChange}
-                      onFormSortDateCreated={(val) => handleTimeStampSorting()}
-                      onFormSortDueDate={()=> handleDueDateSorting()}
-                      row={styles.formRowStyle}
-                      cell={styles.formCellStyle}
-                      entryText={styles.formEntryTextStyle}
-                      columnHeaderRow={styles.formColumnHeaderRowStyle}
-                      columnHeaderCell={styles.formColumnHeaderCellStyle}
-                      columnHeaderText={styles.formColumnHeaderTextStyle}
-                    />
-                    :
-                    workOrderCalendarSelect == 'Completed'
-                      ?
-                      <Form
-                        columns={columns}
-                        entriesData={searchWorkOrderSelectedOption == 'Asset' ? workOrderArray.filter(item => item.status === 'Completed').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
-                        ) : searchWorkOrderSelectedOption == 'Mechanic' ? workOrderArray.filter(item => item.status === 'Completed').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : workOrderArray.filter(item => item.status === 'Completed')}
-                        // entriesData={workOrderArray}
-                        titleForm="Work Order"
-                        onValueChange={handleWorkOrderFormValueChange}
-                        onFormSortDateCreated={(val) => handleTimeStampSorting()}
-                        onFormSortDueDate={()=> handleDueDateSorting()}
-                        row={styles.formRowStyle}
-                        cell={styles.formCellStyle}
-                        entryText={styles.formEntryTextStyle}
-                        columnHeaderRow={styles.formColumnHeaderRowStyle}
-                        columnHeaderCell={styles.formColumnHeaderCellStyle}
-                        columnHeaderText={styles.formColumnHeaderTextStyle}
-                      />
-                      : null
+              <RenderForm />
               :
-              workOrderCalendarSelect == 'All'
-                ?
-                <Form
-                  columns={columns}
-                  entriesData={searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
-                  ) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray}
-                  // entriesData={workOrderArray}
-                  titleForm="Work Order"
-                  onValueChange={handleInHouseWOFormValueChange}
-                  onFormSortDateCreated={(val) => handleTimeStampSorting()}
-                  onFormSortDueDate={()=> handleDueDateSorting()}
-                  row={styles.formRowStyle}
-                  cell={styles.formCellStyle}
-                  entryText={styles.formEntryTextStyle}
-                  columnHeaderRow={styles.formColumnHeaderRowStyle}
-                  columnHeaderCell={styles.formColumnHeaderCellStyle}
-                  columnHeaderText={styles.formColumnHeaderTextStyle}
-                />
-                :
-                workOrderCalendarSelect == 'Over Due'
-                ?
-                <Form
-                  columns={columns}
-                  entriesData={searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => item.status != 'Completed').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => item.status == 'Pending').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray.filter(item => item.status == 'Pending')}
-                  // entriesData={workOrderArray}
-                  titleForm="Work Order"
-                  onValueChange={handleInHouseWOFormValueChange}
-                  onFormSortDateCreated={(val) => handleTimeStampSorting()}
-                  onFormSortDueDate={()=> handleDueDateSorting()}
-                  row={styles.formRowStyle}
-                  cell={styles.formCellStyle}
-                  entryText={styles.formEntryTextStyle}
-                  columnHeaderRow={styles.formColumnHeaderRowStyle}
-                  columnHeaderCell={styles.formColumnHeaderCellStyle}
-                  columnHeaderText={styles.formColumnHeaderTextStyle}
-                />
-                :
-                workOrderCalendarSelect == 'In Progress'
-                ?
-                <Form
-                  columns={columns}
-                  entriesData={searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => item.status == 'In Progress').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => item.status == 'In Progress').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray.filter(item => item.status == 'In Progress')}
-                  // entriesData={workOrderArray}
-                  titleForm="Work Order"
-                  onValueChange={handleInHouseWOFormValueChange}
-                  onFormSortDateCreated={(val) => handleTimeStampSorting()}
-                  onFormSortDueDate={()=> handleDueDateSorting()}
-                  row={styles.formRowStyle}
-                  cell={styles.formCellStyle}
-                  entryText={styles.formEntryTextStyle}
-                  columnHeaderRow={styles.formColumnHeaderRowStyle}
-                  columnHeaderCell={styles.formColumnHeaderCellStyle}
-                  columnHeaderText={styles.formColumnHeaderTextStyle}
-                />
-                :
-                workOrderCalendarSelect == 'Pending'
-                  ?
-                  <Form
-                    columns={columns}
-                    entriesData={searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => item.status == 'Pending').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => item.status == 'Pending').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray.filter(item => item.status == 'Pending')}
-                    // entriesData={workOrderArray}
-                    titleForm="Work Order"
-                    onValueChange={handleInHouseWOFormValueChange}
-                    onFormSortDateCreated={(val) => handleTimeStampSorting()}
-                    onFormSortDueDate={()=> handleDueDateSorting()}
-                    row={styles.formRowStyle}
-                    cell={styles.formCellStyle}
-                    entryText={styles.formEntryTextStyle}
-                    columnHeaderRow={styles.formColumnHeaderRowStyle}
-                    columnHeaderCell={styles.formColumnHeaderCellStyle}
-                    columnHeaderText={styles.formColumnHeaderTextStyle}
-                  />
-                  :
-                  workOrderCalendarSelect == 'Completed'
-                    ?
-                    <Form
-                      columns={columns}
-                      entriesData={searchWorkOrderSelectedOption == 'Asset' ? inHouseWOArray.filter(item => item.status == 'Completed').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())) : searchWorkOrderSelectedOption == 'Mechanic' ? inHouseWOArray.filter(item => item.status == 'Completed').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.assignedMechanic)?.Name?.toLowerCase().includes(search.toLowerCase())) : inHouseWOArray.filter(item => item.status == 'Completed')}
-                      // entriesData={workOrderArray}
-                      titleForm="Work Order"
-                      onValueChange={handleInHouseWOFormValueChange}
-                      onFormSortDateCreated={(val) => handleTimeStampSorting()}
-                      onFormSortDueDate={()=> handleDueDateSorting()}
-                      row={styles.formRowStyle}
-                      cell={styles.formCellStyle}
-                      entryText={styles.formEntryTextStyle}
-                      columnHeaderRow={styles.formColumnHeaderRowStyle}
-                      columnHeaderCell={styles.formColumnHeaderCellStyle}
-                      columnHeaderText={styles.formColumnHeaderTextStyle}
-                    />
-                    :
-                    null}
+              <RenderFormOilChange />
+            }
           </View>
         </ScrollView>
       </TouchableWithoutFeedback>
@@ -833,7 +1327,7 @@ const MaintenancePage = (props) => {
                           optionText={styles.dropdownOptionText}
                           hoveredOptionText={styles.dropdownHoveredOptionText}
                           dropdownButtonSelect={styles.dropdownButtonSelect}
-                          dropdownStyle={[styles.dropdown, {minWidth:350}]}
+                          dropdownStyle={[styles.dropdown, { minWidth: 350 }]}
                           onAssetSelection={(val) => {
                             setSelectedAsset(val['Asset Name'])
                             setSelectedAssetId(val['Asset Number'])
@@ -843,34 +1337,34 @@ const MaintenancePage = (props) => {
                       </View>
                     </View>
                     {selectedAsset != ''
-                    ?
-                    <View>
-                      <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>Priority</Text>
-                      <View style={{ marginTop: 10, }}>
-                        <DropDownComponent
-                          options={["High", "Medium", "Low", "Undefined"]}
-                          onValueChange={(val) => {
-                            setPrioritySelectedOption(val)
-                          }}
-                          // title="Ubaid Arshad"
-                          info='prioritySelection'
-                          selectedValue={prioritySelectedOption}
-                          imageSource={require('../../assets/up_arrow_icon.png')}
-                          container={styles.dropdownContainer}
-                          dropdownButton={styles.dropdownButton}
-                          selectedValueStyle={styles.dropdownSelectedValueStyle}
-                          optionsContainer={styles.dropdownOptionsContainer}
-                          option={styles.dropdownOption}
-                          hoveredOption={styles.dropdownHoveredOption}
-                          optionText={styles.dropdownOptionText}
-                          hoveredOptionText={styles.dropdownHoveredOptionText}
-                          dropdownButtonSelect={styles.dropdownButtonSelect}
-                          dropdownStyle={[styles.dropdown, {minWidth:350}]}
-                        />
+                      ?
+                      <View>
+                        <Text style={{ fontFamily: 'inter-regular', fontSize: 14, }}>Priority</Text>
+                        <View style={{ marginTop: 10, }}>
+                          <DropDownComponent
+                            options={["High", "Medium", "Low", "Undefined"]}
+                            onValueChange={(val) => {
+                              setPrioritySelectedOption(val)
+                            }}
+                            // title="Ubaid Arshad"
+                            info='prioritySelection'
+                            selectedValue={prioritySelectedOption}
+                            imageSource={require('../../assets/up_arrow_icon.png')}
+                            container={styles.dropdownContainer}
+                            dropdownButton={styles.dropdownButton}
+                            selectedValueStyle={styles.dropdownSelectedValueStyle}
+                            optionsContainer={styles.dropdownOptionsContainer}
+                            option={styles.dropdownOption}
+                            hoveredOption={styles.dropdownHoveredOption}
+                            optionText={styles.dropdownOptionText}
+                            hoveredOptionText={styles.dropdownHoveredOptionText}
+                            dropdownButtonSelect={styles.dropdownButtonSelect}
+                            dropdownStyle={[styles.dropdown, { minWidth: 350 }]}
+                          />
+                        </View>
                       </View>
-                    </View>
-                       :
-                       null}
+                      :
+                      null}
                   </View>
 
                 </View>

@@ -4,7 +4,7 @@ import AlertModal from '../../components/AlertModal';
 import { DataContext } from '../store/context/DataContext';
 import moment from 'moment'
 import { BlurView } from 'expo-blur';
-import { collection, getDocs, getFirestore, query, where } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, getFirestore, query, where } from 'firebase/firestore';
 import app from '../config/firebase';
 import { PeopleContext } from '../store/context/PeopleContext';
 import { AssetContext } from '../store/context/AssetContext';
@@ -16,6 +16,7 @@ import * as interbold from '../../assets/fonts/Inter-Bold-normal'
 import * as interregular from '../../assets/fonts/Inter-Regular-normal'
 import * as intermedium from '../../assets/fonts/Inter-Medium-normal'
 import 'jspdf-autotable'
+import { DefectContext } from '../store/context/DefectContext';
 
 
 
@@ -36,6 +37,7 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
     const { state: peopleState } = useContext(PeopleContext)
     const { state: assetState } = useContext(AssetContext)
     const { state: headerOptionState, setHeaderOption } = useContext(HeaderOptionContext)
+    const { state: defectState } = useContext(DefectContext)
 
 
     useEffect(() => {
@@ -142,13 +144,25 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
         });
     };
 
+    const convertImageToBase64 = async (localUri) => {
+        try {
+            const base64Image = await FileSystem.readAsStringAsync(localUri, {
+                encoding: FileSystem.EncodingType.Base64,
+            });
+            // base64Image will contain the base64 string of the image
+            return base64Image;
+        } catch (error) {
+            console.error('Error converting image to base64:', error);
+            return null;
+        }
+    };
 
     const generatePDFContent = async (groups) => {
         const doc = new jsPDF();
 
         interregular
         intermedium
-        console.log(doc.getFontList())
+        // console.log(doc.getFontList())
 
         const pageWidth = doc.internal.pageSize.width;
         const usableWidth = pageWidth - 40; // Adjusted usable width with margins
@@ -160,7 +174,7 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
         doc.setFontSize(16);
         doc.text('Inspection Report', 20, yOffset);
 
-        yOffset+=10
+        yOffset += 10
 
         doc.setFont('Inter-Medium', 'normal');
         doc.setFontSize(10);
@@ -168,14 +182,14 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
         doc.text('eDVIR', 80, yOffset);
         yOffset += 8
         doc.text('Form Status:', 20, yOffset)
-        if(formValue.formStatus == 'Failed'){
+        if (formValue.formStatus == 'Failed') {
             doc.setTextColor('#FF0000');
         }
-        else if (formValue.formStatus == 'Passed'){
+        else if (formValue.formStatus == 'Passed') {
             doc.setTextColor('green');
         }
         else {
-            doc.setTextColor('#646464'); 
+            doc.setTextColor('#646464');
         }
         doc.text(`${formValue.formStatus}`, 80, yOffset);
         yOffset += 8;
@@ -253,10 +267,10 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
                 if (groupData.value == 'Pass') {
                     doc.setTextColor('green')
                 }
-                else if(groupData.value == 'Fail') {
+                else if (groupData.value == 'Fail') {
                     doc.setTextColor('red')
                 }
-                else{
+                else {
                     doc.setTextColor('#646464')
                 }
                 doc.text(groupData.value, 30 + titleColumnWidth, yOffset + 5.5 + (rectHeight * 2.25)); // Value
@@ -287,6 +301,9 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
                 }
 
                 // Add comments if available
+                if(groupData.value == 'Fail' && groupData.Defect.Image == ""){
+                    yOffset += 8;
+                }
                 if (groupData.Defect && groupData.Defect.Note) {
                     const commentLines = doc.splitTextToSize(`${groupData.Defect.Note}`, titleColumnWidth - 10);
                     if (yOffset + commentLines.length * 5 > doc.internal.pageSize.height - 20) {
@@ -321,8 +338,7 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
         doc.text(`Signature`, 30, yOffset + 5.5);  // Adjust position for text
         yOffset += 8
 
-        if(yOffset + 80 > doc.internal.pageSize.height - 20)
-        {
+        if (yOffset + 80 > doc.internal.pageSize.height - 20) {
             doc.addPage();
             yOffset = 20
         }
@@ -418,8 +434,6 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
 
             <View style={{ marginVertical: 10, backgroundColor: 'white', borderRadius: 4, width: 350, padding: 20, margin: 5, }} >
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-
-
                     <Text style={{
                         fontFamily: 'inter-semibold',
                         fontSize: 20,
@@ -441,41 +455,47 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
                     contentContainerStyle={{ maxHeight: 300, }}>
                     {group.map((groupData, index) => (
                         <View key={index}>
-                            {groupData.title == 'Mileage' ? (
+                            {groupData.title == 'Reservation number' ? (
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}>
                                     <View style={{ height: 4, width: 4, backgroundColor: '#000000', borderRadius: 2 }}></View>
                                     <Text style={{ color: '#000000', marginLeft: 15, fontFamily: 'inter-regular', fontSize: 14 }}>{groupData.value} </Text>
                                 </View>
-                            ) : groupData.value == 'Fail' ? (
-                                <>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}>
-                                        <View style={{ height: 4, width: 4, backgroundColor: '#000000', borderRadius: 2 }}></View>
-                                        <Text style={{ color: 'red', marginLeft: 15, fontFamily: 'inter-regular', fontSize: 14 }}>{groupData.title}</Text>
-                                    </View>
-                                    <TouchableOpacity key={index} onPress={() => { window.open(groupData.Defect.Image, '_blank'); }}>
-                                        <View style={{ marginVertical: 10 }}>
-                                            <Image style={{ height: 300, width: 300, }} source={{ uri: groupData.Defect.Image }}>
-                                            </Image>
-                                            <View style={{ flexDirection: 'row', padding: 10 }}>
-                                                <Text style={{ width: 100, color: 'black', fontSize: 13, marginLeft: 5 }}>Comment:</Text>
-                                                <Text style={{ width: '100%', color: 'black', fontSize: 13, marginLeft: 5 }}>{groupData.Defect.Note}</Text>
-                                            </View>
-                                        </View>
-
-                                    </TouchableOpacity>
-                                </>
-                            ) : (
+                            ) : groupData.title == 'Mileage' ? (
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}>
                                     <View style={{ height: 4, width: 4, backgroundColor: '#000000', borderRadius: 2 }}></View>
-                                    <Text style={{ color: '#000000', marginLeft: 15, fontFamily: 'inter-regular', fontSize: 13 }}>{groupData.title}</Text>
+                                    <Text style={{ color: '#000000', marginLeft: 15, fontFamily: 'inter-regular', fontSize: 14 }}>{groupData.value} </Text>
                                 </View>
-                            )}
+                            ) :
+                                groupData.value == 'Fail' ? (
+                                    <>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}>
+                                            <View style={{ height: 4, width: 4, backgroundColor: '#000000', borderRadius: 2 }}></View>
+                                            <Text style={{ color: 'red', marginLeft: 15, fontFamily: 'inter-regular', fontSize: 14 }}>{groupData.title}</Text>
+                                        </View>
+                                        <TouchableOpacity key={index} onPress={() => { window.open(groupData.Defect.Image, '_blank'); }}>
+                                            <View style={{ marginVertical: 10 }}>
+                                                {groupData.Defect.Image ? <Image style={{ height: 300, width: 300, }} source={{ uri: groupData.Defect.Image }}>
+                                                </Image> : null}
+                                                <View style={{ flexDirection: 'row', padding: 10 }}>
+                                                    <Text style={{ width: 100, color: 'black', fontSize: 13, marginLeft: 5 }}>Comment:</Text>
+                                                    <Text style={{ width: '100%', color: 'black', fontSize: 13, marginLeft: 5 }}>{groupData.Defect.Note}</Text>
+                                                </View>
+                                            </View>
+
+                                        </TouchableOpacity>
+                                    </>
+                                ) : (
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}>
+                                        <View style={{ height: 4, width: 4, backgroundColor: '#000000', borderRadius: 2 }}></View>
+                                        <Text style={{ color: '#000000', marginLeft: 15, fontFamily: 'inter-regular', fontSize: 13 }}>{groupData.title}</Text>
+                                    </View>
+                                )}
                         </View>
                     ))}
                 </ScrollView>
-                {group[0].type != 'Mileage' ? (
+                {group[0].type !== 'Mileage' && group[0].type !== 'Reservation number' ? (
                     <View style={{ flex: 1, justifyContent: 'flex-end', marginTop: 10 }}>
-                        <View style={{ borderRadius: 5, marginTop: 10, backgroundColor: group[0].groupValue == 'Pass' ? 'green' : 'red', padding: 2, width: 50, alignItems: 'center', justifyContent: 'center' }}>
+                        <View style={{ borderRadius: 5, marginTop: 10, backgroundColor: group[0].groupValue === 'Pass' ? 'green' : 'red', padding: 2, width: 50, alignItems: 'center', justifyContent: 'center' }}>
                             <Text style={{ color: '#FFFFFF', fontSize: 14 }}>{group[0].groupValue}</Text>
                         </View>
                     </View>
@@ -484,6 +504,20 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
             </View>
         );
     }, [])
+
+    const handleDeleteForm = async () => {
+
+        if (formValue.formStatus == 'Failed') {
+            const newArray = [...defectState.value.defect.filter(item => item.inspectionId == formValue.id)]
+            if (newArray.length != 0) {
+                await deleteDoc(doc(db, "Defects", newArray[0].id.toString()));
+            }
+        }
+        await deleteDoc(doc(db, "Forms", formValue.id.toString()));
+        setAlertStatus('successful')
+        setAlertIsVisible(true)
+        fetchData()
+    }
 
 
     return (
@@ -591,6 +625,67 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
 
                     </View>
 
+
+                    <View style={{ flexDirection: 'row' }}>
+                        <View style={{ marginVertical: 10, backgroundColor: 'white', borderRadius: 4, width: 525, padding: 20, margin: 5, alignItems: 'center', justifyContent: 'center' }} >
+                            {formValue.frontImage ?
+                                <>
+                                    <TouchableOpacity onPress={() => { window.open(formValue.frontImage, '_blank'); }}>
+                                        <Image style={{ height: 300, width: 300, }} source={{ uri: formValue.frontImage }}>
+                                        </Image>
+                                    </TouchableOpacity>
+                                    <Text>Front Side</Text>
+                                </>
+                                :
+                                <Text>No Image</Text>
+                            }
+                        </View>
+                        <View style={{ marginVertical: 10, backgroundColor: 'white', borderRadius: 4, width: 525, padding: 20, margin: 5, alignItems: 'center', justifyContent: 'center' }} >
+                            {formValue.backImage ?
+                                <>
+                                    <TouchableOpacity onPress={() => { window.open(formValue.backImage, '_blank'); }}>
+                                        <Image style={{ height: 300, width: 300, }} source={{ uri: formValue.backImage }}>
+                                        </Image>
+                                    </TouchableOpacity>
+                                    <Text>Back Side</Text>
+                                </>
+                                :
+                                <Text>No Image</Text>
+                            }
+
+                        </View>
+                    </View>
+
+                    <View style={{ flexDirection: 'row' }}>
+                        <View style={{ marginVertical: 10, backgroundColor: 'white', borderRadius: 4, width: 525, padding: 20, margin: 5, alignItems: 'center', justifyContent: 'center' }} >
+                            {formValue.rightImage ?
+                                <>
+                                    <TouchableOpacity onPress={() => { window.open(formValue.rightImage, '_blank'); }}>
+                                        <Image style={{ height: 300, width: 300, }} source={{ uri: formValue.rightImage }}>
+                                        </Image>
+                                    </TouchableOpacity>
+                                    <Text>Right Side</Text>
+                                </>
+                                :
+                                <Text>No Image</Text>
+                            }
+                        </View>
+                        <View style={{ marginVertical: 10, backgroundColor: 'white', borderRadius: 4, width: 525, padding: 20, margin: 5, alignItems: 'center', justifyContent: 'center' }} >
+                            {formValue.leftImage ?
+                                <>
+                                    <TouchableOpacity onPress={() => { window.open(formValue.leftImage, '_blank'); }}>
+                                        <Image style={{ height: 300, width: 300, }} source={{ uri: formValue.leftImage }}>
+                                        </Image>
+                                    </TouchableOpacity>
+                                    <Text>Left Side</Text>
+                                </>
+                                :
+                                <Text>No Image</Text>
+                            }
+
+                        </View>
+                    </View>
+
                     {groups.length != 0
                         ?
                         <View style={{ width: 'auto' }}>
@@ -635,11 +730,8 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
                                     onPress={async () => {
                                         setDeleteModal(false)
                                         setLoading(true)
-                                        await deleteDoc(doc(db, "Forms", formValue.id.toString()));
-                                        console.log('deleted')
-                                        setAlertStatus('successful')
-                                        setAlertIsVisible(true)
-                                        fetchData()
+                                        handleDeleteForm()
+
                                     }}
 
                                     style={[{ width: 100, height: 40, backgroundColor: '#FFFFFF', borderRadius: 5, alignItems: 'center', justifyContent: 'center', shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.9, shadowRadius: 5, elevation: 0, shadowColor: '#575757', marginHorizontal: 10 }, deleteOptionHover[0] && { backgroundColor: '#558BC1', borderColor: '#558BC1' }]}>
