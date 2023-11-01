@@ -22,15 +22,17 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
     const [groups, setGroups] = useState([])
     const [deleteModal, setDeleteModal] = useState(false)
     const [deleteOptionHover, setDeleteOptionHover] = useState({})
-    const [loading, setLoading] = useState(true)
+    const [loading, setLoading] = useState(false)
     const [alertIsVisible, setAlertIsVisible] = useState(false)
     const [alertStatus, setAlertStatus] = useState('')
     const [pdf, setPdf] = useState(null)
 
-    const [frontImage, setFrontImage] = useState('')
-    const [backImage, setBackImage] = useState('')
-    const [leftImage, setLeftImage] = useState('')
-    const [rightImage, setRightImage] = useState('')
+    const [frontImage, setFrontImage] = useState(null)
+    const [backImage, setBackImage] = useState(null)
+    const [leftImage, setLeftImage] = useState(null)
+    const [rightImage, setRightImage] = useState(null)
+
+    const [imgLoading, setImgLoading] = useState(true)
 
 
     const db = getFirestore(app)
@@ -39,93 +41,90 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
     const { state: assetState } = useContext(AssetContext)
     const { state: defectState } = useContext(DefectContext)
 
-    useEffect(() => {
-        if (formValue.frontImage) {
-            fetch(formValue.frontImage)
-                .then(response => {
-                    if (!response.ok) {
-                        if (response.status === 404) {
-                            setFrontImage('')
-                        } else {
-                            setFrontImage('')
-                        }
-                    } else {
-                        setFrontImage(formValue.frontImage)
-                    }
-                })
-                .catch(error => {
-                    setFrontImage('')
+    const getCarImages = async () => {
 
-                });
+        if (formValue.frontImage) {
+            try {
+                await fetch(formValue.frontImage)
+                    .then(response => {
+                        if (response.ok == true) {
+                            setFrontImage(formValue.frontImage)
+                           
+                        }
+                    })
+
+            } catch (error) {
+                console.log('1')
+                console.log(error)
+            }
+
         }
 
         if (formValue.backImage) {
-            fetch(formValue.backImage)
-                .then(response => {
-                    if (!response.ok) {
-                        if (response.status === 404) {
-                            setBackImage('')
-                        } else {
-                            setBackImage('')
+            try {
+                await fetch(formValue.backImage)
+                    .then(response => {
+                        if (response.ok == true) {
+                            setBackImage(formValue.backImage)
+                           
                         }
-                    } else {
-                        setBackImage(formValue.backImage)
-                    }
-                })
-                .catch(error => {
-                    setBackImage('')
+                    })
 
-                });
+            } catch (error) {
+                console.log('1')
+                console.log(error)
+            }
+
         }
 
         if (formValue.leftImage) {
-            fetch(formValue.leftImage)
-                .then(response => {
-                    if (!response.ok) {
-                        if (response.status === 404) {
-                            setLeftImage('')
-                        } else {
-                            setLeftImage('')
+            try {
+                await fetch(formValue.leftImage)
+                    .then(response => {
+                        if (response.ok == true) {
+                            setLeftImage(formValue.leftImage)
+                           
                         }
-                    } else {
-                        setLeftImage(formValue.leftImage)
-                    }
-                })
-                .catch(error => {
-                    setLeftImage('')
+                    })
 
-                });
+            } catch (error) {
+                console.log('1')
+                console.log(error)
+            }
+
         }
-
 
         if (formValue.rightImage) {
-            fetch(formValue.rightImage)
-                .then(response => {
-                    if (!response.ok) {
-                        if (response.status === 404) {
-                            setRightImage('')
-                        } else {
-                            setRightImage('')
+            try {
+                await fetch(formValue.rightImage)
+                    .then(response => {
+                        if (response.ok == true) {
+                            setRightImage(formValue.rightImage)
+                       
                         }
-                    } else {
-                        setRightImage(formValue.rightImage)
-                    }
-                })
-                .catch(error => {
-                    setRightImage('')
+                    })
 
-                });
+            } catch (error) {
+                console.log('1')
+                console.log(error)
+            }
+
         }
 
+        setImgLoading(false)
 
-
-    }, [])
+    }
 
 
     useEffect(() => {
 
         fetchDriverDp()
-        // console.log(formValue)
+        getCarImages()
+        fetchAllData()
+
+    }, [])
+
+    const fetchAllData = async () => {
 
         if (formValue.length != 0) {
             const groupedData = groupData(formValue.form);
@@ -180,17 +179,12 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
 
             const groupedDataWithAppearance = markFirstOccurrence([...groupedData]);
             // console.log(groupedDataWithAppearance)
-
-
             setGroups(groupedDataWithAppearance)
             // Call this function when setting the groups
-            createPdf(groupedDataWithAppearance)
-
-
-
+            // createPdf(groupedDataWithAppearance)
         }
 
-    }, [])
+    }
 
     const mergeGroupsByType = (groups) => {
         const mergedGroups = [];
@@ -214,6 +208,7 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
         const mergedGroups = mergeGroupsByType(data);
         const doc = await generatePDFContent(mergedGroups)
         setPdf(doc)
+        return doc
     }
 
     const fetchImageAsDataUrl = async (imageUrl) => {
@@ -232,7 +227,6 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
 
         interregular
         intermedium
-        // console.log(doc.getFontList())
 
         const pageWidth = doc.internal.pageSize.width;
         const usableWidth = pageWidth - 40; // Adjusted usable width with margins
@@ -397,6 +391,127 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
             // Add a new page if needed for the next group
             addNewPageIfNeeded(20);
         }
+
+        yOffset += 10;
+
+        doc.setFillColor('#D3D3D3');  // Green color for the header
+        doc.rect(20, yOffset, usableWidth, 8, 'F');  // Draw a filled rectangle as the header
+        doc.setFont('Inter-Medium', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(0);  // Set text color to white
+        doc.text(`Front Image`, 30, yOffset + 5.5);  // Adjust position for text
+        yOffset += 8
+
+        if (yOffset + 80 > doc.internal.pageSize.height - 20) {
+            doc.addPage();
+            yOffset = 20
+        }
+        if (frontImage) {
+            yOffset += 8
+            const imgData = await fetchImageAsDataUrl(frontImage);
+            const imgHeight = 50;
+            const imgWidth = 50;
+            if (yOffset + imgHeight > doc.internal.pageSize.height - 20) {
+                doc.addPage(); // Move to the next page
+                yOffset = 20; // Reset the yOffset for the new page
+            }
+            doc.addImage(imgData, 'JPEG', 30, yOffset, imgWidth, imgHeight);
+            yOffset += 50;
+        }
+        else {
+            doc.text(`No Image`, 30, yOffset + 5.5);  // Adjust position for text
+        }
+
+        yOffset += 10;
+
+        doc.setFillColor('#D3D3D3');  // Green color for the header
+        doc.rect(20, yOffset, usableWidth, 8, 'F');  // Draw a filled rectangle as the header
+        doc.setFont('Inter-Medium', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(0);  // Set text color to white
+        doc.text(`Back Image`, 30, yOffset + 5.5);  // Adjust position for text
+        yOffset += 8
+
+        if (yOffset + 80 > doc.internal.pageSize.height - 20) {
+            doc.addPage();
+            yOffset = 20
+        }
+        if (backImage) {
+            yOffset += 8
+            const imgData = await fetchImageAsDataUrl(backImage);
+            const imgHeight = 50;
+            const imgWidth = 50;
+            if (yOffset + imgHeight > doc.internal.pageSize.height - 20) {
+                doc.addPage(); // Move to the next page
+                yOffset = 20; // Reset the yOffset for the new page
+            }
+            doc.addImage(imgData, 'JPEG', 30, yOffset, imgWidth, imgHeight);
+            yOffset += 50;
+        }
+        else {
+            doc.text(`No Image`, 30, yOffset + 5.5);  // Adjust position for text
+        }
+        yOffset += 10;
+
+        doc.setFillColor('#D3D3D3');  // Green color for the header
+        doc.rect(20, yOffset, usableWidth, 8, 'F');  // Draw a filled rectangle as the header
+        doc.setFont('Inter-Medium', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(0);  // Set text color to white
+        doc.text(`Left Image`, 30, yOffset + 5.5);  // Adjust position for text
+        yOffset += 8
+
+        if (yOffset + 80 > doc.internal.pageSize.height - 20) {
+            doc.addPage();
+            yOffset = 20
+        }
+        if (leftImage) {
+            yOffset += 8
+            const imgData = await fetchImageAsDataUrl(leftImage);
+            const imgHeight = 50;
+            const imgWidth = 50;
+            if (yOffset + imgHeight > doc.internal.pageSize.height - 20) {
+                doc.addPage(); // Move to the next page
+                yOffset = 20; // Reset the yOffset for the new page
+            }
+            doc.addImage(imgData, 'JPEG', 30, yOffset, imgWidth, imgHeight);
+            yOffset += 50;
+
+        }
+        else {
+            doc.text(`No Image`, 30, yOffset + 5.5);  // Adjust position for text
+        }
+        yOffset += 10;
+
+        doc.setFillColor('#D3D3D3');  // Green color for the header
+        doc.rect(20, yOffset, usableWidth, 8, 'F');  // Draw a filled rectangle as the header
+        doc.setFont('Inter-Medium', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(0);  // Set text color to white
+        doc.text(`Right Image`, 30, yOffset + 5.5);  // Adjust position for text
+        yOffset += 8
+
+        if (yOffset + 80 > doc.internal.pageSize.height - 20) {
+            doc.addPage();
+            yOffset = 20
+        }
+        if (rightImage) {
+            yOffset += 8
+            const imgData = await fetchImageAsDataUrl(rightImage);
+            const imgHeight = 50;
+            const imgWidth = 50;
+            if (yOffset + imgHeight > doc.internal.pageSize.height - 20) {
+                doc.addPage(); // Move to the next page
+                yOffset = 20; // Reset the yOffset for the new page
+            }
+            doc.addImage(imgData, 'JPEG', 30, yOffset, imgWidth, imgHeight);
+            yOffset += 50;
+        }
+        else {
+            doc.text(`No Image`, 30, yOffset + 5.5);  // Adjust position for text
+        }
+
+
 
         yOffset += 10;
         // Add Group Type as the header
@@ -666,14 +781,11 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
                             <Image style={{ height: 25, width: 25, marginLeft: 20 }} tintColor='red' source={require('../../assets/delete_icon.png')}></Image>
                         </TouchableOpacity>
                         <TouchableOpacity style={{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E2E2', padding: 5, marginLeft: 20 }} onPress={async () => {
-                            // const doc = await generatePDFContent(groups);
-                            // pdf.save('Inspection-Report.pdf');
-                            // window.open(pdf.output('filename.pdf'))
-                            const pdfBlob = pdf.output('blob');
+                            setLoading(true)
+                            const file = await createPdf(groups)
+                            const pdfBlob = file.output('blob');
                             const pdfUrl = URL.createObjectURL(pdfBlob);  // Create a URL for the Blob
                             window.open(pdfUrl, '_blank');  // Open the URL in a new tab
-
-
                         }}>
                             <Text >Download PDF</Text>
                         </TouchableOpacity>
@@ -685,11 +797,11 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
                         <View style={{ marginVertical: 10, backgroundColor: 'white', borderRadius: 4, width: 525, padding: 20, margin: 5, alignItems: 'center', justifyContent: 'center' }} >
                             {frontImage ?
                                 <>
-                                    <TouchableOpacity onPress={() => { window.open(formValue.frontImage, '_blank'); }}>
-                                        <Image style={{ height: 300, width: 300, }} source={{ uri: formValue.frontImage }}>
+                                    <TouchableOpacity onPress={() => { window.open(frontImage, '_blank'); }}>
+                                        <Image style={{ height: 300, width: 300, }} source={{ uri: frontImage }}>
                                         </Image>
                                     </TouchableOpacity>
-                                    <Text>Front Side</Text>
+                                    <Text style={{ fontFamily: 'inter-semibold', fontSize: 14, marginTop: 10, }}>Front Side</Text>
                                 </>
                                 :
                                 <Text>No Image</Text>
@@ -698,11 +810,11 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
                         <View style={{ marginVertical: 10, backgroundColor: 'white', borderRadius: 4, width: 525, padding: 20, margin: 5, alignItems: 'center', justifyContent: 'center' }} >
                             {backImage ?
                                 <>
-                                    <TouchableOpacity onPress={() => { window.open(formValue.backImage, '_blank'); }}>
-                                        <Image style={{ height: 300, width: 300, }} source={{ uri: formValue.backImage }}>
+                                    <TouchableOpacity onPress={() => { window.open(backImage, '_blank'); }}>
+                                        <Image style={{ height: 300, width: 300, }} source={{ uri: backImage }}>
                                         </Image>
                                     </TouchableOpacity>
-                                    <Text>Back Side</Text>
+                                    <Text style={{ fontFamily: 'inter-semibold', fontSize: 14, marginTop: 10, }}>Back Side</Text>
                                 </>
                                 :
                                 <Text>No Image</Text>
@@ -715,11 +827,11 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
                         <View style={{ marginVertical: 10, backgroundColor: 'white', borderRadius: 4, width: 525, padding: 20, margin: 5, alignItems: 'center', justifyContent: 'center' }} >
                             {rightImage ?
                                 <>
-                                    <TouchableOpacity onPress={() => { window.open(formValue.rightImage, '_blank'); }}>
-                                        <Image style={{ height: 300, width: 300, }} source={{ uri: formValue.rightImage }}>
+                                    <TouchableOpacity onPress={() => { window.open(rightImage, '_blank'); }}>
+                                        <Image style={{ height: 300, width: 300, }} source={{ uri: rightImage }}>
                                         </Image>
                                     </TouchableOpacity>
-                                    <Text>Right Side</Text>
+                                    <Text style={{ fontFamily: 'inter-semibold', fontSize: 14, marginTop: 10, }}>Right Side</Text>
                                 </>
                                 :
                                 <Text>No Image</Text>
@@ -728,11 +840,11 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
                         <View style={{ marginVertical: 10, backgroundColor: 'white', borderRadius: 4, width: 525, padding: 20, margin: 5, alignItems: 'center', justifyContent: 'center' }} >
                             {leftImage ?
                                 <>
-                                    <TouchableOpacity onPress={() => { window.open(formValue.leftImage, '_blank'); }}>
-                                        <Image style={{ height: 300, width: 300, }} source={{ uri: formValue.leftImage }}>
+                                    <TouchableOpacity onPress={() => { window.open(leftImage, '_blank'); }}>
+                                        <Image style={{ height: 300, width: 300, }} source={{ uri: leftImage }}>
                                         </Image>
                                     </TouchableOpacity>
-                                    <Text>Left Side</Text>
+                                    <Text style={{ fontFamily: 'inter-semibold', fontSize: 14, marginTop: 10, }}>Left Side</Text>
                                 </>
                                 :
                                 <Text>No Image</Text>
@@ -839,11 +951,19 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
                     : null
             }
 
-            {loading ?
+            {!imgLoading ?
+                null
+                :
                 <View style={styles.activityIndicatorStyle}>
                     <ActivityIndicator color="#23d3d3" size="large" />
-                </View>
-                : null}
+                </View>}
+
+            {!loading ?
+                null
+                :
+                <View style={styles.activityIndicatorStyle}>
+                    <ActivityIndicator color="#23d3d3" size="large" />
+                </View>}
         </View>
     )
 }

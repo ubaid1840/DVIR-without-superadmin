@@ -64,7 +64,7 @@ const GeneralInspectionPage = (props) => {
     const [groups, setGroups] = useState([])
     const [deleteModal, setDeleteModal] = useState(false)
     const [deleteOptionHover, setDeleteOptionHover] = useState({})
-    const [loading, setLoading] = useState(false)
+    const [loading, setLoading] = useState(true)
     const [alertIsVisible, setAlertIsVisible] = useState(false)
     const [alertStatus, setAlertStatus] = useState('')
 
@@ -84,6 +84,10 @@ const GeneralInspectionPage = (props) => {
     const { state: woState, setWO } = useContext(WOContext)
     const { state: assetState, } = useContext(AssetContext)
     const { state: peopleState } = useContext(PeopleContext)
+
+    useEffect(()=>{
+        fetchData()
+    },[])
 
     const fetchData = async () => {
 
