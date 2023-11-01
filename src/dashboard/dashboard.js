@@ -438,6 +438,7 @@ const DashboardPage = (props) => {
         return (
           <GeneralInspectionPage
             form={temp}
+            onDashboardValueChange={handleWorkOrderValue}
             onDashboardValue={handleFormValue} />
         )
       }

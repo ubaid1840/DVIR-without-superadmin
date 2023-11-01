@@ -2347,6 +2347,7 @@ const styles = StyleSheet.create({
                 boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)', // Add boxShadow for web
             },
         }),
+        minWidth: 150,
 
     },
     dropdownOption: {

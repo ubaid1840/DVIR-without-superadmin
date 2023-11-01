@@ -841,7 +841,7 @@ const Form = ({ columns, entriesData, row, cell, entryText, columnHeaderRow, col
     else if (titleForm == "Assets") {
 
 
-        const columnsCSV = columns.filter((column) => column !== 'Action');
+        const columnsCSV = columns.filter((column) => column !== 'Action' && column !=='Status');
 
         const entriesDataCSV = entriesData.map((entry) => {
             // Create a new object without the 'Action' key

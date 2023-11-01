@@ -25,6 +25,7 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
     const [selectedWorkOrder, setSelectedWorkOrder] = useState(value)
     const [loading, setLoading] = useState(false)
     const [plateNumber, setPlateNumber] = useState('')
+    const [mileage, setMileage] = useState('')
     const [workOrderVariable, setWorkOrderVariable] = useState([])
     const [addTask, setAddTask] = useState('')
     const [openAddItems, setOpenAddItems] = useState(false)
@@ -63,6 +64,8 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
     useEffect(() => {
 
         const plate = [...assetState.value.data.filter((item) => item['Asset Number'].toString() === selectedWorkOrder.assetNumber)]
+        const mil = assetState.value.data.find(asset => asset["Asset Number"].toString() === selectedWorkOrder.assetNumber)?.Mileage || 'n/a'
+        setMileage(mil)
         setPlateNumber(plate[0]['Plate Number'])
         setTotalItems(selectedWorkOrder.defectedItems.length)
 
@@ -437,10 +440,6 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
         setLoading(false)
     }
 
-    const handleDeleteWorkOrder = async () => {
-
-    }
-
     const updateComment = async () => {
 
         const currentDate = new Date();
@@ -486,6 +485,15 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
                 'status': 'Corrected',
             })
         }
+
+        if(selectedWorkOrder.assetNumber){
+            await updateDoc(doc(db, 'Assets', selectedWorkOrder.assetNumber), {
+                'Mileage': completionMileage,
+            }) 
+            setMileage(completionMileage)
+        }
+
+        
     }
 
     const updatePendingWOStatus = async () => {
@@ -702,7 +710,7 @@ const WorkOrderDetail = ({ value, returnWorkOrderDetail, onDashboardWorkOrder })
                                     </View>
                                     <View style={styles.subViewStyle}>
                                         <Text style={{ width: 200, fontFamily: 'inter-medium', fontSize: 15 }}>Mileage:</Text>
-                                        <Text style={{}}>{assetState.value.data.find(asset => asset["Asset Number"].toString() === selectedWorkOrder.assetNumber)?.Mileage || 'n/a'}</Text>
+                                        <Text style={{}}>{mileage}</Text>
                                     </View>
                                 </View>
                             </View>

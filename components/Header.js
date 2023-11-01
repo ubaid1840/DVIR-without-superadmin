@@ -112,12 +112,12 @@ const styles = StyleSheet.create({
     dropdownOptionsContainer: {
         position: 'absolute',
         top: '100%',
-        left: 0,
+        right: 0,
         borderWidth: 1,
         borderColor: '#ccc',
         borderRadius: 8,
         backgroundColor: '#fff',
-        marginTop: 4,
+        marginTop: 10,
         boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)',
         width: 200,
         zIndex: 2

@@ -374,8 +374,8 @@ const DefectDetail = ({ value, onDashboardOpenWO, onDashboardDefect }) => {
                             </View>
                         </View>
 
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', margin: 40, height:'auto', width:'auto' }}>
-                            <View style={[styles.newContentCardStyle, { paddingVertical: 25, marginRight: 20, flex:1 }]}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', margin: 40, height: 'auto', width: 'auto' }}>
+                            <View style={[styles.newContentCardStyle, { paddingVertical: 25, marginRight: 20, flex: 1 }]}>
                                 <View style={{ borderBottomWidth: 1, borderBottomColor: '#C6C6C6', paddingHorizontal: 25, paddingBottom: 25 }}>
                                     <Text style={{ color: '#353535', fontFamily: 'inter-medium', fontSize: 20 }}>Details</Text>
                                 </View>
@@ -502,7 +502,7 @@ const DefectDetail = ({ value, onDashboardOpenWO, onDashboardDefect }) => {
                             </View>
 
 
-                            <View style={[styles.newContentCardStyle, { flex:1 }]}>
+                            <View style={[styles.newContentCardStyle, { flex: 1 }]}>
                                 <View style={{ borderBottomWidth: 1, borderBottomColor: '#C6C6C6', padding: 25 }}>
                                     <Text style={{ color: '#353535', fontFamily: 'inter-medium', fontSize: 20 }}>Activity</Text>
                                 </View>
@@ -586,18 +586,23 @@ const DefectDetail = ({ value, onDashboardOpenWO, onDashboardDefect }) => {
                         {selectedDefect.defectsAll
                             ?
                             selectedDefect.defectsAll.map((item, index) => (
-                                <View key={index} style={[styles.newContentCardStyle, { marginHorizontal: 40, marginVertical: 20, flex: 1 }]}>
-                                    <View style={{ borderBottomWidth: 1, borderBottomColor: '#C6C6C6', padding: 25 }}>
+                                <View key={index} style={[styles.newContentCardStyle, { marginHorizontal: 40, marginVertical: 20,  }]}>
+                                    {/* <View style={{ borderBottomWidth: 1, borderBottomColor: '#C6C6C6', padding: 25 }}>
                                         <Text style={{ color: '#353535', fontFamily: 'inter-medium', fontSize: 20 }}>{item.type}</Text>
-                                    </View>
+                                    </View> */}
                                     <View style={{ margin: 25, borderBottomWidth: 1, paddingBottom: 10, borderBottomColor: '#23d3d3' }}>
                                         <Text style={{ fontFamily: 'inter-medium', fontSize: 15, color: '#23d3d3' }}>{item.title}</Text>
                                     </View>
-                                    <TouchableOpacity style={{ marginLeft: 25, marginBottom: 25 }} onPress={() => {
-                                        window.open(item.Defect.Image, '_blank');
-                                    }}>
-                                        <Image style={{ height: 150, width: 150 }} source={{ uri: item.Defect.Image }}></Image>
-                                    </TouchableOpacity>
+                                    {item.Defect.Image ?
+                                        <TouchableOpacity style={{ marginLeft: 25, marginBottom: 25 }} onPress={() => {
+                                            window.open(item.Defect.Image, '_blank');
+                                        }}>
+                                            <Image style={{ height: 150, width: 150 }} source={{ uri: item.Defect.Image }}></Image>
+                                        </TouchableOpacity>
+                                        :
+                                        null
+                                    }
+
                                     <Text style={{ marginBottom: 20, marginLeft: 20, width: '40%' }}>{item.Defect.Note}</Text>
                                 </View>
                             ))
@@ -635,7 +640,7 @@ const DefectDetail = ({ value, onDashboardOpenWO, onDashboardDefect }) => {
                                 <View style={{ width: '100%', paddingHorizontal: 20, paddingBottom: 20, zIndex: 1 }}>
 
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 14, marginTop: 20, marginBottom: 20 }}>Asset : {selectedDefect.assetName}</Text>
+                                        <Text style={{ fontFamily: 'inter-medium', fontSize: 14, marginTop: 20, marginBottom: 20 }}>Asset : {assetState.value.data.find(asset => asset["Asset Number"].toString() === selectedDefect.assetNumber)?.['Asset Name'] || 'Unknown Asset'}</Text>
                                         <Text style={{ fontFamily: 'inter-medium', fontSize: 14, marginTop: 20, marginBottom: 20 }}>Mileage : {mileage ? parseInt(mileage) : 'n/a'}</Text>
                                     </View>
 

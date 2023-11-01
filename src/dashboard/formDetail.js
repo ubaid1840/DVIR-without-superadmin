@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useState } from 'react';
-import { ActivityIndicator, Dimensions, FlatList, Modal, ScrollView, TouchableOpacity, View, StyleSheet, Text, Image, ImageBackground, TouchableWithoutFeedback } from 'react-native';
+import { ActivityIndicator, Dimensions, FlatList, Modal, ScrollView, TouchableOpacity, View, StyleSheet, Text, Image, ImageBackground, TouchableWithoutFeedback, TextInput } from 'react-native';
 import AlertModal from '../../components/AlertModal';
 import { DataContext } from '../store/context/DataContext';
 import moment from 'moment'
@@ -8,17 +8,13 @@ import { collection, deleteDoc, doc, getDocs, getFirestore, query, where } from 
 import app from '../config/firebase';
 import { PeopleContext } from '../store/context/PeopleContext';
 import { AssetContext } from '../store/context/AssetContext';
-import { HeaderOptionContext } from '../store/context/HeaderOptionContext';
 import { CloseAllDropDowns } from '../../components/CloseAllDropdown';
 import AppBtn from '../../components/Button';
 import jsPDF from 'jspdf';
-import * as interbold from '../../assets/fonts/Inter-Bold-normal'
 import * as interregular from '../../assets/fonts/Inter-Regular-normal'
 import * as intermedium from '../../assets/fonts/Inter-Medium-normal'
 import 'jspdf-autotable'
 import { DefectContext } from '../store/context/DefectContext';
-
-
 
 const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection }) => {
 
@@ -31,13 +27,99 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
     const [alertStatus, setAlertStatus] = useState('')
     const [pdf, setPdf] = useState(null)
 
+    const [frontImage, setFrontImage] = useState('')
+    const [backImage, setBackImage] = useState('')
+    const [leftImage, setLeftImage] = useState('')
+    const [rightImage, setRightImage] = useState('')
+
 
     const db = getFirestore(app)
     const { state: dataState, setData } = useContext(DataContext)
     const { state: peopleState } = useContext(PeopleContext)
     const { state: assetState } = useContext(AssetContext)
-    const { state: headerOptionState, setHeaderOption } = useContext(HeaderOptionContext)
     const { state: defectState } = useContext(DefectContext)
+
+    useEffect(() => {
+        if (formValue.frontImage) {
+            fetch(formValue.frontImage)
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            setFrontImage('')
+                        } else {
+                            setFrontImage('')
+                        }
+                    } else {
+                        setFrontImage(formValue.frontImage)
+                    }
+                })
+                .catch(error => {
+                    setFrontImage('')
+
+                });
+        }
+
+        if (formValue.backImage) {
+            fetch(formValue.backImage)
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            setBackImage('')
+                        } else {
+                            setBackImage('')
+                        }
+                    } else {
+                        setBackImage(formValue.backImage)
+                    }
+                })
+                .catch(error => {
+                    setBackImage('')
+
+                });
+        }
+
+        if (formValue.leftImage) {
+            fetch(formValue.leftImage)
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            setLeftImage('')
+                        } else {
+                            setLeftImage('')
+                        }
+                    } else {
+                        setLeftImage(formValue.leftImage)
+                    }
+                })
+                .catch(error => {
+                    setLeftImage('')
+
+                });
+        }
+
+
+        if (formValue.rightImage) {
+            fetch(formValue.rightImage)
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            setRightImage('')
+                        } else {
+                            setRightImage('')
+                        }
+                    } else {
+                        setRightImage(formValue.rightImage)
+                    }
+                })
+                .catch(error => {
+                    setRightImage('')
+
+                });
+        }
+
+
+
+    }, [])
 
 
     useEffect(() => {
@@ -144,18 +226,6 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
         });
     };
 
-    const convertImageToBase64 = async (localUri) => {
-        try {
-            const base64Image = await FileSystem.readAsStringAsync(localUri, {
-                encoding: FileSystem.EncodingType.Base64,
-            });
-            // base64Image will contain the base64 string of the image
-            return base64Image;
-        } catch (error) {
-            console.error('Error converting image to base64:', error);
-            return null;
-        }
-    };
 
     const generatePDFContent = async (groups) => {
         const doc = new jsPDF();
@@ -301,7 +371,7 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
                 }
 
                 // Add comments if available
-                if(groupData.value == 'Fail' && groupData.Defect.Image == ""){
+                if (groupData.value == 'Fail' && groupData.Defect.Image == "") {
                     yOffset += 8;
                 }
                 if (groupData.Defect && groupData.Defect.Note) {
@@ -350,14 +420,6 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
         setLoading(false);
         return doc;
     };
-
-
-
-
-
-
-
-
 
     const fetchDriverDp = async () => {
         await getDocs(query(collection(db, 'AllowedUsers'), where('Designation', '==', 'Driver')))
@@ -522,15 +584,6 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
 
     return (
         <View style={{ flex: 1, backgroundColor: '#f6f8f9' }}>
-            {/* <View style={{
-                position: 'absolute',
-                top: 0,
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: Dimensions.get('window').height,
-                
-            }}></View> */}
             <TouchableWithoutFeedback onPress={() => {
                 CloseAllDropDowns()
             }}>
@@ -587,6 +640,8 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
                                 <Text style={{ fontFamily: 'inter-regular', fontSize: 15, height: 25, marginTop: 5 }}>{peopleState.value.data.filter(d => d.Designation === 'Driver').find(driver => driver["Employee Number"].toString() === formValue.driverEmployeeNumber)?.Name || 'Unknown Driver'}</Text>
                             </View>
 
+
+
                             <View style={{ flexDirection: 'column', alignItems: 'center' }}>
                                 <Image style={{ height: 40, width: 40 }} source={require('../../assets/vehicle_icon.png')}></Image>
                                 <Text style={{ fontFamily: 'inter-regular', fontSize: 15, height: 25, marginTop: 5 }}>{assetState.value.data.find(asset => asset["Asset Number"].toString() === formValue.assetNumber)?.['Asset Name'] || 'Unknown Asset'}</Text>
@@ -628,7 +683,7 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
 
                     <View style={{ flexDirection: 'row' }}>
                         <View style={{ marginVertical: 10, backgroundColor: 'white', borderRadius: 4, width: 525, padding: 20, margin: 5, alignItems: 'center', justifyContent: 'center' }} >
-                            {formValue.frontImage ?
+                            {frontImage ?
                                 <>
                                     <TouchableOpacity onPress={() => { window.open(formValue.frontImage, '_blank'); }}>
                                         <Image style={{ height: 300, width: 300, }} source={{ uri: formValue.frontImage }}>
@@ -641,7 +696,7 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
                             }
                         </View>
                         <View style={{ marginVertical: 10, backgroundColor: 'white', borderRadius: 4, width: 525, padding: 20, margin: 5, alignItems: 'center', justifyContent: 'center' }} >
-                            {formValue.backImage ?
+                            {backImage ?
                                 <>
                                     <TouchableOpacity onPress={() => { window.open(formValue.backImage, '_blank'); }}>
                                         <Image style={{ height: 300, width: 300, }} source={{ uri: formValue.backImage }}>
@@ -658,7 +713,7 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
 
                     <View style={{ flexDirection: 'row' }}>
                         <View style={{ marginVertical: 10, backgroundColor: 'white', borderRadius: 4, width: 525, padding: 20, margin: 5, alignItems: 'center', justifyContent: 'center' }} >
-                            {formValue.rightImage ?
+                            {rightImage ?
                                 <>
                                     <TouchableOpacity onPress={() => { window.open(formValue.rightImage, '_blank'); }}>
                                         <Image style={{ height: 300, width: 300, }} source={{ uri: formValue.rightImage }}>
@@ -671,7 +726,7 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
                             }
                         </View>
                         <View style={{ marginVertical: 10, backgroundColor: 'white', borderRadius: 4, width: 525, padding: 20, margin: 5, alignItems: 'center', justifyContent: 'center' }} >
-                            {formValue.leftImage ?
+                            {leftImage ?
                                 <>
                                     <TouchableOpacity onPress={() => { window.open(formValue.leftImage, '_blank'); }}>
                                         <Image style={{ height: 300, width: 300, }} source={{ uri: formValue.leftImage }}>
@@ -752,6 +807,7 @@ const FormDetail = ({ formValue, returnFormDetail, onDashboardGeneralInspection 
                 </View>
 
             </Modal>
+
 
             {alertStatus == 'successful'
                 ?
@@ -851,9 +907,6 @@ const styles = StyleSheet.create({
         paddingLeft: 20,
         flexDirection: 'row',
         marginBottom: 10
-
-        // borderBottomWidth: 1,
-        // borderBottomColor: '#ccc',
     },
     selectedNavItem: {
         // backgroundColor: '#ccc',
@@ -1048,7 +1101,95 @@ const styles = StyleSheet.create({
         fontSize: 15,
         // width: 150,
         height: 25
-    }
+    },
+    input: {
+        width: '100%',
+        height: 40,
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        paddingHorizontal: 10,
+        borderWidth: 1,
+        borderColor: '#cccccc',
+        outlineStyle: 'none'
+    },
+    dropdownContainer: {
+        position: 'relative',
+
+
+    },
+    dropdownButton: {
+        padding: 12,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 8,
+        minWidth: 150,
+    },
+    dropdown: {
+        // Custom styles for the dropdown container
+        // For example:
+        // padding: 12,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 8,
+        minWidth: 150,
+        backgroundColor: '#FFFFFF',
+        height: 40,
+        paddingLeft: 12,
+        paddingRight: 12,
+        alignItems: 'center',
+
+
+    },
+    dropdownSelectedValueStyle: {
+        fontSize: 16,
+    },
+    dropdownOptionsContainer: {
+        position: 'absolute',
+        top: '100%',
+        right: 0,
+        left: 0,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 8,
+        backgroundColor: '#fff',
+        marginTop: 4,
+        ...Platform.select({
+            web: {
+                boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)', // Add boxShadow for web
+            },
+        }),
+
+    },
+    dropdownOption: {
+        padding: 12,
+        borderBottomWidth: 1,
+        borderColor: '#ccc',
+    },
+    dropdownHoveredOption: {
+        ...(Platform.OS === 'web' && {
+            backgroundColor: '#67E9DA',
+            cursor: 'pointer',
+            transitionDuration: '0.2s',
+        }),
+    },
+    dropdownOptionText: {
+        fontSize: 16,
+    },
+    dropdownHoveredOptionText: {
+        ...(Platform.OS === 'web' && {
+            color: '#FFFFFF',
+        }),
+    },
+    dropdownButtonSelect: {
+        borderColor: '#558BC1',
+        shadowColor: '#558BC1',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 1,
+        shadowRadius: 10,
+        elevation: 0,
+
+        backgroundColor: '#FFFFFF'
+    },
 });
 
 export default FormDetail

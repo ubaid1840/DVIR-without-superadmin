@@ -792,10 +792,6 @@ const MainDashboard = (props) => {
 
                 </View>
 
-
-
-
-
                 <View style={{ flexDirection: 'row', justifyContent: 'space-evenly', marginTop: 15 }}>
                   <View style={{ marginLeft: 10, marginRight: 10, }}>
                     <Text style={styles.subHeadingText}>

@@ -1120,16 +1120,16 @@ const MaintenancePage = (props) => {
             </View>
           </View>
 
-          <View style={{ justifyContent: 'space-between', alignItems: 'center', flexDirection: 'row', zIndex: 1 }}>
-            <View style={{ flexDirection: 'row', margin: 10 }}>
-              <TouchableOpacity style={{ flexDirection: 'row', marginHorizontal: 15, height: 40, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }} onPress={() => setOptions('1')}>
+          <View style={{ justifyContent: 'space-between', alignItems: 'center', flexDirection: 'row', zIndex: 1, marginRight: 40, marginLeft:40, }}>
+            <View style={{ flexDirection: 'row' }}>
+              <TouchableOpacity style={{ flexDirection: 'row', height: 40, justifyContent: 'center', alignItems: 'center',  }} onPress={() => setOptions('1')}>
                 <Text style={{ color: options == '1' ? 'white' : 'grey', fontFamily: 'inter-bold', fontSize: options == '1' ? 16 : 14, padding: 10, backgroundColor: options == '1' ? '#335a75' : null, borderWidth: options == '1' ? 1 : 0, borderColor: '#335a75', borderRadius: 10 }}>General WO</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={{ flexDirection: 'row', marginHorizontal: 15, height: 40, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }} onPress={() => setOptions('2')}>
+              <TouchableOpacity style={{ flexDirection: 'row', marginHorizontal: 5, height: 40, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }} onPress={() => setOptions('2')}>
                 <Text style={{ color: options == '2' ? 'white' : 'grey', fontFamily: 'inter-bold', fontSize: options == '2' ? 16 : 14, padding: 10, backgroundColor: options == '2' ? '#335a75' : null, borderWidth: options == '2' ? 1 : 0, borderColor: '#335a75', borderRadius: 10 }}>Oil Change WO</Text>
               </TouchableOpacity>
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 40, zIndex: 2, }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', zIndex: 2, }}>
               <View style={{ flexDirection: 'row' }}>
                 <View style={{ marginRight: 10 }}>
                   <TextInput
@@ -1142,7 +1142,7 @@ const MaintenancePage = (props) => {
                     onBlur={() => { setSearchTextInputBorderColor(false) }}
                   />
                 </View>
-                <View style={{ marginRight: 10 }}>
+                <View style={{marginRight: 10}}>
                   <DropDownComponent
                     options={['Select', 'Asset', 'Mechanic']}
                     onValueChange={handleSearchWorkOrderValueChange}
@@ -1166,8 +1166,8 @@ const MaintenancePage = (props) => {
                   <AppBtn
                     title="Create Work Order"
                     imgSource={require('../../assets/add_plus_btn_icon.png')}
-                    btnStyle={[styles.btn, { marginHorizontal: 10 }]}
-                    btnTextStyle={[styles.btnText, { marginLeft: 0, marginRight: 10 }]}
+                    btnStyle={[styles.btn, {}]}
+                    btnTextStyle={[styles.btnText, {marginLeft:0}]}
                     onPress={() => {
                       clearAll()
                       setAssetOption(false)
@@ -1202,7 +1202,7 @@ const MaintenancePage = (props) => {
             </View>
           </View>
 
-          <View style={{ flexDirection: 'row', marginLeft: 40, alignItems: 'center', marginTop: 10, zIndex: 1 }}>
+          <View style={{ flexDirection: 'row', marginLeft: 40, alignItems: 'center', marginVertical: 20, zIndex: 1 }}>
 
             <View style={{ marginRight: 10 }}>
               <DropDownComponent
@@ -1268,7 +1268,7 @@ const MaintenancePage = (props) => {
             </View>
           </View>
 
-          <View style={[styles.contentCardStyle, { marginTop: 10 }]}>
+          <View style={[styles.contentCardStyle, { marginTop: 0 }]}>
             {options == '1'
               ?
               <RenderForm />
@@ -1554,7 +1554,7 @@ const MaintenancePage = (props) => {
 
         </AlertModal>
         :
-        alertStatus.includes('failed')
+        alertStatus.includes('Failed')
           ?
           <AlertModal
             centeredViewStyle={styles.centeredView}
@@ -1896,7 +1896,7 @@ const styles = StyleSheet.create({
         boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)', // Add boxShadow for web
       },
     }),
-
+    minWidth: 150,
   },
   dropdownOption: {
     padding: 12,

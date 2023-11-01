@@ -49,6 +49,7 @@ const DefectsPage = (props) => {
     const [totalNew, setTotalNew] = useState(0)
     const [totalInProgress, setTotalInProgress] = useState(0)
     const [totalCorrected, setTotalCorrected] = useState(0)
+    const [defectStatusSelect, setDefectStatusSelect] = useState('New')
 
     const { state: dataState, setData } = useContext(DataContext)
     const { state: authState, setAuth } = useContext(AuthContext)
@@ -124,7 +125,7 @@ const DefectsPage = (props) => {
     const searchDefectOptionList = ["Select", "Asset", "Driver",]
 
     const handleDefectsFormValueChange = (value) => {
-       
+
         // console.log(value)
         // setSelectedDefect(value)
         props.onDashboardValueChange(value)
@@ -170,72 +171,91 @@ const DefectsPage = (props) => {
         <View style={{ flex: 1, backgroundColor: '#f6f8f9' }}
         >
 
-                <TouchableWithoutFeedback onPress={()=> {
-                    CloseAllDropDowns()
-                }}>
-                    <ScrollView style={{ height: 100 }}>
-                        <View style={{ flexDirection: 'row', marginLeft: 40, marginVertical: 40, marginRight: 40, justifyContent: 'space-between', alignItems: 'center' }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <View style={{ backgroundColor: '#23d3d3', borderRadius: 15, }}>
-                                    <Image style={{ width: 30, height: 30, margin: 7 }}
-                                        tintColor="#FFFFFF"
-                                        source={require('../../assets/defects_icon.png')}></Image>
-                                </View>
-                                <Text style={{ fontSize: 30, color: '#335a75', fontFamily: 'inter-extrablack', marginLeft: 10 }}>
-                                    Defects
-                                </Text>
+            <TouchableWithoutFeedback onPress={() => {
+                CloseAllDropDowns()
+            }}>
+                <ScrollView style={{ height: 100 }}>
+                    <View style={{ flexDirection: 'row', marginLeft: 40, marginVertical: 40, marginRight: 40, justifyContent: 'space-between', alignItems: 'center' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <View style={{ backgroundColor: '#23d3d3', borderRadius: 15, }}>
+                                <Image style={{ width: 30, height: 30, margin: 7 }}
+                                    tintColor="#FFFFFF"
+                                    source={require('../../assets/defects_icon.png')}></Image>
                             </View>
-                            <View style={{ flexDirection: 'row' }}>
-                                <View style={{ alignItems: 'center' }}>
-                                    <Text style={{ color: '#5B5B5B', fontSize: 20, fontFamily: 'inter-medium' }}>{totalNew}</Text>
-                                    <Text style={{ color: '#5B5B5B', fontSize: 17 }}>New</Text>
-                                </View>
-                                <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 25, opacity: 0.5, }}></View>
-                                <View style={{ alignItems: 'center' }}>
-                                    <Text style={{ color: '#5B5B5B', fontSize: 20, fontFamily: 'inter-medium' }}>{totalInProgress}</Text>
-                                    <Text style={{ color: '#5B5B5B', fontSize: 17 }}>In Progress</Text>
-                                </View>
-                                <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 25, opacity: 0.5 }}></View>
-                                <View style={{ alignItems: 'center' }}>
-                                    <Text style={{ color: '#5B5B5B', fontSize: 20, fontFamily: 'inter-medium' }}>{totalCorrected}</Text>
-                                    <Text style={{ color: '#5B5B5B', fontSize: 17 }}>Corrected</Text>
-                                </View>
+                            <Text style={{ fontSize: 30, color: '#335a75', fontFamily: 'inter-extrablack', marginLeft: 10 }}>
+                                Defects
+                            </Text>
+                        </View>
+                        <View style={{ flexDirection: 'row' }}>
+                            <View style={{ alignItems: 'center' }}>
+                                <Text style={{ color: '#5B5B5B', fontSize: 20, fontFamily: 'inter-medium' }}>{totalNew}</Text>
+                                <Text style={{ color: '#5B5B5B', fontSize: 17 }}>New</Text>
+                            </View>
+                            <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 25, opacity: 0.5, }}></View>
+                            <View style={{ alignItems: 'center' }}>
+                                <Text style={{ color: '#5B5B5B', fontSize: 20, fontFamily: 'inter-medium' }}>{totalInProgress}</Text>
+                                <Text style={{ color: '#5B5B5B', fontSize: 17 }}>In Progress</Text>
+                            </View>
+                            <View style={{ borderRightWidth: 2, borderRightColor: '#A2A2A2', marginHorizontal: 25, opacity: 0.5 }}></View>
+                            <View style={{ alignItems: 'center' }}>
+                                <Text style={{ color: '#5B5B5B', fontSize: 20, fontFamily: 'inter-medium' }}>{totalCorrected}</Text>
+                                <Text style={{ color: '#5B5B5B', fontSize: 17 }}>Corrected</Text>
                             </View>
                         </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 40, paddingRight: 40, zIndex: 1, }}>
-                            <View style={{ flexDirection: 'row' }}>
-                                <View style={{ marginRight: 10 }}>
-                                    <TextInput
-                                        style={[styles.input, { marginTop: 0 },]}
-                                        placeholder="Type to search"
-                                        placeholderTextColor="#868383DC"
-                                        value={search}
-                                        onChangeText={(val) => { setSearch(val) }}
-                                        onFocus={() => { setSearchTextInputBorderColor(true) }}
-                                        onBlur={() => { setSearchTextInputBorderColor(false) }}
-                                    />
-                                </View>
-                                <View style={{ marginRight: 10 }}>
-                                    <DropDownComponent
-                                        options={searchDefectOptionList}
-                                        onValueChange={handleSearchDefectValueChange}
-                                        // title="Ubaid Arshad"
-                                        info='searchSelection'
-                                        selectedValue={searchDefectSelectedOption}
-                                        imageSource={require('../../assets/up_arrow_icon.png')}
-                                        container={styles.dropdownContainer}
-                                        dropdownButton={styles.dropdownButton}
-                                        selectedValueStyle={styles.dropdownSelectedValueStyle}
-                                        optionsContainer={styles.dropdownOptionsContainer}
-                                        option={styles.dropdownOption}
-                                        hoveredOption={styles.dropdownHoveredOption}
-                                        optionText={styles.dropdownOptionText}
-                                        hoveredOptionText={styles.dropdownHoveredOptionText}
-                                        dropdownButtonSelect={styles.dropdownButtonSelect}
-                                        dropdownStyle={styles.dropdown}
-                                    />
-                                </View>
-                                {/* <View style={{ marginRight: 10 }}>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 40, marginRight: 40, marginLeft:40, zIndex: 1, }}>
+                        <View style={{ flexDirection: 'row', }}>
+                            <TouchableOpacity style={{ flexDirection: 'row', height: 40, justifyContent: 'center', alignItems: 'center',  }} onPress={() => setDefectStatusSelect("New")}>
+                                <Text style={{ color: defectStatusSelect == 'New' ? 'white' : 'grey', fontFamily: 'inter-bold', fontSize: defectStatusSelect == 'New' ? 16 : 14, padding: 10, backgroundColor: defectStatusSelect == 'New' ? '#335a75' : null, borderWidth: defectStatusSelect == 'New' ? 1 : 0, borderColor: '#335a75', borderRadius: 10 }}>
+                                New
+                                </Text>
+                            </TouchableOpacity >
+                            <TouchableOpacity style={{ flexDirection: 'row', height: 40, justifyContent: 'center', alignItems: 'center', marginLeft: 10 }} onPress={() => setDefectStatusSelect("Corrected")}>
+                                <Text style={{ color: defectStatusSelect == 'Corrected' ? 'white' : 'grey', fontFamily: 'inter-bold', fontSize: defectStatusSelect == 'Corrected' ? 16 : 14, padding: 10, backgroundColor: defectStatusSelect == 'Corrected' ? '#335a75' : null, borderWidth: defectStatusSelect == 'Corrected' ? 1 : 0, borderColor: '#335a75', borderRadius: 10 }}>
+                                    Corrected
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={{ flexDirection: 'row', height: 40, justifyContent: 'center', alignItems: 'center', marginLeft: 10 }} onPress={() => setDefectStatusSelect("In Progress")}>
+                                <Text style={{ color: defectStatusSelect == 'In Progress' ? 'white' : 'grey', fontFamily: 'inter-bold', fontSize: defectStatusSelect == 'In Progress' ? 16 : 14, padding: 10, backgroundColor: defectStatusSelect == 'In Progress' ? '#335a75' : null, borderWidth: defectStatusSelect == 'In Progress' ? 1 : 0, borderColor: '#335a75', borderRadius: 10 }}>
+                                    In Progress
+                                </Text>
+                            </TouchableOpacity>
+
+                        </View>
+
+                        <View style={{ flexDirection: 'row' }}>
+                            <View style={{ marginRight: 10 }}>
+                                <TextInput
+                                    style={[styles.input, { marginTop: 0 },]}
+                                    placeholder="Type to search"
+                                    placeholderTextColor="#868383DC"
+                                    value={search}
+                                    onChangeText={(val) => { setSearch(val) }}
+                                    onFocus={() => { setSearchTextInputBorderColor(true) }}
+                                    onBlur={() => { setSearchTextInputBorderColor(false) }}
+                                />
+                            </View>
+                            <View style={{ }}>
+                                <DropDownComponent
+                                    options={searchDefectOptionList}
+                                    onValueChange={handleSearchDefectValueChange}
+                                    // title="Ubaid Arshad"
+                                    info='searchSelection'
+                                    selectedValue={searchDefectSelectedOption}
+                                    imageSource={require('../../assets/up_arrow_icon.png')}
+                                    container={styles.dropdownContainer}
+                                    dropdownButton={styles.dropdownButton}
+                                    selectedValueStyle={styles.dropdownSelectedValueStyle}
+                                    optionsContainer={styles.dropdownOptionsContainer}
+                                    option={styles.dropdownOption}
+                                    hoveredOption={styles.dropdownHoveredOption}
+                                    optionText={styles.dropdownOptionText}
+                                    hoveredOptionText={styles.dropdownHoveredOptionText}
+                                    dropdownButtonSelect={styles.dropdownButtonSelect}
+                                    dropdownStyle={styles.dropdown}
+                                />
+                            </View>
+                            {/* <View style={{ marginRight: 10 }}>
                                     <TouchableOpacity
                                         onMouseEnter={() => setSearchBtnHover(true)}
                                         onMouseLeave={() => setSearchBtnHover(false)}
@@ -249,39 +269,36 @@ const DefectsPage = (props) => {
                                             source={require('../../assets/search_icon.png')}></Image>
                                     </TouchableOpacity>
                                 </View> */}
-                                {/* <CSVLink style={{ textDecorationLine: 'none' }} data={[]} headers={[]} filename={"defects_report.csv"}>
+                            {/* <CSVLink style={{ textDecorationLine: 'none' }} data={[]} headers={[]} filename={"defects_report.csv"}>
                     <AppBtn
                         title="Download Report"
                         btnStyle={styles.btn}
                         btnTextStyle={styles.btnText}
                         onPress={handleDownloadReportBtn} />
                 </CSVLink> */}
-                            </View>
-
                         </View>
-                        <View style={styles.contentCardStyle}>
-                       
-                                <Form
-                                    columns={columns}
-                                    entriesData={searchDefectSelectedOption == 'Asset' ? defectedArray.filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())
-                                    ) : searchDefectSelectedOption == 'Driver' ? defectedArray.filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.driverEmployeeNumber)?.Name?.toLowerCase().includes(search.toLowerCase())
-                                    ) : defectedArray}
-                                    titleForm="Defects"
-                                    onValueChange={handleDefectsFormValueChange}
-                                    onOpenWorkOrder={handleOpenWorkOrderValue}
-                                    row={styles.formRowStyle}
-                                    cell={styles.formCellStyle}
-                                    entryText={styles.formEntryTextStyle}
-                                    columnHeaderRow={styles.formColumnHeaderRowStyle}
-                                    columnHeaderCell={styles.formColumnHeaderCellStyle}
-                                    columnHeaderText={styles.formColumnHeaderTextStyle}
-                                />
-                             
 
-                        </View>
-                    </ScrollView>
-                </TouchableWithoutFeedback>
-            
+                    </View>
+                    <View style={styles.contentCardStyle}>
+                        <Form
+                            columns={columns}
+                            entriesData={defectStatusSelect == 'Corrected' ? searchDefectSelectedOption == 'Asset' ? defectedArray.filter(item => item.status == 'Corrected').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())) : searchDefectSelectedOption == 'Driver' ? defectedArray.filter(item => item.status == 'Corrected').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.driverEmployeeNumber)?.Name?.toLowerCase().includes(search.toLowerCase())) : defectedArray.filter(item => item.status == 'Corrected') : defectStatusSelect == 'In Progress' ? searchDefectSelectedOption == 'Asset' ? defectedArray.filter(item => item.status == 'In Progress').filter(item => assetState.value.data.find(asset => asset['Asset Number'].toString() === item.assetNumber)?.['Asset Name']?.toLowerCase().includes(search.toLowerCase())) : searchDefectSelectedOption == 'Driver' ? defectedArray.filter(item => item.status == 'In Progress').filter(item => peopleState.value.data.find(people => people['Employee Number'].toString() === item.driverEmployeeNumber)?.Name?.toLowerCase().includes(search.toLowerCase())) : defectedArray.filter(item => item.status == 'In Progress') : defectedArray.filter(item => item.status == 'New')}
+                            titleForm="Defects"
+                            onValueChange={handleDefectsFormValueChange}
+                            onOpenWorkOrder={handleOpenWorkOrderValue}
+                            row={styles.formRowStyle}
+                            cell={styles.formCellStyle}
+                            entryText={styles.formEntryTextStyle}
+                            columnHeaderRow={styles.formColumnHeaderRowStyle}
+                            columnHeaderCell={styles.formColumnHeaderCellStyle}
+                            columnHeaderText={styles.formColumnHeaderTextStyle}
+                        />
+
+
+                    </View>
+                </ScrollView>
+            </TouchableWithoutFeedback>
+
             {loading ?
                 <View style={styles.activityIndicatorStyle}>
                     <ActivityIndicator color="#23d3d3" size="large" />
@@ -594,7 +611,7 @@ const styles = StyleSheet.create({
                 boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)', // Add boxShadow for web
             },
         }),
-
+        minWidth: 150,
     },
     dropdownOption: {
         padding: 12,

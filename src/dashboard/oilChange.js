@@ -405,7 +405,7 @@ const OilChangePage = (props) => {
                         <View style={{ backgroundColor: '#23d3d3', borderRadius: 15, }}>
                             <Image style={{ width: 30, height: 30, margin: 7 }}
                                 tintColor='#FFFFFF'
-                                source={require('../../assets/inspection_icon.png')}></Image>
+                                source={require('../../assets/oil_change_icon.png')}></Image>
                         </View>
                         <Text style={{ fontSize: 30, color: '#335a75', fontFamily: 'inter-extrablack', marginLeft: 10 }}>
                             Oil Change
